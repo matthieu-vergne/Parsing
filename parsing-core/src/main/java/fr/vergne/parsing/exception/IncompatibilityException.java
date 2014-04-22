@@ -8,9 +8,12 @@ public class IncompatibilityException extends IllegalArgumentException {
 	private final int start;
 	private final int end;
 
-	public IncompatibilityException(String regex, String content, int start, int end) {
-		super("Incompatible format \"" + regex + "\" at position " + start
-				+ ": " + content.substring(start, end));
+	public IncompatibilityException(String regex, String content, int start,
+			int end) {
+		super("Incompatible format "
+				+ (regex == null ? "(empty)" : "\"" + regex + "\"")
+				+ " at position " + start + ": \""
+				+ content.substring(start, end) + "\"");
 		this.regex = regex;
 		this.content = content;
 		this.start = start;
