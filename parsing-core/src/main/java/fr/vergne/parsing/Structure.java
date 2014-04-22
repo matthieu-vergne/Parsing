@@ -17,4 +17,12 @@ public interface Structure {
 
 	public void setContent(String content);
 
+	public void addContentListener(ContentListener listener);
+	
+	public void removeContentListener(ContentListener listener);
+	
+	public static interface ContentListener {
+
+		public void contentSet(String oldValue, String newValue);
+	}
 }

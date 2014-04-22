@@ -9,7 +9,7 @@ import java.util.NoSuchElementException;
 import fr.vergne.parsing.Structure;
 import fr.vergne.parsing.exception.IncompatibilityException;
 
-public class Alternatives implements Structure {
+public class Alternatives extends AbstractStructure {
 
 	private final List<? extends Structure> alternatives;
 	private Integer currentAlternative = null;
@@ -38,7 +38,7 @@ public class Alternatives implements Structure {
 	}
 
 	@Override
-	public void setContent(String content) {
+	protected void setInternalContent(String content) {
 		for (Structure alternative : alternatives) {
 			try {
 				alternative.setContent(content);

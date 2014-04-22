@@ -3,10 +3,9 @@ package fr.vergne.parsing.impl;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import fr.vergne.parsing.Structure;
 import fr.vergne.parsing.exception.IncompatibilityException;
 
-public class Atom implements Structure {
+public class Atom extends AbstractStructure {
 
 	private final String regex;
 	private String content;
@@ -26,7 +25,7 @@ public class Atom implements Structure {
 	}
 
 	@Override
-	public void setContent(String content) {
+	protected void setInternalContent(String content) {
 		Matcher matcher = Pattern.compile("^" + regex + "$").matcher(content);
 		if (matcher.find()) {
 			this.content = matcher.group();

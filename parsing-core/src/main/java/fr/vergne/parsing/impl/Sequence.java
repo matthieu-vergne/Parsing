@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
 import fr.vergne.parsing.Structure;
 import fr.vergne.parsing.exception.IncompatibilityException;
 
-public class Sequence implements Structure {
+public class Sequence extends AbstractStructure {
 
 	private final List<? extends Structure> sequence;
 
@@ -36,7 +36,7 @@ public class Sequence implements Structure {
 	}
 
 	@Override
-	public void setContent(String content) {
+	protected void setInternalContent(String content) {
 		String regex = buildGroupedRegex(sequence);
 		Matcher matcher = Pattern.compile("^" + regex + "$").matcher(content);
 		if (matcher.find()) {
