@@ -39,22 +39,14 @@ public class Alternatives implements Structure {
 
 	@Override
 	public void setContent(String content) {
-		IncompatibilityException optimist = null;
 		for (Structure alternative : alternatives) {
 			try {
 				alternative.setContent(content);
 				currentAlternative = alternatives.indexOf(alternative);
 			} catch (IncompatibilityException e) {
-				if (optimist == null) {
-					optimist = e;
-				} else {
-					int delta1 = optimist.getEnd() - optimist.getStart();
-					int delta2 = e.getEnd() - e.getStart();
-					optimist = delta1 <= delta2 ? optimist : e;
-				}
+				// try another
 			}
 		}
-		optimist.printStackTrace();
 		throw new IncompatibilityException(getRegex(), content, 0,
 				content.length());
 	}
