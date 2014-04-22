@@ -91,7 +91,7 @@ public class SequenceTest {
 	}
 
 	@Test
-	public void testParsingException() {
+	public void testIncompatibilityException() {
 		Atom word1 = new Atom("[a-zA-Z]+");
 		Atom word2 = new Atom("[a-zA-Z]+");
 		Atom word3 = new Atom("[a-zA-Z]+");
