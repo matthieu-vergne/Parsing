@@ -105,7 +105,8 @@ public class SequenceTest {
 			structure.setContent("A testing case!");
 			fail("Exception not thrown");
 		} catch (IncompatibilityException e) {
-			assertEquals("Incompatible format \"\\Q.\\E\" at position 14: !",
+			assertEquals(
+					"Incompatible format \"\\Q.\\E\" at position 14: \"!\"",
 					e.getMessage());
 		}
 
@@ -114,7 +115,7 @@ public class SequenceTest {
 			fail("Exception not thrown");
 		} catch (IncompatibilityException e) {
 			assertEquals(
-					"Incompatible format \"[a-zA-Z]+\" at position 2: 3 4 5",
+					"Incompatible format \"[a-zA-Z]+\" at position 2: \"3 4 5\"",
 					e.getMessage());
 		}
 
@@ -123,7 +124,7 @@ public class SequenceTest {
 			fail("Exception not thrown");
 		} catch (IncompatibilityException e) {
 			assertEquals(
-					"Incompatible format \"[a-zA-Z]+\" at position 10: c4se",
+					"Incompatible format \"[a-zA-Z]+\" at position 10: \"c4se\"",
 					e.getMessage());
 		}
 
@@ -132,7 +133,7 @@ public class SequenceTest {
 			fail("Exception not thrown");
 		} catch (IncompatibilityException e) {
 			assertEquals(
-					"Incompatible format \"[a-zA-Z]+\" at position 7: very long testing case",
+					"Incompatible format \"[a-zA-Z]+\" at position 7: \"very long testing case\"",
 					e.getMessage());
 		}
 	}
