@@ -9,6 +9,13 @@ import fr.vergne.parsing.exception.IncompatibilityException;
 public class AtomTest {
 
 	@Test
+	public void testRegex() {
+		String regex = "[abc]{2}";
+		Atom structure = new Atom(regex);
+		assertEquals(regex, structure.getRegex());
+	}
+
+	@Test
 	public void testGetContent() {
 		String content = "ca";
 		Atom structure = new Atom("[abc]{2}");

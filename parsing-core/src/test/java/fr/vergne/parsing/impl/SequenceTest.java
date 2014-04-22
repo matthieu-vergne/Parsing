@@ -11,6 +11,21 @@ import fr.vergne.parsing.exception.IncompatibilityException;
 public class SequenceTest {
 
 	@Test
+	public void testRegex() {
+		Atom word1 = new Atom("[a-zA-Z]+");
+		Atom word2 = new Atom("[0-9]+");
+		Atom word3 = new Atom("[a-zA-Z0-9]+");
+		StaticAtom space1 = new StaticAtom(" ");
+		StaticAtom space2 = new StaticAtom(" ");
+		StaticAtom dot = new StaticAtom(".");
+		Sequence sequence = new Sequence(Arrays.asList(word1, space1, word2,
+				space2, word3, dot));
+		assertEquals(word1.getRegex() + space1.getRegex() + word2.getRegex()
+				+ space2.getRegex() + word3.getRegex() + dot.getRegex(),
+				sequence.getRegex());
+	}
+
+	@Test
 	public void testGetContent() {
 		String content = "A testing case.";
 		Atom word1 = new Atom("[a-zA-Z]+");
