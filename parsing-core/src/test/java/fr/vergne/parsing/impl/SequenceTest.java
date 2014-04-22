@@ -19,8 +19,8 @@ public class SequenceTest {
 		StaticAtom space1 = new StaticAtom(" ");
 		StaticAtom space2 = new StaticAtom(" ");
 		StaticAtom dot = new StaticAtom(".");
-		Sequence structure = new Sequence(Arrays.asList(
-				word1, space1, word2, space2, word3, dot));
+		Sequence structure = new Sequence(Arrays.asList(word1, space1, word2,
+				space2, word3, dot));
 		structure.setContent(content);
 
 		assertEquals(content, structure.getContent());
@@ -60,8 +60,8 @@ public class SequenceTest {
 		StaticAtom space1 = new StaticAtom(" ");
 		StaticAtom space2 = new StaticAtom(" ");
 		StaticAtom dot = new StaticAtom(".");
-		Sequence structure = new Sequence(Arrays.asList(
-				word1, space1, word2, space2, word3, dot));
+		Sequence structure = new Sequence(Arrays.asList(word1, space1, word2,
+				space2, word3, dot));
 		structure.setContent(content);
 
 		String content2 = "A running case.";
@@ -83,8 +83,8 @@ public class SequenceTest {
 		StaticAtom space1 = new StaticAtom(" ");
 		StaticAtom space2 = new StaticAtom(" ");
 		StaticAtom dot = new StaticAtom(".");
-		Sequence structure = new Sequence(Arrays.asList(
-				word1, space1, word2, space2, word3, dot));
+		Sequence structure = new Sequence(Arrays.asList(word1, space1, word2,
+				space2, word3, dot));
 
 		try {
 			structure.setContent("A testing case!");
@@ -98,7 +98,8 @@ public class SequenceTest {
 			structure.setContent("A 3 4 5.");
 			fail("Exception not thrown");
 		} catch (IncompatibilityException e) {
-			assertEquals("Incompatible format \"[a-zA-Z]+\" at position 2: 3 4 5",
+			assertEquals(
+					"Incompatible format \"[a-zA-Z]+\" at position 2: 3 4 5",
 					e.getMessage());
 		}
 
@@ -106,7 +107,8 @@ public class SequenceTest {
 			structure.setContent("A testing c4se.");
 			fail("Exception not thrown");
 		} catch (IncompatibilityException e) {
-			assertEquals("Incompatible format \"[a-zA-Z]+\" at position 10: c4se",
+			assertEquals(
+					"Incompatible format \"[a-zA-Z]+\" at position 10: c4se",
 					e.getMessage());
 		}
 
@@ -114,7 +116,8 @@ public class SequenceTest {
 			structure.setContent("A very very long testing case.");
 			fail("Exception not thrown");
 		} catch (IncompatibilityException e) {
-			assertEquals("Incompatible format \"[a-zA-Z]+\" at position 7: very long testing case",
+			assertEquals(
+					"Incompatible format \"[a-zA-Z]+\" at position 7: very long testing case",
 					e.getMessage());
 		}
 	}
