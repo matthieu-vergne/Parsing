@@ -43,6 +43,7 @@ public class Alternatives implements Structure {
 			try {
 				alternative.setContent(content);
 				currentAlternative = alternatives.indexOf(alternative);
+				return;
 			} catch (IncompatibilityException e) {
 				// try another
 			}
