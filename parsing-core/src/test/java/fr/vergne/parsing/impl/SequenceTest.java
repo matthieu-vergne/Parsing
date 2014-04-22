@@ -27,6 +27,31 @@ public class SequenceTest {
 	}
 
 	@Test
+	public void testInnerContentSynchronization() {
+		String content = "A testing case.";
+		Atom word1 = new Atom("[a-zA-Z]+");
+		Atom word2 = new Atom("[a-zA-Z]+");
+		Atom word3 = new Atom("[a-zA-Z]+");
+		StaticAtom space1 = new StaticAtom(" ");
+		StaticAtom space2 = new StaticAtom(" ");
+		StaticAtom dot = new StaticAtom(".");
+		Sequence sequence = new Sequence(Arrays.asList(word1, space1, word2,
+				space2, word3, dot));
+		sequence.setContent(content);
+
+		assertEquals("A", word1.getContent());
+		assertEquals("testing", word2.getContent());
+		assertEquals("case", word3.getContent());
+
+		word1.setContent("Another");
+		word2.setContent("running");
+		assertEquals("Another", word1.getContent());
+		assertEquals("running", word2.getContent());
+		assertEquals("case", word3.getContent());
+		assertEquals("Another running case.", sequence.getContent());
+	}
+
+	@Test
 	public void testSetContent() {
 		String content = "A testing case.";
 		Atom word1 = new Atom("[a-zA-Z]+");
