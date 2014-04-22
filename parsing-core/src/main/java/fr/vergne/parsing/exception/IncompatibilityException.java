@@ -19,19 +19,19 @@ public class IncompatibilityException extends IllegalArgumentException {
 		this.start = start;
 		this.end = end;
 	}
-	
+
 	public String getRegex() {
 		return regex;
 	}
-	
+
 	public String getContent() {
 		return content;
 	}
-	
+
 	public int getStart() {
 		return start;
 	}
-	
+
 	public int getEnd() {
 		return end;
 	}
