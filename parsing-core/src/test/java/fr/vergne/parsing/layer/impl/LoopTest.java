@@ -124,6 +124,22 @@ public class LoopTest {
 	}
 
 	@Test
+	public void testIsEmpty() {
+		Formula letter = new Formula("[a-zA-Z]");
+		Loop<Formula> loop = new Loop<Formula>(letter);
+		assertTrue(loop.isEmpty());
+
+		loop.setContent("Tes");
+		assertFalse(loop.isEmpty());
+
+		loop.setContent("");
+		assertTrue(loop.isEmpty());
+
+		loop.setContent("a");
+		assertFalse(loop.isEmpty());
+	}
+
+	@Test
 	public void testGetIndex() {
 		Formula letter = new Formula("[a-zA-Z]");
 		Loop<Formula> loop = new Loop<Formula>(letter);

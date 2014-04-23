@@ -138,6 +138,15 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 		return contents.size();
 	}
 
+	/**
+	 * 
+	 * @return <code>true</code> is no occurrences have been found,
+	 *         <code>false</code> otherwise
+	 */
+	public boolean isEmpty() {
+		return size() == 0;
+	}
+
 	@Override
 	public Iterator<CLayer> iterator() {
 		currentIndex = null;
