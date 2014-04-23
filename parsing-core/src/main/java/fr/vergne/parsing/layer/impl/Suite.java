@@ -1,5 +1,6 @@
 package fr.vergne.parsing.layer.impl;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -50,6 +51,10 @@ public class Suite extends AbstractLayer {
 
 	public Suite(List<? extends Layer> sequence) {
 		this.sequence = Collections.unmodifiableList(sequence);
+	}
+
+	public Suite(Layer... sequence) {
+		this(Arrays.asList(sequence));
 	}
 
 	@Override

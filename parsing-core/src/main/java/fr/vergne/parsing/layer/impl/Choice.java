@@ -1,5 +1,6 @@
 package fr.vergne.parsing.layer.impl;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -26,6 +27,10 @@ public class Choice extends AbstractLayer {
 	public Choice(Collection<? extends Layer> alternatives) {
 		this.alternatives = Collections.unmodifiableList(new LinkedList<Layer>(
 				alternatives));
+	}
+	
+	public Choice(Layer... choices) {
+		this(Arrays.asList(choices));
 	}
 
 	@Override
