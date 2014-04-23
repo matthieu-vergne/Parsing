@@ -2,6 +2,7 @@ package fr.vergne.parsing.layer;
 
 import javax.sound.midi.Sequence;
 
+import fr.vergne.parsing.layer.exception.ParsingException;
 import fr.vergne.parsing.layer.impl.Choice;
 
 /**
@@ -40,6 +41,9 @@ public interface Layer {
 	 * 
 	 * @param content
 	 *            the content this {@link Layer} should represent
+	 * @throws ParsingException
+	 *             if the content does not fit the {@link Layer}'s syntax as
+	 *             returned by {@link #getRegex()}
 	 */
 	public void setContent(String content);
 
