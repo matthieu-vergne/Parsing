@@ -225,6 +225,24 @@ public class LoopTest {
 		assertEquals("VivTesting", loop.getContent());
 		loop.add(3, "a");
 		assertEquals("VivaTesting", loop.getContent());
+
+		try {
+			loop.add(5, "!");
+			fail("Exception not thrown.");
+		} catch (ParsingException e) {
+			assertEquals(
+					"Incompatible format \"[a-zA-Z]\" at position 0: \"!\"",
+					e.getMessage());
+		}
+
+		try {
+			loop.add(5, "abc");
+			fail("Exception not thrown.");
+		} catch (ParsingException e) {
+			assertEquals(
+					"Incompatible format \"[a-zA-Z]\" at position 0: \"abc\"",
+					e.getMessage());
+		}
 	}
 
 	@Test
