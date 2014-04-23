@@ -18,6 +18,17 @@ public class Repetitions<CStructure extends Structure> extends AbstractStructure
 	private final int min;
 	private final int max;
 	private Integer currentIndex = null;
+	private final ContentListener updater = new ContentListener() {
+
+		@Override
+		public void contentSet(String oldValue, String newValue) {
+			if (currentIndex == null) {
+				// no synchronization
+			} else {
+				contents.set(currentIndex, newValue);
+			}
+		}
+	};
 
 	public Repetitions(CStructure structure, int min, int max) {
 		if (min < 0 || max < 0) {
@@ -30,19 +41,13 @@ public class Repetitions<CStructure extends Structure> extends AbstractStructure
 			this.structure = structure;
 			this.min = min;
 			this.max = max;
-			structure.addContentListener(new ContentListener() {
-
-				@Override
-				public void contentSet(String oldValue, String newValue) {
-					if (currentIndex == null) {
-						// no synchronization
-					} else {
-						contents.set(currentIndex, newValue);
-					}
-				}
-			});
+			structure.addContentListener(updater);
 		}
 	}
+	
+	protected void finalize() throws Throwable {
+		structure.removeContentListener(updater);
+	};
 
 	public Repetitions(CStructure structure, int count) {
 		this(structure, count, count);
