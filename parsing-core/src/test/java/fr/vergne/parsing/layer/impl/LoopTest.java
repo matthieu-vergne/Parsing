@@ -109,7 +109,7 @@ public class LoopTest {
 	}
 
 	@Test
-	public void testCount() {
+	public void testSize() {
 		Formula letter = new Formula("[a-zA-Z]");
 		Loop<Formula> loop = new Loop<Formula>(letter);
 
