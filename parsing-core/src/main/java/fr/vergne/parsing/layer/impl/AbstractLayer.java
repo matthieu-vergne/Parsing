@@ -1,19 +1,19 @@
 package fr.vergne.parsing.layer.impl;
 
 import java.util.Collection;
-import java.util.LinkedList;
+import java.util.HashSet;
 
 import fr.vergne.parsing.layer.Layer;
 
 public abstract class AbstractLayer implements Layer {
 
-	private final Collection<ContentListener> listeners = new LinkedList<ContentListener>();
-	
+	private final Collection<ContentListener> listeners = new HashSet<ContentListener>();
+
 	@Override
 	public void addContentListener(ContentListener listener) {
 		listeners.add(listener);
 	}
-	
+
 	@Override
 	public void removeContentListener(ContentListener listener) {
 		listeners.remove(listener);
@@ -31,7 +31,7 @@ public abstract class AbstractLayer implements Layer {
 			}
 		}
 	}
-	
+
 	protected abstract void setInternalContent(String content);
 
 }
