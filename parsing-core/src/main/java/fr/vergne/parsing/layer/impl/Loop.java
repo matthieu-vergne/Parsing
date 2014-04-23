@@ -26,11 +26,13 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 		Iterable<CLayer> {
 
 	private final List<String> contents = new LinkedList<String>();
+	private final List<CLayer> occurrences = new LinkedList<CLayer>();
+	private final Generator<CLayer> generator;
 	private final CLayer template;
 	private final int min;
 	private final int max;
 	private Integer currentIndex = null;
-	private final ContentListener updater = new ContentListener() {
+	private final ContentListener templateUpdater = new ContentListener() {
 
 		@Override
 		public void contentSet(String oldValue, String newValue) {
@@ -42,7 +44,25 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 		}
 	};
 
-	public Loop(CLayer template, int min, int max) {
+	/**
+	 * Instantiate a {@link Loop} which uses a {@link Generator} to instantiate
+	 * the occurrences it will find. Notice that requesting two times the same
+	 * occurrence, for instance calling {@link #get(int)} with the same index,
+	 * should provide the same instance as long as the
+	 * {@link #setContent(String)} method has not been called. If the
+	 * {@link Generator} returns always the same instance, it is the same than
+	 * instantiating the {@link Loop} by using {@link #Loop(Layer, int, int)}
+	 * with an uncloneable template.
+	 * 
+	 * @param generator
+	 *            the occurrences {@link Generator}
+	 * @param min
+	 *            the minimum size of this {@link Loop}, at least 0
+	 * @param max
+	 *            the maximum size of this {@link Loop}, at most
+	 *            {@link Integer#MAX_VALUE}
+	 */
+	public Loop(Generator<CLayer> generator, int min, int max) {
 		if (min < 0 || max < 0) {
 			throw new IllegalArgumentException(
 					"The limits should be positive or null.");
@@ -50,21 +70,106 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 			throw new IllegalArgumentException(
 					"The minimum should be inferior or equal to the maximum.");
 		} else {
-			this.template = template;
+			this.generator = generator;
 			this.min = min;
 			this.max = max;
-			template.addContentListener(updater);
+			this.template = generator.generates();
+		}
+	}
+
+	/**
+	 * Instantiate a {@link Loop} in the same way the
+	 * {@link #Loop(Generator, int, int)} but by providing the {@link Layer} to
+	 * use as template for the occurrences. If this template is cloneable (the
+	 * {@link #clone()} method is public), a {@link Generator} is automatically
+	 * instantiated to use clones of this template for future occurrences.
+	 * Otherwise, the template itself will be used for all the occurrences.<br/>
+	 * <br/>
+	 * <b>ATTENTION</b> In the case of an uncloneable template, pay attention to
+	 * how you use the methods like {@link #get(int)} or {@link #iterator()}.
+	 * The returned element is always this same template instance but with a
+	 * different content (corresponding to the occurrence it is supposed to
+	 * represent). You have also to pay attention on how you use the template:
+	 * it is synchronized to the {@link Loop} (any content modification can
+	 * affect the {@link Loop}'s content) and it can have its content modified
+	 * at any moment by the {@link Loop}. It is highly recommended to dedicate
+	 * such a template to its {@link Loop} and not reuse it, as well as not
+	 * reuse the instances returned by this {@link Loop}.
+	 * 
+	 * @param template
+	 *            the {@link CLayer} to use as a template
+	 * @param min
+	 *            the minimum size of this {@link Loop}, at least 0
+	 * @param max
+	 *            the maximum size of this {@link Loop}, at most
+	 *            {@link Integer#MAX_VALUE}
+	 */
+	public Loop(final CLayer template, int min, int max) {
+		this(isCloneable(template) ? new Generator<CLayer>() {
+
+			@SuppressWarnings("unchecked")
+			@Override
+			public CLayer generates() {
+				try {
+					return (CLayer) template.getClass().getMethod("clone")
+							.invoke(template);
+				} catch (Exception e) {
+					throw new RuntimeException(e);
+				}
+			}
+		} : new Generator<CLayer>() {
+
+			@Override
+			public CLayer generates() {
+				return template;
+			}
+		}, min, max);
+		if (isCloneable(template)) {
+			// keep synchronization for clones
+		} else {
+			template.addContentListener(templateUpdater);
+		}
+	}
+
+	private static <CLayer extends Layer> boolean isCloneable(CLayer template) {
+		try {
+			return template.getClass().getMethod("clone").invoke(template) != null;
+		} catch (Exception e) {
+			return false;
 		}
 	}
 
 	protected void finalize() throws Throwable {
-		template.removeContentListener(updater);
+		// no cloneable check because assumed to works anyway
+		template.removeContentListener(templateUpdater);
 	};
 
+	/**
+	 * Same as {@link #Loop(Generator, int, int)} with the same min/max.
+	 */
+	public Loop(Generator<CLayer> generator, int count) {
+		this(generator, count, count);
+	}
+
+	/**
+	 * Same as {@link #Loop(CLayer, int, int)} with the same min/max.
+	 */
 	public Loop(CLayer template, int count) {
 		this(template, count, count);
 	}
 
+	/**
+	 * Same as {@link #Loop(Generator, int, int)} where the minimum is 0 and the
+	 * maximum is {@link Integer#MAX_VALUE}.
+	 */
+	public Loop(Generator<CLayer> generator) {
+		this(generator, 0, Integer.MAX_VALUE);
+	}
+
+	/**
+	 * Same as {@link #Loop(CLayer, int, int)} where the minimum is 0 and the
+	 * maximum is {@link Integer#MAX_VALUE}.
+	 */
 	public Loop(CLayer template) {
 		this(template, 0, Integer.MAX_VALUE);
 	}
@@ -93,9 +198,11 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 		Matcher matcher = Pattern.compile(getRegex()).matcher(content);
 		if (matcher.matches()) {
 			contents.clear();
+			occurrences.clear();
 			matcher = Pattern.compile(template.getRegex()).matcher(content);
 			while (matcher.find()) {
 				contents.add(matcher.group(0));
+				occurrences.add(null);
 			}
 		} else {
 			matcher = Pattern.compile(template.getRegex()).matcher(content);
@@ -147,24 +254,40 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 		return size() == 0;
 	}
 
+	/**
+	 * <b>ATTENTION</b> if the {@link Loop} is based on a uncloneable template
+	 * (provided to the constructor), the {@link Layer} returned for each
+	 * {@link Iterator#next()} is always this same template but set with the
+	 * corresponding content. Do not use it for instance to get two occurrences
+	 * and compare them, it will be always equal.
+	 */
 	@Override
 	public Iterator<CLayer> iterator() {
 		currentIndex = null;
 		return new Iterator<CLayer>() {
 
 			private int nextIndex = 0;
+			private boolean isRemoved = false;
 
 			@Override
 			public boolean hasNext() {
 				return nextIndex < size();
 			}
 
+			/**
+			 * <b>ATTENTION</b> if the {@link Loop} is based on a uncloneable
+			 * template (provided to the constructor), the {@link Layer}
+			 * returned is always this same template but set with the
+			 * corresponding content. Do not use it for instance to get two
+			 * occurrences and compare them, it will be always equal.
+			 */
 			@Override
 			public CLayer next() {
 				if (hasNext()) {
-					CLayer template = get(nextIndex);
+					CLayer occurrence = get(nextIndex);
 					nextIndex++;
-					return template;
+					isRemoved = false;
+					return occurrence;
 				} else {
 					throw new NoSuchElementException();
 				}
@@ -172,12 +295,12 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 
 			@Override
 			public void remove() {
-				if (currentIndex == null) {
+				if (isRemoved) {
 					throw new NoSuchElementException();
 				} else {
-					Loop.this.remove(currentIndex);
-					currentIndex = null;
 					nextIndex--;
+					Loop.this.remove(nextIndex);
+					isRemoved = true;
 				}
 			}
 		};
@@ -186,19 +309,38 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 	/**
 	 * This method provides the index-th occurrence found in the content.<br/>
 	 * <br/>
-	 * <b>ATTENTION</b> the {@link Layer} returned is always the same (the one
-	 * provided in the constructor) but set with the corresponding content. Do
-	 * not use it for instance to get two occurrences and compare them, it will
-	 * be always equal.
+	 * <b>ATTENTION</b> if the {@link Loop} is based on a uncloneable template
+	 * (provided to the constructor), the {@link Layer} returned is always this
+	 * same template but set with the corresponding content. Do not use it for
+	 * instance to get two occurrences and compare them, it will be always
+	 * equal.
 	 * 
 	 * @param index
 	 *            the index of the occurrence
 	 * @return the occurrence
 	 */
-	public CLayer get(int index) {
-		currentIndex = index;
-		template.setContent(contents.get(index));
-		return template;
+	public CLayer get(final int index) {
+		if (occurrences.get(index) != null) {
+			return occurrences.get(index);
+		} else {
+			CLayer occurrence = generator.generates();
+			if (occurrence != template) {
+				occurrence.setContent(contents.get(index));
+				occurrence.addContentListener(new ContentListener() {
+
+					@Override
+					public void contentSet(String oldValue, String newValue) {
+						contents.set(index, newValue);
+					}
+				});
+				occurrences.set(index, occurrence);
+				return occurrence;
+			} else {
+				currentIndex = index;
+				template.setContent(contents.get(index));
+				return template;
+			}
+		}
 	}
 
 	/**
@@ -210,6 +352,7 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 	 */
 	public void remove(int index) {
 		contents.remove(index);
+		occurrences.remove(index);
 		currentIndex = currentIndex == null || currentIndex == index ? null
 				: currentIndex > index ? currentIndex - 1 : currentIndex;
 	}
@@ -220,7 +363,13 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 	 * the index provided is the size of the {@link Loop}, the interpretation is
 	 * to duplicate the last element (index=size-1) but to return the original
 	 * element (index=size). This method cannot be used if the {@link Loop} is
-	 * empty.
+	 * empty.<br/>
+	 * <br/>
+	 * <b>ATTENTION</b> if the {@link Loop} is based on a uncloneable template
+	 * (provided to the constructor), the {@link Layer} returned is always this
+	 * same template but set with the corresponding content. Do not use it for
+	 * instance to get two occurrences and compare them, it will be always
+	 * equal.
 	 * 
 	 * @param index
 	 *            the index of the occurrence to duplicate
@@ -232,19 +381,65 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 		} else {
 			contents.add(index, contents.get(index));
 		}
+		occurrences.add(index, null);
 		return get(index);
 	}
 
 	/**
-	 * This method adds a new occurrence to this loop. This occurrence should be
-	 * compatible with the template of the {@link Loop}.
+	 * This method adds a new occurrence to this loop. The content should be
+	 * compatible with the regex of this {@link Loop}.
 	 * 
 	 * @param index
 	 *            the index of the new occurrence
 	 * @param content
-	 *            the content this new occurrence
+	 *            the content of this new occurrence
 	 */
 	public void add(int index, String content) {
-		duplicate(index).setContent(content);
+		CLayer duplicate = duplicate(index);
+		try {
+			duplicate.setContent(content);
+		} catch (ParsingException e) {
+			remove(index);
+			throw e;
+		}
+	}
+
+	/**
+	 * This method adds a new occurrence at the end of this loop. The content
+	 * should be compatible with the regex of this {@link Loop}.
+	 * 
+	 * @param content
+	 *            the content this new occurrence
+	 */
+	public void add(String content) {
+		add(size(), content);
+	}
+
+	/**
+	 * 
+	 * @param from
+	 *            the index of the occurrence to move
+	 * @param to
+	 *            the index to move the occurrence to
+	 */
+	public void move(int from, int to) {
+		contents.add(to, contents.remove(from));
+		occurrences.add(to, occurrences.remove(from));
+	}
+
+	/**
+	 * A {@link Generator} allows to create new instances of a specific
+	 * {@link Layer}.
+	 * 
+	 * @author Matthieu Vergne <matthieu.vergne@gmail.com>
+	 * 
+	 * @param <CLayer>
+	 */
+	public static interface Generator<CLayer extends Layer> {
+		/**
+		 * 
+		 * @return a new {@link CLayer}
+		 */
+		public CLayer generates();
 	}
 }
