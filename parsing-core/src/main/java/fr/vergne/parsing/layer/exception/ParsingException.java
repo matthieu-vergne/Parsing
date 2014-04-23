@@ -1,14 +1,14 @@
-package fr.vergne.parsing.exception;
+package fr.vergne.parsing.layer.exception;
 
 @SuppressWarnings("serial")
-public class IncompatibilityException extends IllegalArgumentException {
+public class ParsingException extends IllegalArgumentException {
 
 	private final String regex;
 	private final String content;
 	private final int start;
 	private final int end;
 
-	public IncompatibilityException(String regex, String content, int start,
+	public ParsingException(String regex, String content, int start,
 			int end) {
 		super("Incompatible format "
 				+ (regex == null ? "(empty)" : "\"" + regex + "\"")

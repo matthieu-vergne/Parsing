@@ -1,4 +1,4 @@
-package fr.vergne.parsing.impl;
+package fr.vergne.parsing.layer.impl;
 
 import java.util.Collections;
 import java.util.LinkedList;
@@ -6,22 +6,57 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import fr.vergne.parsing.Structure;
-import fr.vergne.parsing.exception.IncompatibilityException;
+import fr.vergne.parsing.layer.Layer;
+import fr.vergne.parsing.layer.exception.ParsingException;
 
-public class Sequence extends AbstractStructure {
+/**
+ * A {@link Suite} is a {@link Layer} representing an ordered sequence of
+ * elements. This is particularly suited for structure templates like in
+ * C/C++/Java/...:
+ * <ol>
+ * <li>"if ("</li>
+ * <li>condition</li>
+ * <li>") {"</li>
+ * <li>block</li>
+ * <li>"}"</li>
+ * </ol>
+ * or in HTML:
+ * <ol>
+ * <li>"&lt;a href='"</li>
+ * <li>url</li>
+ * <li>"'>"</li>
+ * <li>content</li>
+ * <li>"&lt;/a>"</li>
+ * </ol>
+ * At a higher level, it also fits global structures like the architecture of a
+ * scientific paper for instance:
+ * <ol>
+ * <li>title</li>
+ * <li>authors</li>
+ * <li>abstract</li>
+ * <li>introduction</li>
+ * <li>problem</li>
+ * <li>solution</li>
+ * <li>discussion</li>
+ * <li>conclusion</li>
+ * </ol>
+ * 
+ * @author Matthieu Vergne <matthieu.vergne@gmail.com>
+ * 
+ */
+public class Suite extends AbstractLayer {
 
-	private final List<? extends Structure> sequence;
+	private final List<? extends Layer> sequence;
 
-	public Sequence(List<? extends Structure> structures) {
-		this.sequence = Collections.unmodifiableList(structures);
+	public Suite(List<? extends Layer> sequence) {
+		this.sequence = Collections.unmodifiableList(sequence);
 	}
 
 	@Override
 	public String getRegex() {
 		String regex = "";
-		for (Structure structure : sequence) {
-			regex += structure.getRegex();
+		for (Layer layer : sequence) {
+			regex += layer.getRegex();
 		}
 		return regex;
 	}
@@ -29,15 +64,15 @@ public class Sequence extends AbstractStructure {
 	@Override
 	public String getContent() {
 		String content = "";
-		for (Structure structure : sequence) {
-			content += structure.getContent();
+		for (Layer layer : sequence) {
+			content += layer.getContent();
 		}
 		return content;
 	}
 
 	@Override
 	protected void setInternalContent(String content) {
-		String regex = buildGroupedRegex(sequence);
+		String regex = buildCapturingRegex(sequence);
 		Matcher matcher = Pattern.compile("^" + regex + "$").matcher(content);
 		if (matcher.find()) {
 			int delta = 0;
@@ -50,20 +85,20 @@ public class Sequence extends AbstractStructure {
 				delta += match.length();
 			}
 		} else {
-			LinkedList<Structure> compatibleBeginning = new LinkedList<Structure>();
+			LinkedList<Layer> compatibleBeginning = new LinkedList<Layer>();
 			do {
 				compatibleBeginning.addLast(sequence.get(compatibleBeginning
 						.size()));
-				regex = buildGroupedRegex(compatibleBeginning);
+				regex = buildCapturingRegex(compatibleBeginning);
 				matcher = Pattern.compile("^" + regex).matcher(content);
 			} while (matcher.find());
 			compatibleBeginning.removeLast();
 
-			LinkedList<Structure> compatibleEnding = new LinkedList<Structure>();
+			LinkedList<Layer> compatibleEnding = new LinkedList<Layer>();
 			do {
 				compatibleEnding.addFirst(sequence.get(sequence.size()
 						- compatibleEnding.size() - 1));
-				regex = buildGroupedRegex(compatibleEnding);
+				regex = buildCapturingRegex(compatibleEnding);
 				matcher = Pattern.compile(regex + "$").matcher(content);
 			} while (matcher.find()
 					&& compatibleEnding.size() + compatibleBeginning.size() < sequence
@@ -77,30 +112,30 @@ public class Sequence extends AbstractStructure {
 			} else {
 				// nothing to adapt
 			}
-			List<Structure> fakeSequence = new LinkedList<Structure>();
+			List<Layer> fakeSequence = new LinkedList<Layer>();
 			fakeSequence.addAll(compatibleBeginning);
-			Atom atom = new Atom(".*");
+			Formula atom = new Formula(".*");
 			fakeSequence.add(atom);
 			fakeSequence.addAll(compatibleEnding);
-			Sequence s = new Sequence(fakeSequence);
+			Suite s = new Suite(fakeSequence);
 			s.setContent(content);
 			String content2 = atom.getContent();
-			String prefix = new Sequence(compatibleBeginning).getContent();
+			String prefix = new Suite(compatibleBeginning).getContent();
 			try {
 				sequence.get(compatibleBeginning.size()).setContent(content2);
-			} catch (IncompatibilityException e) {
-				throw new IncompatibilityException(e.getRegex(), content,
+			} catch (ParsingException e) {
+				throw new ParsingException(e.getRegex(), content,
 						prefix.length() + e.getStart(), prefix.length()
 								+ e.getEnd());
 			}
 		}
 	}
 
-	private String buildGroupedRegex(List<? extends Structure> compatibleEnding) {
+	private String buildCapturingRegex(List<? extends Layer> compatibleEnding) {
 		String regex;
 		regex = "";
-		for (Structure structure : compatibleEnding) {
-			regex += "(" + structure.getRegex() + ")";
+		for (Layer layer : compatibleEnding) {
+			regex += "(" + layer.getRegex() + ")";
 		}
 		return regex;
 	}

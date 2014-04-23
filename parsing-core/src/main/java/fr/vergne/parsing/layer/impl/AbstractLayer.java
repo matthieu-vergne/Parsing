@@ -1,11 +1,11 @@
-package fr.vergne.parsing.impl;
+package fr.vergne.parsing.layer.impl;
 
 import java.util.Collection;
 import java.util.LinkedList;
 
-import fr.vergne.parsing.Structure;
+import fr.vergne.parsing.layer.Layer;
 
-public abstract class AbstractStructure implements Structure {
+public abstract class AbstractLayer implements Layer {
 
 	private final Collection<ContentListener> listeners = new LinkedList<ContentListener>();
 	
