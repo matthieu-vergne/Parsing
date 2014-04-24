@@ -11,24 +11,52 @@ import fr.vergne.parsing.layer.exception.ParsingException;
 public class ChoiceTest {
 
 	@Test
-	public void testGetContent() {
-		Formula lower = new Formula("[a-z]+");
-		Formula upper = new Formula("[A-Z]+");
-		Formula number = new Formula("[0-9]+");
-		Atom test = new Atom("T35T");
-		Choice choice = new Choice(Arrays.asList(lower, upper, number, test));
+	public void testSetGetContent() {
+		{
+			String content = "test";
+			Formula contiguous = new Formula("[a-z]+");
+			Formula newline = new Formula("[A-Z\n]+");
+			Formula empty = new Formula("");
+			Choice choice = new Choice(contiguous, newline, empty);
+			choice.setContent(content);
+			assertEquals(content, choice.getContent());
+		}
+		{
+			String content = "TEST\nTEST";
+			Formula contiguous = new Formula("[a-z]+");
+			Formula newline = new Formula("[A-Z\n]+");
+			Formula empty = new Formula("");
+			Choice choice = new Choice(contiguous, newline, empty);
+			choice.setContent(content);
+			assertEquals(content, choice.getContent());
+		}
+		{
+			String content = "";
+			Formula contiguous = new Formula("[a-z]+");
+			Formula newline = new Formula("[A-Z\n]+");
+			Formula empty = new Formula("");
+			Choice choice = new Choice(contiguous, newline, empty);
+			choice.setContent(content);
+			assertEquals(content, choice.getContent());
+		}
+	}
 
-		String content = "abc";
-		choice.setContent(content);
-		assertEquals(content, choice.getContent());
-
-		content = "ABC";
-		choice.setContent(content);
-		assertEquals(content, choice.getContent());
-
-		content = "123";
-		choice.setContent(content);
-		assertEquals(content, choice.getContent());
+	@Test
+	public void testDifferent() {
+		{
+			Formula contiguous = new Formula("[a-z]+");
+			Formula newline = new Formula("[A-Z\n]+");
+			Formula empty = new Formula("");
+			Choice choice = new Choice(contiguous, newline, empty);
+			try {
+				choice.setContent("123");
+				fail("Exception not thrown.");
+			} catch (ParsingException e) {
+				assertEquals(
+						"Unable to parse from 0: \"123\" incompatible with \"(([a-z]+)|([A-Z\\n]+)|())\"",
+						e.getMessage());
+			}
+		}
 	}
 
 	@Test
@@ -57,7 +85,7 @@ public class ChoiceTest {
 	}
 
 	@Test
-	public void testSetContent() {
+	public void testCurrent() {
 		Formula lower = new Formula("[a-z]+");
 		Formula upper = new Formula("[A-Z]+");
 		Formula number = new Formula("[0-9]+");
@@ -66,34 +94,19 @@ public class ChoiceTest {
 
 		String content = "abc";
 		choice.setContent(content);
+		assertSame(lower, choice.getCurrent());
 
-		content = "654";
+		content = "ABC";
 		choice.setContent(content);
-		assertEquals(content, choice.getContent());
+		assertSame(upper, choice.getCurrent());
 
-		try {
-			choice.setContent("123abc");
-			fail("Exception not thrown.");
-		} catch (ParsingException e) {
-		}
-	}
+		content = "321";
+		choice.setContent(content);
+		assertSame(number, choice.getCurrent());
 
-	@Test
-	public void testParsingException() {
-		Formula lower = new Formula("[a-z]+");
-		Formula upper = new Formula("[A-Z]+");
-		Formula number = new Formula("[0-9]+");
-		Atom test = new Atom("T35T");
-		Choice choice = new Choice(Arrays.asList(lower, upper, number, test));
-
-		try {
-			choice.setContent("abc12");
-			fail("Exception not thrown");
-		} catch (ParsingException e) {
-			assertEquals(
-					"Incompatible format \"(?:(?:[a-z]+)|(?:[A-Z]+)|(?:[0-9]+)|(?:\\QT35T\\E))\" at position 0: \"abc12\"",
-					e.getMessage());
-		}
+		content = "T35T";
+		choice.setContent(content);
+		assertSame(test, choice.getCurrent());
 	}
 
 }

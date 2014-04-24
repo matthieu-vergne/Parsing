@@ -28,9 +28,9 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 	private final List<String> contents = new LinkedList<String>();
 	private final List<CLayer> occurrences = new LinkedList<CLayer>();
 	private final Generator<CLayer> generator;
-	private final CLayer template;
 	private final int min;
 	private final int max;
+	private CLayer template = null;
 	private Integer currentIndex = null;
 	private final ContentListener templateUpdater = new ContentListener() {
 
@@ -73,7 +73,6 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 			this.generator = generator;
 			this.min = min;
 			this.max = max;
-			this.template = generator.generates();
 		}
 	}
 
@@ -141,7 +140,7 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 
 	protected void finalize() throws Throwable {
 		// no cloneable check because assumed to works anyway
-		template.removeContentListener(templateUpdater);
+		getTemplate().removeContentListener(templateUpdater);
 	};
 
 	/**
@@ -174,23 +173,18 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 		this(template, 0, Integer.MAX_VALUE);
 	}
 
-	@Override
-	public String getRegex() {
-		String decorator;
-		if (min == 0 && max == Integer.MAX_VALUE) {
-			decorator = "*";
-		} else if (min == 0 && max == 1) {
-			decorator = "?";
-		} else if (min == 1 && max == Integer.MAX_VALUE) {
-			decorator = "+";
-		} else if (min == max) {
-			decorator = "{" + min + "}";
-		} else if (max == Integer.MAX_VALUE) {
-			decorator = "{" + min + ",}";
+	private CLayer getTemplate() {
+		if (template == null) {
+			template = generator.generates();
 		} else {
-			decorator = "{" + min + "," + max + "}";
+			// already known
 		}
-		return "(?:" + template.getRegex() + ")" + decorator;
+		return template;
+	}
+
+	@Override
+	protected String buildRegex() {
+		return "(?:" + getTemplate().getRegex() + ")" + buildRegexCardinality();
 	}
 
 	@Override
@@ -199,17 +193,18 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 		if (matcher.matches()) {
 			contents.clear();
 			occurrences.clear();
-			matcher = Pattern.compile(template.getRegex()).matcher(content);
+			matcher = Pattern.compile(getTemplate().getRegex())
+					.matcher(content);
 			while (matcher.find()) {
 				contents.add(matcher.group(0));
 				occurrences.add(null);
 			}
 		} else {
-			matcher = Pattern.compile(template.getRegex()).matcher(content);
+			matcher = Pattern.compile(getTemplate().getRegex())
+					.matcher(content);
 			int start = 0;
 			int count = 0;
-			boolean found;
-			while ((found = matcher.find()) && matcher.start() == start) {
+			while (matcher.find() && matcher.start() == start) {
 				count++;
 				if (count > max) {
 					throw new ParsingException(null, content, start,
@@ -219,11 +214,13 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 				}
 			}
 			if (count < min) {
-				throw new ParsingException(template.getRegex(), content,
+				throw new ParsingException(getTemplate().getRegex()
+						+ buildRegexCardinality(count), content,
 						content.length(), content.length());
 			} else {
-				throw new ParsingException(template.getRegex(), content, start,
-						found ? matcher.start() : content.length());
+				throw new ParsingException(getTemplate().getRegex()
+						+ buildRegexCardinality(count), content, start,
+						content.length());
 			}
 		}
 	}
@@ -324,7 +321,7 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 			return occurrences.get(index);
 		} else {
 			CLayer occurrence = generator.generates();
-			if (occurrence != template) {
+			if (occurrence != getTemplate()) {
 				occurrence.setContent(contents.get(index));
 				occurrence.addContentListener(new ContentListener() {
 
@@ -337,8 +334,8 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 				return occurrence;
 			} else {
 				currentIndex = index;
-				template.setContent(contents.get(index));
-				return template;
+				getTemplate().setContent(contents.get(index));
+				return getTemplate();
 			}
 		}
 	}
@@ -425,6 +422,38 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 	public void move(int from, int to) {
 		contents.add(to, contents.remove(from));
 		occurrences.add(to, occurrences.remove(from));
+	}
+
+	@Override
+	public String toString() {
+		return getClass().getSimpleName() + "["
+				+ getTemplate().getClass().getSimpleName()
+				+ buildRegexCardinality() + "]";
+	}
+
+	private String buildRegexCardinality() {
+		return buildRegexCardinality(0);
+	}
+
+	private String buildRegexCardinality(int consumed) {
+		int min = Math.max(this.min - consumed, 0);
+		int max = this.max == Integer.MAX_VALUE ? Integer.MAX_VALUE : Math.max(
+				this.max - consumed, 0);
+		String decorator;
+		if (min == 0 && max == Integer.MAX_VALUE) {
+			decorator = "*";
+		} else if (min == 0 && max == 1) {
+			decorator = "?";
+		} else if (min == 1 && max == Integer.MAX_VALUE) {
+			decorator = "+";
+		} else if (min == max) {
+			decorator = "{" + min + "}";
+		} else if (max == Integer.MAX_VALUE) {
+			decorator = "{" + min + ",}";
+		} else {
+			decorator = "{" + min + "," + max + "}";
+		}
+		return decorator;
 	}
 
 	/**

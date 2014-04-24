@@ -33,7 +33,7 @@ public class Formula extends AbstractLayer {
 	}
 
 	@Override
-	public String getRegex() {
+	protected String buildRegex() {
 		return regex;
 	}
 
@@ -48,13 +48,12 @@ public class Formula extends AbstractLayer {
 		if (matcher.find()) {
 			this.content = matcher.group();
 		} else {
-			throw new ParsingException(regex, content, 0,
-					content.length());
+			throw new ParsingException(regex, content, 0, content.length());
 		}
 	}
 
 	@Override
 	public String toString() {
-		return "{" + regex + "=" + content + "}";
+		return getClass().getSimpleName() + "[" + regex + "]";
 	}
 }

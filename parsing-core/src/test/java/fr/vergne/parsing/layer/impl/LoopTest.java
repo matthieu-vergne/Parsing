@@ -24,38 +24,167 @@ public class LoopTest {
 	 * 
 	 * @return potential combinations of {@link Loop}s
 	 */
-	private Collection<Loop<Formula>> createLoops() {
+	private Collection<Loop<Formula>> createLoops(final String regex, int min,
+			int max) {
 		Collection<Loop<Formula>> combinations = new LinkedList<Loop<Formula>>();
 		combinations.add(new Loop<Formula>(new Generator<Formula>() {
 
 			@Override
 			public Formula generates() {
-				return new Formula("[a-zA-Z]");
+				return new Formula(regex);
 			}
 
-		}) {
+		}, min, max) {
 			@Override
 			public String toString() {
 				return "Generator-based";
 			}
 		});
-		combinations.add(new Loop<Formula>(new Formula("[a-zA-Z]") {
+		combinations.add(new Loop<Formula>(new Formula(regex) {
 			public Object clone() {
-				return new Formula("[a-zA-Z]");
+				return new Formula(regex);
 			}
-		}) {
+		}, min, max) {
 			@Override
 			public String toString() {
 				return "Cloneable-based";
 			}
 		});
-		combinations.add(new Loop<Formula>(new Formula("[a-zA-Z]")) {
+		combinations.add(new Loop<Formula>(new Formula(regex), min, max) {
 			@Override
 			public String toString() {
 				return "Uncloneable-based";
 			}
 		});
 		return combinations;
+	}
+
+	@Test
+	public void testSetGetContent() {
+		for (Loop<Formula> loop : createLoops("[a-zA-Z\n]", 0, 10)) {
+			{
+				String content = "test";
+				loop.setContent(content);
+				assertEquals(loop.toString(), content, loop.getContent());
+			}
+			{
+				String content = "test\ntest";
+				loop.setContent(content);
+				assertEquals(loop.toString(), content, loop.getContent());
+			}
+			{
+				String content = "";
+				loop.setContent(content);
+				assertEquals(loop.toString(), content, loop.getContent());
+			}
+		}
+	}
+
+	@Test
+	public void testDifferent() {
+		for (Loop<Formula> loop : createLoops("[a-zA-Z\n]", 0, 20)) {
+			try {
+				loop.setContent("123");
+				fail("Exception not thrown.");
+			} catch (ParsingException e) {
+				assertEquals(
+						loop.toString(),
+						"Unable to parse from 0: \"123\" incompatible with \"[a-zA-Z\\n]{0,20}\"",
+						e.getMessage());
+			}
+			try {
+				loop.setContent("abc123");
+				fail("Exception not thrown.");
+			} catch (ParsingException e) {
+				assertEquals(
+						loop.toString(),
+						"Unable to parse from 3: \"123\" incompatible with \"[a-zA-Z\\n]{0,17}\"",
+						e.getMessage());
+			}
+			try {
+				loop.setContent("abc\nabc123");
+				fail("Exception not thrown.");
+			} catch (ParsingException e) {
+				assertEquals(
+						loop.toString(),
+						"Unable to parse from 7: \"123\" incompatible with \"[a-zA-Z\\n]{0,13}\"",
+						e.getMessage());
+			}
+			try {
+				loop.setContent("abc123abc");
+				fail("Exception not thrown.");
+			} catch (ParsingException e) {
+				assertEquals(
+						loop.toString(),
+						"Unable to parse from 3: \"123abc\" incompatible with \"[a-zA-Z\\n]{0,17}\"",
+						e.getMessage());
+			}
+		}
+	}
+
+	@Test
+	public void testTooLong() {
+		for (Loop<Formula> loop : createLoops("[0-9\n]", 0, 5)) {
+			{
+				try {
+					loop.setContent("123456789");
+					fail("Exception not thrown.");
+				} catch (ParsingException e) {
+					assertEquals(
+							loop.toString(),
+							"Unable to parse from 5: \"6789\" incompatible with (empty)",
+							e.getMessage());
+				}
+			}
+			{
+				try {
+					loop.setContent("12\n4567\n9");
+					fail("Exception not thrown.");
+				} catch (ParsingException e) {
+					assertEquals(
+							loop.toString(),
+							"Unable to parse from 5: \"67\\n9\" incompatible with (empty)",
+							e.getMessage());
+				}
+			}
+		}
+	}
+
+	@Test
+	public void testTooShort() {
+		for (Loop<Formula> loop : createLoops("[0-9\n]", 5, 10)) {
+			{
+				try {
+					loop.setContent("123");
+					fail("Exception not thrown.");
+				} catch (ParsingException e) {
+					assertEquals(
+							loop.toString(),
+							"Unable to parse from 3: \"\" incompatible with \"[0-9\\n]{2,7}\"",
+							e.getMessage());
+				}
+			}
+			{
+				try {
+					loop.setContent("1\n3");
+					fail("Exception not thrown.");
+				} catch (ParsingException e) {
+					assertEquals(
+							loop.toString(),
+							"Unable to parse from 3: \"\" incompatible with \"[0-9\\n]{2,7}\"",
+							e.getMessage());
+				}
+				try {
+					loop.setContent("");
+					fail("Exception not thrown.");
+				} catch (ParsingException e) {
+					assertEquals(
+							loop.toString(),
+							"Unable to parse from 0: \"\" incompatible with \"[0-9\\n]{5,10}\"",
+							e.getMessage());
+				}
+			}
+		}
 	}
 
 	@Test
@@ -167,18 +296,8 @@ public class LoopTest {
 	}
 
 	@Test
-	public void testGetContent() {
-		for (Loop<Formula> loop : createLoops()) {
-			String content = "Test";
-			loop.setContent(content);
-
-			assertEquals(loop.toString(), content, loop.getContent());
-		}
-	}
-
-	@Test
 	public void testIterator() {
-		for (Loop<Formula> loop : createLoops()) {
+		for (Loop<Formula> loop : createLoops("[a-zA-Z]", 0, 50)) {
 			String content = "Test";
 			loop.setContent(content);
 
@@ -197,7 +316,7 @@ public class LoopTest {
 
 	@Test
 	public void testInnerContentSynchronization() {
-		for (Loop<Formula> loop : createLoops()) {
+		for (Loop<Formula> loop : createLoops("[a-zA-Z]", 0, 50)) {
 			String content = "Test";
 			loop.setContent(content);
 
@@ -226,7 +345,7 @@ public class LoopTest {
 
 	@Test
 	public void testSize() {
-		for (Loop<Formula> loop : createLoops()) {
+		for (Loop<Formula> loop : createLoops("[a-zA-Z]", 0, 50)) {
 			loop.setContent("Test");
 			assertEquals(loop.toString(), 4, loop.size());
 
@@ -240,7 +359,7 @@ public class LoopTest {
 
 	@Test
 	public void testIsEmpty() {
-		for (Loop<Formula> loop : createLoops()) {
+		for (Loop<Formula> loop : createLoops("[a-zA-Z]", 0, 50)) {
 			assertTrue(loop.toString(), loop.isEmpty());
 
 			loop.setContent("Tes");
@@ -256,7 +375,7 @@ public class LoopTest {
 
 	@Test
 	public void testGetIndex() {
-		for (Loop<Formula> loop : createLoops()) {
+		for (Loop<Formula> loop : createLoops("[a-zA-Z]", 0, 50)) {
 			loop.setContent("Test");
 			assertEquals(loop.toString(), "T", loop.get(0).getContent());
 			assertEquals(loop.toString(), "e", loop.get(1).getContent());
@@ -276,7 +395,7 @@ public class LoopTest {
 
 	@Test
 	public void testRemoveIndex() {
-		for (Loop<Formula> loop : createLoops()) {
+		for (Loop<Formula> loop : createLoops("[a-zA-Z]", 0, 50)) {
 			loop.setContent("Test");
 			assertEquals(loop.toString(), "Test", loop.getContent());
 			loop.remove(0);
@@ -292,7 +411,7 @@ public class LoopTest {
 
 	@Test
 	public void testDuplicate() {
-		for (Loop<Formula> loop : createLoops()) {
+		for (Loop<Formula> loop : createLoops("[a-zA-Z]", 0, 50)) {
 			loop.setContent("Test");
 			assertEquals(loop.toString(), "Test", loop.getContent());
 			loop.duplicate(loop.size()).setContent("i");
@@ -318,7 +437,7 @@ public class LoopTest {
 
 	@Test
 	public void testAddString() {
-		for (Loop<Formula> loop : createLoops()) {
+		for (Loop<Formula> loop : createLoops("[a-zA-Z]", 0, 50)) {
 			loop.setContent("Test");
 			assertEquals(loop.toString(), "Test", loop.getContent());
 			loop.add(loop.size(), "i");
@@ -342,7 +461,7 @@ public class LoopTest {
 			} catch (ParsingException e) {
 				assertEquals(
 						loop.toString(),
-						"Incompatible format \"[a-zA-Z]\" at position 0: \"!\"",
+						"Unable to parse from 0: \"!\" incompatible with \"[a-zA-Z]\"",
 						e.getMessage());
 			}
 
@@ -352,7 +471,7 @@ public class LoopTest {
 			} catch (ParsingException e) {
 				assertEquals(
 						loop.toString(),
-						"Incompatible format \"[a-zA-Z]\" at position 0: \"abc\"",
+						"Unable to parse from 0: \"abc\" incompatible with \"[a-zA-Z]\"",
 						e.getMessage());
 			}
 		}
@@ -360,7 +479,7 @@ public class LoopTest {
 
 	@Test
 	public void testMove() {
-		for (Loop<Formula> loop : createLoops()) {
+		for (Loop<Formula> loop : createLoops("[a-zA-Z]", 0, 50)) {
 			loop.setContent("Test");
 
 			loop.move(0, 3);
@@ -370,92 +489,36 @@ public class LoopTest {
 		}
 	}
 
-	@Test
-	public void testSetContent() {
-		for (Loop<Formula> loop : createLoops()) {
-			String content = "Test";
-			loop.setContent(content);
-			assertEquals(loop.toString(), content, loop.getContent());
+	public class A extends Loop<Suite> {
 
-			content = "Noitamina";
-			loop.setContent(content);
-			assertEquals(loop.toString(), content, loop.getContent());
+		public A() {
+			super(new Generator<Suite>() {
 
-			try {
-				loop.setContent("BOOM!");
-				fail("Exception not thrown with " + loop);
-			} catch (ParsingException e) {
-			}
+				@Override
+				public Suite generates() {
+					return new Suite(new Atom("["), new A(), new Atom("]"));
+				}
+			});
 		}
+
 	}
 
 	@Test
-	public void testParsingException() {
-		for (Loop<Formula> loop : createLoops()) {
-			try {
-				loop.setContent("Test_");
-				fail("Exception not thrown with " + loop);
-			} catch (ParsingException e) {
-				assertEquals(
-						loop.toString(),
-						"Incompatible format \"[a-zA-Z]\" at position 4: \"_\"",
-						e.getMessage());
-			}
-
-			try {
-				loop.setContent("Test_test");
-				fail("Exception not thrown with " + loop);
-			} catch (ParsingException e) {
-				assertEquals(
-						loop.toString(),
-						"Incompatible format \"[a-zA-Z]\" at position 4: \"_\"",
-						e.getMessage());
-			}
-
-			try {
-				loop.setContent("_Test");
-				fail("Exception not thrown with " + loop);
-			} catch (ParsingException e) {
-				assertEquals(
-						loop.toString(),
-						"Incompatible format \"[a-zA-Z]\" at position 0: \"_\"",
-						e.getMessage());
-			}
-
-			try {
-				loop.setContent("Test_test_test");
-				fail("Exception not thrown with " + loop);
-			} catch (ParsingException e) {
-				assertEquals(
-						loop.toString(),
-						"Incompatible format \"[a-zA-Z]\" at position 4: \"_\"",
-						e.getMessage());
-			}
-		}
-	}
-
-	@Test
-	public void testMinMax() {
-		Formula letter = new Formula("[a-zA-Z]");
-		Loop<Formula> loop = new Loop<Formula>(letter, 3, 5);
-		loop.setContent("Tes");
-
+	public void testInfiniteLoop() {
+		A loop = new A();
+		loop.setContent("");
+		loop.setContent("[]");
+		loop.setContent("[][]");
+		loop.setContent("[[]]");
+		loop.setContent("[][[][[][][]]][]");
 		try {
-			loop.setContent("Testing");
+			loop.setContent("[][]a[][]");
 			fail("Exception not thrown");
 		} catch (ParsingException e) {
-			assertEquals("Incompatible format (empty) at position 5: \"ng\"",
-					e.getMessage());
-		}
-
-		try {
-			loop.setContent("Te");
-			fail("Exception not thrown");
-		} catch (ParsingException e) {
-			assertEquals(
-					"Incompatible format \"[a-zA-Z]\" at position 2: \"\"",
-					e.getMessage());
+			System.out.println(e.getMessage());
+			// assertEquals("Incompatible format
+			// \"\\Q[\\E(?:\\Q[\\E(?:\\Q[\\E(?:\Q[\E(?:\Q[\E(?:\Q[\E(?:\Q[\E(?:\Q[\E(?:\Q[\E(?:\Q[\E(?:\Q[\E(?:\Q[\E(?:\Q[\E(?:\Q[\E(?:\Q[\E(?:\Q[\E(?:\Q[\E(?:\Q[\E(?:\Q[\E(?:\Q[\E(?:\Q[\E(?:\Q[\E(?:\Q[\E(?:\Q[\E(?:\Q[\E(?:\Q[\E(?:\Q[\E(?:\Q[\E(?:\Q[\E(?:\Q[\E(?:\Q[\E(?:\Q[\E(?:\Q[\E(?:\Q[\E(?:\Q[\E(?:\Q[\E(?:\Q[\E(?:\Q[\E.*\Q]\E)*\Q]\E)*\Q]\E)*\Q]\E)*\Q]\E)*\Q]\E)*\Q]\E)*\Q]\E)*\Q]\E)*\Q]\E)*\Q]\E)*\Q]\E)*\Q]\E)*\Q]\E)*\Q]\E)*\Q]\E)*\Q]\E)*\Q]\E)*\Q]\E)*\Q]\E)*\Q]\E)*\Q]\E)*\Q]\E)*\Q]\E)*\Q]\E)*\Q]\E)*\Q]\E)*\Q]\E)*\Q]\E)*\Q]\E)*\Q]\E)*\Q]\E)*\Q]\E)*\Q]\E)*\Q]\E)*\Q]\E)*\Q]\E)*\Q]\E\" at position 4: \"a\"",
+			// e.getMessage());
 		}
 	}
-
 }

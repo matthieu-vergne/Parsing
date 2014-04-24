@@ -58,7 +58,7 @@ public class Suite extends AbstractLayer {
 	}
 
 	@Override
-	public String getRegex() {
+	protected String buildRegex() {
 		String regex = "";
 		for (Layer layer : sequence) {
 			regex += layer.getRegex();
@@ -77,8 +77,8 @@ public class Suite extends AbstractLayer {
 
 	@Override
 	protected void setInternalContent(String content) {
-		String regex = buildCapturingRegex(sequence);
-		Matcher matcher = Pattern.compile("^" + regex + "$").matcher(content);
+		Matcher matcher = Pattern.compile(
+				"^" + buildCapturingRegex(sequence) + "$").matcher(content);
 		if (matcher.find()) {
 			int delta = 0;
 			for (int i = 1; i <= matcher.groupCount(); i++) {
@@ -90,56 +90,28 @@ public class Suite extends AbstractLayer {
 				delta += match.length();
 			}
 		} else {
-			LinkedList<Layer> compatibleBeginning = new LinkedList<Layer>();
+			LinkedList<Layer> preOk = new LinkedList<Layer>(sequence);
+			LinkedList<Layer> postKo = new LinkedList<Layer>();
 			do {
-				compatibleBeginning.addLast(sequence.get(compatibleBeginning
-						.size()));
-				regex = buildCapturingRegex(compatibleBeginning);
+				postKo.addFirst(preOk.removeLast());
+				String regex = buildCapturingRegex(preOk);
 				matcher = Pattern.compile("^" + regex).matcher(content);
-			} while (matcher.find());
-			compatibleBeginning.removeLast();
+			} while (!matcher.find());
 
-			LinkedList<Layer> compatibleEnding = new LinkedList<Layer>();
-			do {
-				compatibleEnding.addFirst(sequence.get(sequence.size()
-						- compatibleEnding.size() - 1));
-				regex = buildCapturingRegex(compatibleEnding);
-				matcher = Pattern.compile(regex + "$").matcher(content);
-			} while (matcher.find()
-					&& compatibleEnding.size() + compatibleBeginning.size() < sequence
-							.size() + 2);
-			compatibleEnding.removeFirst();
-
-			if (compatibleBeginning.size() + compatibleEnding.size() == sequence
-					.size() + 1) {
-				compatibleBeginning.removeLast();
-				compatibleEnding.removeFirst();
-			} else {
-				// nothing to adapt
-			}
-			List<Layer> fakeSequence = new LinkedList<Layer>();
-			fakeSequence.addAll(compatibleBeginning);
-			Formula atom = new Formula(".*");
-			fakeSequence.add(atom);
-			fakeSequence.addAll(compatibleEnding);
-			Suite s = new Suite(fakeSequence);
-			s.setContent(content);
-			String content2 = atom.getContent();
-			String prefix = new Suite(compatibleBeginning).getContent();
-			try {
-				sequence.get(compatibleBeginning.size()).setContent(content2);
-			} catch (ParsingException e) {
-				throw new ParsingException(e.getRegex(), content,
-						prefix.length() + e.getStart(), prefix.length()
-								+ e.getEnd());
-			}
+			List<Layer> fakeSequence = new LinkedList<Layer>(preOk);
+			Formula remaining = new Formula("[\\s\\S]*");
+			fakeSequence.add(remaining);
+			new Suite(fakeSequence).setContent(content);
+			String incompatible = remaining.getContent();
+			throw new ParsingException(new Suite(postKo).getRegex(), content,
+					content.length() - incompatible.length(), content.length());
 		}
 	}
 
-	private String buildCapturingRegex(List<? extends Layer> compatibleEnding) {
+	private String buildCapturingRegex(List<? extends Layer> sequence) {
 		String regex;
 		regex = "";
-		for (Layer layer : compatibleEnding) {
+		for (Layer layer : sequence) {
 			regex += "(" + layer.getRegex() + ")";
 		}
 		return regex;
@@ -147,6 +119,10 @@ public class Suite extends AbstractLayer {
 
 	@Override
 	public String toString() {
-		return sequence.toString();
+		List<String> suite = new LinkedList<String>();
+		for (Layer layer : sequence) {
+			suite.add(layer.getClass().getSimpleName());
+		}
+		return getClass().getSimpleName() + suite;
 	}
 }

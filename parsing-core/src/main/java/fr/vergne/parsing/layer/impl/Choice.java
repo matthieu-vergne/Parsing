@@ -28,13 +28,13 @@ public class Choice extends AbstractLayer {
 		this.alternatives = Collections.unmodifiableList(new LinkedList<Layer>(
 				alternatives));
 	}
-	
+
 	public Choice(Layer... choices) {
 		this(Arrays.asList(choices));
 	}
 
 	@Override
-	public String getRegex() {
+	protected String buildRegex() {
 		String regex = "";
 		for (Layer layer : alternatives) {
 			regex += "|(?:" + layer.getRegex() + ")";
@@ -62,8 +62,23 @@ public class Choice extends AbstractLayer {
 				// try another
 			}
 		}
-		throw new ParsingException(getRegex(), content, 0,
-				content.length());
+		throw new ParsingException(getRegex(), content, 0, content.length());
 	}
 
+	@Override
+	public String toString() {
+		List<String> choices = new LinkedList<String>();
+		for (Layer layer : alternatives) {
+			choices.add(layer.getClass().getSimpleName());
+		}
+		return "CHOOSE" + choices;
+	}
+
+	/**
+	 * 
+	 * @return the alternative corresponding to the current content
+	 */
+	public Object getCurrent() {
+		return alternatives.get(currentAlternative);
+	}
 }
