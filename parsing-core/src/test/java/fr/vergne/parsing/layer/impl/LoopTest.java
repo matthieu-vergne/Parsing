@@ -135,34 +135,34 @@ public class LoopTest {
 		{
 			String regex = new Loop<Formula>(letter).getRegex();
 			assertTrue(regex, regex.contains(letter.getRegex()));
-			assertTrue(regex, regex.endsWith("*$"));
+			assertTrue(regex, regex.endsWith("*"));
 		}
 		{
 			String regex = new Loop<Formula>(letter, 0, 1).getRegex();
 			assertTrue(regex, regex.contains(letter.getRegex()));
-			assertTrue(regex, regex.endsWith("?$"));
+			assertTrue(regex, regex.endsWith("?"));
 		}
 		{
 			String regex = new Loop<Formula>(letter, 1, Integer.MAX_VALUE)
 					.getRegex();
 			assertTrue(regex, regex.contains(letter.getRegex()));
-			assertTrue(regex, regex.endsWith("+$"));
+			assertTrue(regex, regex.endsWith("+"));
 		}
 		{
 			String regex = new Loop<Formula>(letter, 3).getRegex();
 			assertTrue(regex, regex.contains(letter.getRegex()));
-			assertTrue(regex, regex.endsWith("{3}$"));
+			assertTrue(regex, regex.endsWith("{3}"));
 		}
 		{
 			String regex = new Loop<Formula>(letter, 3, Integer.MAX_VALUE)
 					.getRegex();
 			assertTrue(regex, regex.contains(letter.getRegex()));
-			assertTrue(regex, regex.endsWith("{3,}$"));
+			assertTrue(regex, regex.endsWith("{3,}"));
 		}
 		{
 			String regex = new Loop<Formula>(letter, 3, 5).getRegex();
 			assertTrue(regex, regex.contains(letter.getRegex()));
-			assertTrue(regex, regex.endsWith("{3,5}$"));
+			assertTrue(regex, regex.endsWith("{3,5}"));
 		}
 	}
 

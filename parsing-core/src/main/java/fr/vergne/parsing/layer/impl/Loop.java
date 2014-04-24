@@ -190,7 +190,7 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 		} else {
 			decorator = "{" + min + "," + max + "}";
 		}
-		return "^(?:" + template.getRegex() + ")" + decorator + "$";
+		return "(?:" + template.getRegex() + ")" + decorator;
 	}
 
 	@Override
