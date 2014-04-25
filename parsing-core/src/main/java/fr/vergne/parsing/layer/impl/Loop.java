@@ -4,9 +4,11 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import fr.vergne.logging.LoggerConfiguration;
 import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.exception.ParsingException;
 
@@ -32,6 +34,7 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 	private final int max;
 	private CLayer template = null;
 	private Integer currentIndex = null;
+	public final Logger log = LoggerConfiguration.getSimpleLogger();
 	private final ContentListener templateUpdater = new ContentListener() {
 
 		@Override
@@ -93,7 +96,9 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 	 * affect the {@link Loop}'s content) and it can have its content modified
 	 * at any moment by the {@link Loop}. It is highly recommended to dedicate
 	 * such a template to its {@link Loop} and not reuse it, as well as not
-	 * reuse the instances returned by this {@link Loop}.
+	 * reuse the instances returned by this {@link Loop}. To avoid unwanted
+	 * behaviors, a warning is displayed if you provide an uncloneable template,
+	 * but you can disable this warning with the parameters.
 	 * 
 	 * @param template
 	 *            the {@link CLayer} to use as a template
@@ -102,8 +107,11 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 	 * @param max
 	 *            the maximum size of this {@link Loop}, at most
 	 *            {@link Integer#MAX_VALUE}
+	 * @param warnUncloneable
+	 *            <code>true</code> if the use of an uncloneable template should
+	 *            result in a warning, <code>false</code> to remain silent
 	 */
-	public Loop(final CLayer template, int min, int max) {
+	public Loop(final CLayer template, int min, int max, boolean warnUncloneable) {
 		this(isCloneable(template) ? new Generator<CLayer>() {
 
 			@SuppressWarnings("unchecked")
@@ -126,8 +134,22 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 		if (isCloneable(template)) {
 			// keep synchronization for clones
 		} else {
+			if (warnUncloneable) {
+				log.warning("Loop " + this
+						+ " based on an uncloneable template.");
+			} else {
+				// do not notice
+			}
 			template.addContentListener(templateUpdater);
 		}
+	}
+
+	/**
+	 * Same as {@link #Loop(Layer, int, int, boolean)} with the uncloneable
+	 * template warning enabled.
+	 */
+	public Loop(CLayer template, int min, int max) {
+		this(template, min, max, true);
 	}
 
 	private static <CLayer extends Layer> boolean isCloneable(CLayer template) {
@@ -151,10 +173,18 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 	}
 
 	/**
-	 * Same as {@link #Loop(CLayer, int, int)} with the same min/max.
+	 * Same as {@link #Loop(CLayer, int, int, boolean)} with the same min/max.
+	 */
+	public Loop(CLayer template, int count, boolean warnUncloneable) {
+		this(template, count, count, warnUncloneable);
+	}
+
+	/**
+	 * Same as {@link #Loop(Layer, int, boolean)} with the uncloneable template
+	 * warning enabled.
 	 */
 	public Loop(CLayer template, int count) {
-		this(template, count, count);
+		this(template, count, true);
 	}
 
 	/**
@@ -166,11 +196,19 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 	}
 
 	/**
-	 * Same as {@link #Loop(CLayer, int, int)} where the minimum is 0 and the
-	 * maximum is {@link Integer#MAX_VALUE}.
+	 * Same as {@link #Loop(CLayer, int, int, boolean)} where the minimum is 0
+	 * and the maximum is {@link Integer#MAX_VALUE}.
+	 */
+	public Loop(CLayer template, boolean warnUncloneable) {
+		this(template, 0, Integer.MAX_VALUE, warnUncloneable);
+	}
+
+	/**
+	 * Same as {@link #Loop(Layer, boolean)} with the uncloneable template
+	 * warning enabled.
 	 */
 	public Loop(CLayer template) {
-		this(template, 0, Integer.MAX_VALUE);
+		this(template, true);
 	}
 
 	private CLayer getTemplate() {

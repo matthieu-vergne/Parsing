@@ -50,12 +50,13 @@ public class LoopTest {
 				return "Cloneable-based";
 			}
 		});
-		combinations.add(new Loop<Formula>(new Formula(regex), min, max) {
-			@Override
-			public String toString() {
-				return "Uncloneable-based";
-			}
-		});
+		combinations
+				.add(new Loop<Formula>(new Formula(regex), min, max, false) {
+					@Override
+					public String toString() {
+						return "Uncloneable-based";
+					}
+				});
 		return combinations;
 	}
 
@@ -240,7 +241,7 @@ public class LoopTest {
 	@Test
 	public void testUncloneableReuse() {
 		Formula template = new Formula("[a-zA-Z]");
-		Loop<Formula> loop = new Loop<Formula>(template);
+		Loop<Formula> loop = new Loop<Formula>(template, false);
 		loop.setContent("abc");
 
 		assertSame(template, loop.get(0));
@@ -260,7 +261,12 @@ public class LoopTest {
 
 	@Test
 	public void testRegex() {
-		Formula letter = new Formula("[a-zA-Z]");
+		Formula letter = new Formula("[a-zA-Z]") {
+			@Override
+			public Object clone() throws CloneNotSupportedException {
+				return new Formula(getRegex());
+			}
+		};
 		{
 			String regex = new Loop<Formula>(letter).getRegex();
 			assertTrue(regex, regex.contains(letter.getRegex()));
