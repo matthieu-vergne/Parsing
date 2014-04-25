@@ -39,7 +39,7 @@ public class FormulaTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"abc\" incompatible with \"[a-z]{4}\"",
+						"Incompatible regex \"[a-z]{4}\" for content \"abc\"",
 						e.getMessage());
 			}
 		}
@@ -50,7 +50,7 @@ public class FormulaTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"abc\" incompatible with \"[a-z\\n]{9}\"",
+						"Incompatible regex \"[a-z\\n]{9}\" for content \"abc\"",
 						e.getMessage());
 			}
 		}
@@ -60,8 +60,7 @@ public class FormulaTest {
 				formula.setContent("abc");
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
-				assertEquals(
-						"Unable to parse from 0: \"abc\" incompatible with \"\"",
+				assertEquals("Incompatible regex \"\" for content \"abc\"",
 						e.getMessage());
 			}
 		}
@@ -77,7 +76,7 @@ public class FormulaTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"testabc\" incompatible with \"[a-z]{4}\"",
+						"Incompatible regex \"[a-z]{4}\" for content \"testabc\"",
 						e.getMessage());
 			}
 		}
@@ -89,7 +88,7 @@ public class FormulaTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"test\\ntestabc\" incompatible with \"[a-z\\n]{9}\"",
+						"Incompatible regex \"[a-z\\n]{9}\" for content \"test\\ntestabc\"",
 						e.getMessage());
 			}
 		}
@@ -100,8 +99,7 @@ public class FormulaTest {
 				formula.setContent(content + "abc");
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
-				assertEquals(
-						"Unable to parse from 0: \"abc\" incompatible with \"\"",
+				assertEquals("Incompatible regex \"\" for content \"abc\"",
 						e.getMessage());
 			}
 		}
@@ -117,7 +115,7 @@ public class FormulaTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"abctest\" incompatible with \"[a-z]{4}\"",
+						"Incompatible regex \"[a-z]{4}\" for content \"abctest\"",
 						e.getMessage());
 			}
 		}
@@ -129,7 +127,7 @@ public class FormulaTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"abctest\\ntest\" incompatible with \"[a-z\\n]{9}\"",
+						"Incompatible regex \"[a-z\\n]{9}\" for content \"abctest\\ntest\"",
 						e.getMessage());
 			}
 		}
@@ -140,8 +138,7 @@ public class FormulaTest {
 				formula.setContent("abc" + content);
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
-				assertEquals(
-						"Unable to parse from 0: \"abc\" incompatible with \"\"",
+				assertEquals("Incompatible regex \"\" for content \"abc\"",
 						e.getMessage());
 			}
 		}
@@ -158,7 +155,7 @@ public class FormulaTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"teabcst\" incompatible with \"[a-z]{4}\"",
+						"Incompatible regex \"[a-z]{4}\" for content \"teabcst\"",
 						e.getMessage());
 			}
 		}
@@ -171,7 +168,7 @@ public class FormulaTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"teabcst\\ntest\" incompatible with \"[a-z\\n]{9}\"",
+						"Incompatible regex \"[a-z\\n]{9}\" for content \"teabcst\\ntest\"",
 						e.getMessage());
 			}
 			try {
@@ -180,7 +177,7 @@ public class FormulaTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"test\\ntabcest\" incompatible with \"[a-z\\n]{9}\"",
+						"Incompatible regex \"[a-z\\n]{9}\" for content \"test\\ntabcest\"",
 						e.getMessage());
 			}
 		}
@@ -196,7 +193,7 @@ public class FormulaTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"te\" incompatible with \"[a-z]{4}\"",
+						"Incompatible regex \"[a-z]{4}\" for content \"te\"",
 						e.getMessage());
 			}
 		}
@@ -208,7 +205,7 @@ public class FormulaTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"te\" incompatible with \"[a-z\\n]{9}\"",
+						"Incompatible regex \"[a-z\\n]{9}\" for content \"te\"",
 						e.getMessage());
 			}
 			try {
@@ -216,7 +213,7 @@ public class FormulaTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"test\" incompatible with \"[a-z\\n]{9}\"",
+						"Incompatible regex \"[a-z\\n]{9}\" for content \"test\"",
 						e.getMessage());
 			}
 		}
@@ -232,7 +229,7 @@ public class FormulaTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"st\" incompatible with \"[a-z]{4}\"",
+						"Incompatible regex \"[a-z]{4}\" for content \"st\"",
 						e.getMessage());
 			}
 		}
@@ -244,7 +241,7 @@ public class FormulaTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"st\\ntest\" incompatible with \"[a-z\\n]{9}\"",
+						"Incompatible regex \"[a-z\\n]{9}\" for content \"st\\ntest\"",
 						e.getMessage());
 			}
 			try {
@@ -252,7 +249,7 @@ public class FormulaTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"test\" incompatible with \"[a-z\\n]{9}\"",
+						"Incompatible regex \"[a-z\\n]{9}\" for content \"test\"",
 						e.getMessage());
 			}
 		}
@@ -269,7 +266,7 @@ public class FormulaTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"tst\" incompatible with \"[a-z]{4}\"",
+						"Incompatible regex \"[a-z]{4}\" for content \"tst\"",
 						e.getMessage());
 			}
 		}
@@ -282,7 +279,7 @@ public class FormulaTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"tet\\ntest\" incompatible with \"[a-z\\n]{9}\"",
+						"Incompatible regex \"[a-z\\n]{9}\" for content \"tet\\ntest\"",
 						e.getMessage());
 			}
 			try {
@@ -291,7 +288,7 @@ public class FormulaTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"teest\" incompatible with \"[a-z\\n]{9}\"",
+						"Incompatible regex \"[a-z\\n]{9}\" for content \"teest\"",
 						e.getMessage());
 			}
 			try {
@@ -300,7 +297,7 @@ public class FormulaTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"test\\ntst\" incompatible with \"[a-z\\n]{9}\"",
+						"Incompatible regex \"[a-z\\n]{9}\" for content \"test\\ntst\"",
 						e.getMessage());
 			}
 		}

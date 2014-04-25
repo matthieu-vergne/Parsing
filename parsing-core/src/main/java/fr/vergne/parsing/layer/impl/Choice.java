@@ -57,7 +57,7 @@ public class Choice extends AbstractLayer {
 				// try another
 			}
 		}
-		throw new ParsingException(getRegex(), content, 0, content.length());
+		throw new ParsingException(getRegex(), content);
 	}
 
 	@Override

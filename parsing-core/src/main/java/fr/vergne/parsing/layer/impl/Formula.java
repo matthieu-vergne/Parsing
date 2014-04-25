@@ -48,7 +48,7 @@ public class Formula extends AbstractLayer {
 		if (matcher.find()) {
 			this.content = matcher.group();
 		} else {
-			throw new ParsingException(regex, content, 0, content.length());
+			throw new ParsingException(regex, content);
 		}
 	}
 

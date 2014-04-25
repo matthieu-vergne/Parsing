@@ -54,33 +54,29 @@ public class SuiteTest {
 				suite.setContent("1esr");
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
-				assertEquals(
-						"Unable to parse from 0: \"1esr\" incompatible with \"[a-zA-Z]\\Qe\\E\\Qs\\E[a-zA-Z]\"",
-						e.getMessage());
+				assertEquals("Unable to parse " + letter1 + " for " + suite
+						+ " from (1,1): \"1esr\"", e.getMessage());
 			}
 			try {
 				suite.setContent("taxi");
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
-				assertEquals(
-						"Unable to parse from 1: \"axi\" incompatible with \"\\Qe\\E\\Qs\\E[a-zA-Z]\"",
-						e.getMessage());
+				assertEquals("Unable to parse " + letter2 + " for " + suite
+						+ " from (1,2): \"axi\"", e.getMessage());
 			}
 			try {
 				suite.setContent("text");
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
-				assertEquals(
-						"Unable to parse from 2: \"xt\" incompatible with \"\\Qs\\E[a-zA-Z]\"",
-						e.getMessage());
+				assertEquals("Unable to parse " + letter3 + " for " + suite
+						+ " from (1,3): \"xt\"", e.getMessage());
 			}
 			try {
 				suite.setContent("tes1");
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
-				assertEquals(
-						"Unable to parse from 3: \"1\" incompatible with \"[a-zA-Z]\"",
-						e.getMessage());
+				assertEquals("Unable to parse " + letter4 + " for " + suite
+						+ " from (1,4): \"1\"", e.getMessage());
 			}
 		}
 		{
@@ -92,25 +88,22 @@ public class SuiteTest {
 				suite.setContent("abc\ndef");
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
-				assertEquals(
-						"Unable to parse from 0: \"abc\\ndef\" incompatible with \"[a-z]{4}\\s+[a-z]{4}\"",
-						e.getMessage());
+				assertEquals("Unable to parse " + word1 + " for " + suite
+						+ " from (1,1): \"abc\\ndef\"", e.getMessage());
 			}
 			try {
 				suite.setContent("test-def");
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
-				assertEquals(
-						"Unable to parse from 4: \"-def\" incompatible with \"\\s+[a-z]{4}\"",
-						e.getMessage());
+				assertEquals("Unable to parse " + space + " for " + suite
+						+ " from (1,5): \"-def\"", e.getMessage());
 			}
 			try {
 				suite.setContent("test\ntex");
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
-				assertEquals(
-						"Unable to parse from 5: \"tex\" incompatible with \"[a-z]{4}\"",
-						e.getMessage());
+				assertEquals("Unable to parse " + word2 + " for " + suite
+						+ " from (2,1): \"tex\"", e.getMessage());
 			}
 		}
 		{
@@ -122,9 +115,8 @@ public class SuiteTest {
 				suite.setContent("abc");
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
-				assertEquals(
-						"Unable to parse from 0: \"abc\" incompatible with \"\\Qtest\\E\"",
-						e.getMessage());
+				assertEquals("Unable to parse " + word2 + " for " + suite
+						+ " from (1,1): \"abc\"", e.getMessage());
 			}
 		}
 	}
@@ -142,9 +134,8 @@ public class SuiteTest {
 				suite.setContent(content + "abc");
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
-				assertEquals(
-						"Unable to parse from 3: \"tabc\" incompatible with \"[a-zA-Z]\"",
-						e.getMessage());
+				assertEquals("Unable to parse " + letter4 + " for " + suite
+						+ " from (1,4): \"tabc\"", e.getMessage());
 			}
 		}
 		{
@@ -157,9 +148,8 @@ public class SuiteTest {
 				suite.setContent(content + "abc");
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
-				assertEquals(
-						"Unable to parse from 5: \"testabc\" incompatible with \"[a-z]{4}\"",
-						e.getMessage());
+				assertEquals("Unable to parse " + word2 + " for " + suite
+						+ " from (2,1): \"testabc\"", e.getMessage());
 			}
 		}
 		{
@@ -172,9 +162,8 @@ public class SuiteTest {
 				suite.setContent(content + "abc");
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
-				assertEquals(
-						"Unable to parse from 4: \"abc\" incompatible with \"\"",
-						e.getMessage());
+				assertEquals("Unable to parse " + word3 + " for " + suite
+						+ " from (1,5): \"abc\"", e.getMessage());
 			}
 		}
 	}
@@ -192,9 +181,8 @@ public class SuiteTest {
 				suite.setContent("abc" + content);
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
-				assertEquals(
-						"Unable to parse from 1: \"bctest\" incompatible with \"\\Qe\\E\\Qs\\E[a-zA-Z]\"",
-						e.getMessage());
+				assertEquals("Unable to parse " + letter2 + " for " + suite
+						+ " from (1,2): \"bctest\"", e.getMessage());
 			}
 		}
 		{
@@ -207,9 +195,8 @@ public class SuiteTest {
 				suite.setContent("abc" + content);
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
-				assertEquals(
-						"Unable to parse from 4: \"est\\ntest\" incompatible with \"\\s+[a-z]{4}\"",
-						e.getMessage());
+				assertEquals("Unable to parse " + space + " for " + suite
+						+ " from (1,5): \"est\\ntest\"", e.getMessage());
 			}
 		}
 		{
@@ -222,9 +209,8 @@ public class SuiteTest {
 				suite.setContent("abc" + content);
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
-				assertEquals(
-						"Unable to parse from 0: \"abctest\" incompatible with \"\\Qtest\\E\"",
-						e.getMessage());
+				assertEquals("Unable to parse " + word2 + " for " + suite
+						+ " from (1,1): \"abctest\"", e.getMessage());
 			}
 		}
 	}
@@ -241,9 +227,8 @@ public class SuiteTest {
 				suite.setContent("teabcst");
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
-				assertEquals(
-						"Unable to parse from 2: \"abcst\" incompatible with \"\\Qs\\E[a-zA-Z]\"",
-						e.getMessage());
+				assertEquals("Unable to parse " + letter3 + " for " + suite
+						+ " from (1,3): \"abcst\"", e.getMessage());
 			}
 		}
 		{
@@ -257,18 +242,16 @@ public class SuiteTest {
 						+ content.substring(2));
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
-				assertEquals(
-						"Unable to parse from 4: \"cst\\ntest\" incompatible with \"\\s+[a-z]{4}\"",
-						e.getMessage());
+				assertEquals("Unable to parse " + space + " for " + suite
+						+ " from (1,5): \"cst\\ntest\"", e.getMessage());
 			}
 			try {
 				suite.setContent(content.substring(0, 6) + "abc"
 						+ content.substring(6));
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
-				assertEquals(
-						"Unable to parse from 5: \"tabcest\" incompatible with \"[a-z]{4}\"",
-						e.getMessage());
+				assertEquals("Unable to parse " + word2 + " for " + suite
+						+ " from (2,1): \"tabcest\"", e.getMessage());
 			}
 		}
 	}
@@ -286,9 +269,8 @@ public class SuiteTest {
 				suite.setContent(content.substring(0, 2));
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
-				assertEquals(
-						"Unable to parse from 2: \"\" incompatible with \"\\Qs\\E[a-zA-Z]\"",
-						e.getMessage());
+				assertEquals("Unable to parse " + letter3 + " for " + suite
+						+ " from (1,3): \"\"", e.getMessage());
 			}
 		}
 		{
@@ -301,33 +283,29 @@ public class SuiteTest {
 				suite.setContent(content.substring(0, 2));
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
-				assertEquals(
-						"Unable to parse from 0: \"te\" incompatible with \"[a-z]{4}\\s+[a-z]{4}\"",
-						e.getMessage());
+				assertEquals("Unable to parse " + word1 + " for " + suite
+						+ " from (1,1): \"te\"", e.getMessage());
 			}
 			try {
 				suite.setContent(content.substring(0, 4));
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
-				assertEquals(
-						"Unable to parse from 4: \"\" incompatible with \"\\s+[a-z]{4}\"",
-						e.getMessage());
+				assertEquals("Unable to parse " + space + " for " + suite
+						+ " from (1,5): \"\"", e.getMessage());
 			}
 			try {
 				suite.setContent(content.substring(0, 5));
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
-				assertEquals(
-						"Unable to parse from 5: \"\" incompatible with \"[a-z]{4}\"",
-						e.getMessage());
+				assertEquals("Unable to parse " + word2 + " for " + suite
+						+ " from (2,1): \"\"", e.getMessage());
 			}
 			try {
 				suite.setContent(content.substring(0, 7));
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
-				assertEquals(
-						"Unable to parse from 5: \"te\" incompatible with \"[a-z]{4}\"",
-						e.getMessage());
+				assertEquals("Unable to parse " + word2 + " for " + suite
+						+ " from (2,1): \"te\"", e.getMessage());
 			}
 		}
 	}
@@ -345,9 +323,8 @@ public class SuiteTest {
 				suite.setContent(content.substring(2));
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
-				assertEquals(
-						"Unable to parse from 1: \"t\" incompatible with \"\\Qe\\E\\Qs\\E[a-zA-Z]\"",
-						e.getMessage());
+				assertEquals("Unable to parse " + letter2 + " for " + suite
+						+ " from (1,2): \"t\"", e.getMessage());
 			}
 		}
 		{
@@ -360,17 +337,15 @@ public class SuiteTest {
 				suite.setContent(content.substring(2));
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
-				assertEquals(
-						"Unable to parse from 0: \"st\\ntest\" incompatible with \"[a-z]{4}\\s+[a-z]{4}\"",
-						e.getMessage());
+				assertEquals("Unable to parse " + word1 + " for " + suite
+						+ " from (1,1): \"st\\ntest\"", e.getMessage());
 			}
 			try {
 				suite.setContent(content.substring(4));
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
-				assertEquals(
-						"Unable to parse from 0: \"\\ntest\" incompatible with \"[a-z]{4}\\s+[a-z]{4}\"",
-						e.getMessage());
+				assertEquals("Unable to parse " + word1 + " for " + suite
+						+ " from (1,1): \"\\ntest\"", e.getMessage());
 			}
 		}
 	}
@@ -388,9 +363,8 @@ public class SuiteTest {
 				suite.setContent(content.substring(0, 1) + content.substring(2));
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
-				assertEquals(
-						"Unable to parse from 1: \"st\" incompatible with \"\\Qe\\E\\Qs\\E[a-zA-Z]\"",
-						e.getMessage());
+				assertEquals("Unable to parse " + letter2 + " for " + suite
+						+ " from (1,2): \"st\"", e.getMessage());
 			}
 		}
 		{
@@ -403,25 +377,22 @@ public class SuiteTest {
 				suite.setContent(content.substring(0, 2) + content.substring(3));
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
-				assertEquals(
-						"Unable to parse from 0: \"tet\\ntest\" incompatible with \"[a-z]{4}\\s+[a-z]{4}\"",
-						e.getMessage());
+				assertEquals("Unable to parse " + word1 + " for " + suite
+						+ " from (1,1): \"tet\\ntest\"", e.getMessage());
 			}
 			try {
 				suite.setContent(content.substring(0, 2) + content.substring(6));
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
-				assertEquals(
-						"Unable to parse from 4: \"t\" incompatible with \"\\s+[a-z]{4}\"",
-						e.getMessage());
+				assertEquals("Unable to parse " + space + " for " + suite
+						+ " from (1,5): \"t\"", e.getMessage());
 			}
 			try {
 				suite.setContent(content.substring(0, 6) + content.substring(7));
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
-				assertEquals(
-						"Unable to parse from 5: \"tst\" incompatible with \"[a-z]{4}\"",
-						e.getMessage());
+				assertEquals("Unable to parse " + word2 + " for " + suite
+						+ " from (2,1): \"tst\"", e.getMessage());
 			}
 		}
 	}

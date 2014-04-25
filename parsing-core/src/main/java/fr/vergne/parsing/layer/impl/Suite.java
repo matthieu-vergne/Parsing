@@ -103,8 +103,15 @@ public class Suite extends AbstractLayer {
 			fakeSequence.add(remaining);
 			new Suite(fakeSequence).setContent(content);
 			String incompatible = remaining.getContent();
-			throw new ParsingException(new Suite(postKo).getRegex(), content,
-					content.length() - incompatible.length(), content.length());
+			try {
+				postKo.getFirst().setContent(incompatible);
+			} catch (ParsingException e) {
+				throw new ParsingException(this, postKo.getFirst(), content,
+						content.length() - incompatible.length(),
+						content.length(), e);
+			}
+			throw new IllegalStateException(
+					"No exception thrown while it should not be parsable.");
 		}
 	}
 

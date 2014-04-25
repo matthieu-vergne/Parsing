@@ -40,7 +40,7 @@ public class AtomTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"abc\" incompatible with \"\\Qtest\\E\"",
+						"Incompatible regex \"\\Qtest\\E\" for content \"abc\"",
 						e.getMessage());
 			}
 		}
@@ -52,7 +52,7 @@ public class AtomTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"abc\" incompatible with \"\\Qtest\\ntest\\E\"",
+						"Incompatible regex \"\\Qtest\\ntest\\E\" for content \"abc\"",
 						e.getMessage());
 			}
 		}
@@ -64,7 +64,7 @@ public class AtomTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"abc\" incompatible with \"\\Q\\E\"",
+						"Incompatible regex \"\\Q\\E\" for content \"abc\"",
 						e.getMessage());
 			}
 		}
@@ -80,7 +80,7 @@ public class AtomTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"testabc\" incompatible with \"\\Qtest\\E\"",
+						"Incompatible regex \"\\Qtest\\E\" for content \"testabc\"",
 						e.getMessage());
 			}
 		}
@@ -92,7 +92,7 @@ public class AtomTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"test\\ntestabc\" incompatible with \"\\Qtest\\ntest\\E\"",
+						"Incompatible regex \"\\Qtest\\ntest\\E\" for content \"test\\ntestabc\"",
 						e.getMessage());
 			}
 		}
@@ -104,7 +104,7 @@ public class AtomTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"abc\" incompatible with \"\\Q\\E\"",
+						"Incompatible regex \"\\Q\\E\" for content \"abc\"",
 						e.getMessage());
 			}
 		}
@@ -120,7 +120,7 @@ public class AtomTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"abctest\" incompatible with \"\\Qtest\\E\"",
+						"Incompatible regex \"\\Qtest\\E\" for content \"abctest\"",
 						e.getMessage());
 			}
 		}
@@ -132,7 +132,7 @@ public class AtomTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"abctest\\ntest\" incompatible with \"\\Qtest\\ntest\\E\"",
+						"Incompatible regex \"\\Qtest\\ntest\\E\" for content \"abctest\\ntest\"",
 						e.getMessage());
 			}
 		}
@@ -144,7 +144,7 @@ public class AtomTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"abc\" incompatible with \"\\Q\\E\"",
+						"Incompatible regex \"\\Q\\E\" for content \"abc\"",
 						e.getMessage());
 			}
 		}
@@ -161,7 +161,7 @@ public class AtomTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"teabcst\" incompatible with \"\\Qtest\\E\"",
+						"Incompatible regex \"\\Qtest\\E\" for content \"teabcst\"",
 						e.getMessage());
 			}
 		}
@@ -174,7 +174,7 @@ public class AtomTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"teabcst\\ntest\" incompatible with \"\\Qtest\\ntest\\E\"",
+						"Incompatible regex \"\\Qtest\\ntest\\E\" for content \"teabcst\\ntest\"",
 						e.getMessage());
 			}
 			try {
@@ -183,7 +183,7 @@ public class AtomTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"test\\ntabcest\" incompatible with \"\\Qtest\\ntest\\E\"",
+						"Incompatible regex \"\\Qtest\\ntest\\E\" for content \"test\\ntabcest\"",
 						e.getMessage());
 			}
 		}
@@ -199,7 +199,7 @@ public class AtomTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"te\" incompatible with \"\\Qtest\\E\"",
+						"Incompatible regex \"\\Qtest\\E\" for content \"te\"",
 						e.getMessage());
 			}
 		}
@@ -211,7 +211,7 @@ public class AtomTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"te\" incompatible with \"\\Qtest\\ntest\\E\"",
+						"Incompatible regex \"\\Qtest\\ntest\\E\" for content \"te\"",
 						e.getMessage());
 			}
 			try {
@@ -219,7 +219,7 @@ public class AtomTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"test\" incompatible with \"\\Qtest\\ntest\\E\"",
+						"Incompatible regex \"\\Qtest\\ntest\\E\" for content \"test\"",
 						e.getMessage());
 			}
 		}
@@ -235,7 +235,7 @@ public class AtomTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"st\" incompatible with \"\\Qtest\\E\"",
+						"Incompatible regex \"\\Qtest\\E\" for content \"st\"",
 						e.getMessage());
 			}
 		}
@@ -247,7 +247,7 @@ public class AtomTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"st\\ntest\" incompatible with \"\\Qtest\\ntest\\E\"",
+						"Incompatible regex \"\\Qtest\\ntest\\E\" for content \"st\\ntest\"",
 						e.getMessage());
 			}
 			try {
@@ -255,7 +255,7 @@ public class AtomTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"test\" incompatible with \"\\Qtest\\ntest\\E\"",
+						"Incompatible regex \"\\Qtest\\ntest\\E\" for content \"test\"",
 						e.getMessage());
 			}
 		}
@@ -271,7 +271,7 @@ public class AtomTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"tst\" incompatible with \"\\Qtest\\E\"",
+						"Incompatible regex \"\\Qtest\\E\" for content \"tst\"",
 						e.getMessage());
 			}
 		}
@@ -283,7 +283,7 @@ public class AtomTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"tet\\ntest\" incompatible with \"\\Qtest\\ntest\\E\"",
+						"Incompatible regex \"\\Qtest\\ntest\\E\" for content \"tet\\ntest\"",
 						e.getMessage());
 			}
 			try {
@@ -291,7 +291,7 @@ public class AtomTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"teest\" incompatible with \"\\Qtest\\ntest\\E\"",
+						"Incompatible regex \"\\Qtest\\ntest\\E\" for content \"teest\"",
 						e.getMessage());
 			}
 			try {
@@ -299,7 +299,7 @@ public class AtomTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"test\\ntst\" incompatible with \"\\Qtest\\ntest\\E\"",
+						"Incompatible regex \"\\Qtest\\ntest\\E\" for content \"test\\ntst\"",
 						e.getMessage());
 			}
 		}

@@ -53,7 +53,7 @@ public class ChoiceTest {
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals(
-						"Unable to parse from 0: \"123\" incompatible with \"(([a-z]+)|([A-Z\\n]+)|())\"",
+						"Incompatible regex \"(([a-z]+)|([A-Z\\n]+)|())\" for content \"123\"",
 						e.getMessage());
 			}
 		}
