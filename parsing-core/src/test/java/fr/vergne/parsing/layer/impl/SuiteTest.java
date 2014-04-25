@@ -466,4 +466,22 @@ public class SuiteTest {
 		assertEquals("Another running case.", suite.getContent());
 	}
 
+	@Test
+	public void testGetIndex() {
+		Formula word1 = new Formula("[a-zA-Z]+");
+		Formula word2 = new Formula("[a-zA-Z]+");
+		Formula word3 = new Formula("[a-zA-Z]+");
+		Atom space1 = new Atom(" ");
+		Atom space2 = new Atom(" ");
+		Atom dot = new Atom(".");
+		Suite suite = new Suite(word1, space1, word2, space2, word3, dot);
+
+		assertSame(word1, suite.get(0));
+		assertSame(space1, suite.get(1));
+		assertSame(word2, suite.get(2));
+		assertSame(space2, suite.get(3));
+		assertSame(word3, suite.get(4));
+		assertSame(dot, suite.get(5));
+	}
+
 }

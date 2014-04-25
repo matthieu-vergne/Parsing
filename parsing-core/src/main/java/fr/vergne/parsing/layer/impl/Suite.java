@@ -125,4 +125,9 @@ public class Suite extends AbstractLayer {
 		}
 		return getClass().getSimpleName() + suite;
 	}
+
+	@SuppressWarnings("unchecked")
+	public <CLayer extends Layer> CLayer get(int index) {
+		return (CLayer) sequence.get(index);
+	}
 }
