@@ -5,7 +5,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.NoSuchElementException;
 
 import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.exception.ParsingException;
@@ -44,11 +43,7 @@ public class Choice extends AbstractLayer {
 
 	@Override
 	public String getContent() {
-		if (currentAlternative == null) {
-			throw new NoSuchElementException();
-		} else {
-			return alternatives.get(currentAlternative).getContent();
-		}
+		return getCurrent().getContent();
 	}
 
 	@Override
