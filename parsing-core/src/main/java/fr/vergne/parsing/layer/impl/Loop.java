@@ -266,8 +266,8 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 	@Override
 	public String getContent() {
 		String content = "";
-		for (String chunk : contents) {
-			content += chunk;
+		for (int i = 0; i < contents.size(); i++) {
+			content += get(i).getContent();
 		}
 		return content;
 	}
@@ -361,14 +361,8 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 			CLayer occurrence = generator.generates();
 			if (occurrence != getTemplate()) {
 				occurrence.setContent(contents.get(index));
-				occurrence.addContentListener(new ContentListener() {
-
-					@Override
-					public void contentSet(String oldValue, String newValue) {
-						contents.set(index, newValue);
-					}
-				});
 				occurrences.set(index, occurrence);
+				contents.set(index, null);
 				return occurrence;
 			} else {
 				currentIndex = index;
@@ -411,13 +405,18 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 	 * @return the new occurrence
 	 */
 	public CLayer duplicate(int index) {
-		if (index == size()) {
-			contents.add(index, contents.get(index - 1));
+		if (size() > 0) {
+			if (index == size()) {
+				contents.add(index, get(index - 1).getContent());
+			} else {
+				contents.add(index, get(index).getContent());
+			}
+			occurrences.add(index, null);
+			return get(index);
 		} else {
-			contents.add(index, contents.get(index));
+			throw new IllegalStateException("The loop " + this
+					+ " is empty, no duplicate an be done.");
 		}
-		occurrences.add(index, null);
-		return get(index);
 	}
 
 	/**
