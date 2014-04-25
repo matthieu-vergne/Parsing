@@ -78,7 +78,7 @@ public class Choice extends AbstractLayer {
 	 * 
 	 * @return the alternative corresponding to the current content
 	 */
-	public Object getCurrent() {
+	public Layer getCurrent() {
 		return alternatives.get(currentAlternative);
 	}
 }
