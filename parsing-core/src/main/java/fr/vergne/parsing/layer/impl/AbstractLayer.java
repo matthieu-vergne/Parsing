@@ -21,6 +21,7 @@ public abstract class AbstractLayer implements Layer {
 	 * browsed.
 	 */
 	public static int recursivityDepth = 3;
+	private static final Map<Class<?>, Integer> calls = new HashMap<Class<?>, Integer>();
 	private final Collection<ContentListener> listeners = new HashSet<ContentListener>();
 
 	@Override
@@ -48,23 +49,23 @@ public abstract class AbstractLayer implements Layer {
 
 	protected abstract void setInternalContent(String content);
 
-	private static final Map<Class<?>, Integer> calls = new HashMap<Class<?>, Integer>();
-
 	@Override
 	public String getRegex() {
-		Class<? extends AbstractLayer> clazz = getClass();
-		int value = calls.containsKey(clazz) ? calls.get(clazz) : 0;
-		if (value >= recursivityDepth) {
-			return ".*";
-		} else {
-			calls.put(clazz, value + 1);
-			String regex = buildRegex();
-			if (value == 0) {
-				calls.remove(clazz);
+		synchronized (calls) {
+			Class<? extends AbstractLayer> clazz = getClass();
+			int value = calls.containsKey(clazz) ? calls.get(clazz) : 0;
+			if (value >= recursivityDepth) {
+				return ".*";
 			} else {
-				calls.put(clazz, value);
+				calls.put(clazz, value + 1);
+				String regex = buildRegex();
+				if (value == 0) {
+					calls.remove(clazz);
+				} else {
+					calls.put(clazz, value);
+				}
+				return regex;
 			}
-			return regex;
 		}
 	}
 
