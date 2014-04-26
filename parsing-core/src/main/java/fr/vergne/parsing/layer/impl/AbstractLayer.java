@@ -68,6 +68,15 @@ public abstract class AbstractLayer implements Layer {
 		}
 	}
 
+	/**
+	 * This method should provide the complete regular expression which
+	 * represents this {@link Layer}. However, capturing parenthesis are
+	 * forbidden to avoid conflict with future uses of such captures (but using
+	 * "(?:...)" is allowed, as it does not conflict).
+	 * 
+	 * @return the undecorated regular expression representing this
+	 *         {@link Layer}
+	 */
 	protected abstract String buildRegex();
 
 }
