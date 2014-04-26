@@ -398,21 +398,6 @@ public class SuiteTest {
 	}
 
 	@Test
-	public void testRegex() {
-		Formula word1 = new Formula("[a-zA-Z]+");
-		Formula word2 = new Formula("[0-9]+");
-		Formula word3 = new Formula("[a-zA-Z0-9]+");
-		Atom space1 = new Atom(" ");
-		Atom space2 = new Atom(" ");
-		Atom dot = new Atom(".");
-		Suite suite = new Suite(Arrays.asList(word1, space1, word2, space2,
-				word3, dot));
-		assertEquals(word1.getRegex() + space1.getRegex() + word2.getRegex()
-				+ space2.getRegex() + word3.getRegex() + dot.getRegex(),
-				suite.getRegex());
-	}
-
-	@Test
 	public void testInnerContentSynchronization() {
 		String content = "A testing case.";
 		Formula word1 = new Formula("[a-zA-Z]+");
