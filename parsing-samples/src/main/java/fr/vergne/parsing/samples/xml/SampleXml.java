@@ -39,7 +39,7 @@ public class SampleXml {
 
 				NodeList manager = parent.getChildrenManager();
 				Node duplicate = manager.duplicate(manager.size());
-				duplicate.getField("id").getValue().setContent("new chid");
+				duplicate.getField("id").getValue().setContent("new child");
 			} else {
 				// no change
 			}
