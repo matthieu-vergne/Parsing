@@ -1,6 +1,5 @@
 package fr.vergne.parsing.layer.impl;
 
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import fr.vergne.parsing.layer.Layer;
@@ -44,9 +43,8 @@ public class Formula extends AbstractLayer {
 
 	@Override
 	protected void setInternalContent(String content) {
-		Matcher matcher = Pattern.compile("^" + regex + "$").matcher(content);
-		if (matcher.find()) {
-			this.content = matcher.group();
+		if (Pattern.matches("^" + regex + "$", content)) {
+			this.content = content;
 		} else {
 			throw new ParsingException(regex, content);
 		}
