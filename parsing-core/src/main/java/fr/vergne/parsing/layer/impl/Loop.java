@@ -245,8 +245,8 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 			while (matcher.find() && matcher.start() == start) {
 				count++;
 				if (count > max) {
-					throw new ParsingException(this, null, content,
-							start, content.length());
+					throw new ParsingException(this, null, content, start,
+							content.length());
 				} else {
 					start += matcher.group(0).length();
 				}
