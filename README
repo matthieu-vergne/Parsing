@@ -1,1 +1,35 @@
-This project aims at implementing a generic, user-friendly parser able to deal with any kind of grammar and manage read/write facilities. For instance, it should be possible to parse a string representation (e.g. XML tree), access some of its values in a domain-relevant way (e.g. Node getRoot(), Collection<Node> getChildren()), change these values in a domain-relevant way (e.g. setRoot(Node root), addChild(Node child)) and retrieve the corresponding string representation (e.g. XML tree) with the new values. Thus, such a parser should be extensible to any domain and provide a user-friendly bridge between the file parsed and the domain logics.
+OBJECTIVE
+
+This project aims at implementing a generic, user-friendly parser able to deal with many kind of grammars and manage read/write facilities. For instance, one should be able to extend the implemented classes to build his own structures as a hierarchy and, by providing the textual content, the structure should be completely updated. Then, accessing the different parts and by modifying them, the content is progressively updated and getting the content from the main structure allows to get the fully updated textual content.
+
+HOW IT WORKS
+
+Several Layers are implemented:
+- an Atom is a Layer which represents a piece of text which is static
+- a Formula is a Layer which represents a piece of text which should respect a given regular expression
+- a Suite is a Layer which represents a sequence of pieces of text, each having its own Layer (i.e. XYZ)
+- a Choice is a Layer which allows to use different Layers for the same piece of text (i.e. X|Y|Z)
+- a Loop is a Layer which allows to parse a sequence of pieces of text which have the same format (i.e. X*, X+, X{min,max})
+
+Each Layer class represents a type of element, or provide a semantic. Each instance of a Layer corresponds to a given regular expression, which provides the syntaxical rule that a text should respect in order to fit this Layer. For instance, a Suite is a sequence of elements, and a specific intance of a Suite will receive specific (sub)Layer instances. The overall correspond to a given regular expression which will tell which text can fit this Suite.
+
+When you apply a text to a Layer's instance (Layer.setContent(String)), the text is recursively applied to the subinstances (if any). The content of each element can be retrieved at any time (Layer.getContent()). If one of the subinstances is changed (by using its own setContent() method), retrieving the content of the parent provide tha updated version. This can be done at any level in the architecture. If the text provided to setContent() does not fit the overall regular expression, an exception is thrown (generally from the deepest parts and re-thrown at each level to make a detailed stack trace) so that one can identify which Layer is not able to take which part of the text. 
+
+Notice that all the process is based on regular expression, which do not manage recursivity in general. Some engines provide recursivity features, but we use the standard Java Pattern/Matcher classes, which do not describe such feature as far as we read. However, here we are able to deal with recursivity to some extents: if you use a Layer A, which is a Suite of Y-B-Y, which is a Suite X-A-X, you are dealing with a recursive architecture, where instantiating an A implies to instantiate a B, which implies to instantiate an A and so on. In order to avoid stack overflow, such recursivity is stopped after a given level (currently 3, but it can be changed). This means that, to build a regex, after 3 levels of A or B we just consider a generic ".*". If you have a recursive architecture and you know that it should not go further than a given level, you can change the value of AbstractLayer.recursivityDepth to your convenience. Otherwise the check at a higher level is based on an approximation, and once we go deeper to set the content of the subinstances the check go further. Thus, the exception generation goes in a different way (we do not know from the highest level if it really fits completely).
+
+This project is still at an experimental state, so we did not investigate exactly how the current implementation behave in complex situations, but we have plenty of tests ;) If you have any problem, do not hesitate to post a new issue.
+
+HOW TO USE
+
+If you use Maven, you can use this dependency:
+(Check the last release tag for the most recent version)
+
+<dependency>
+	<groupId>fr.matthieu-vergne</groupId>
+	<artifactId>parsing-core</artifactId>
+	<version>1.1</version>
+</dependency>
+
+Otherwise, you can download the JAR on the central repository of Maven or build it from the sources. You can find an example of use in parsing-sample, which have a simple (but recursive!) architecture for an XML file. The file's content is displayed, parsed, modified and the updated version is displayed. You can see the simplicity of the sample and how the different classes extending the Suite/Loop/... are also quite straightforward. The most subtle elements are the Blank elements, which are used in a way to preserve the indentation of the XML content.
+
+Basically, you start from the highest level of your text (e.g. Xml) and decide how you want to cut it (e.g. XmlHeader followed by XmlTree) in order to choose which class to extend (e.g. Suite). Then, you redo the same process for each sublevel (e.g. XmlHeader = Suite of "<?xml"+Fields+"?>", Fields = Loop of Field, etc.). Each class is simple and documented, so you should be able to use them easily. If you have any problem, please post an issue.
