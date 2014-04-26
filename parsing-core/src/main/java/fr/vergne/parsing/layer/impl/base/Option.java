@@ -3,6 +3,7 @@ package fr.vergne.parsing.layer.impl.base;
 import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.exception.ParsingException;
 import fr.vergne.parsing.layer.impl.AbstractLayer;
+import fr.vergne.parsing.layer.impl.GreedyMode;
 
 /**
  * An {@link Option} make a {@link Layer} optional. Thus, a compatible content
@@ -17,14 +18,28 @@ public class Option<CLayer extends Layer> extends AbstractLayer implements
 
 	private final CLayer option;
 	private boolean isPresent = false;
+	private GreedyMode mode = GreedyMode.GREEDY;
+
+	public Option(CLayer layer, GreedyMode mode) {
+		this(layer);
+		setMode(mode);
+	}
 
 	public Option(CLayer layer) {
 		this.option = layer;
 	}
 
+	public void setMode(GreedyMode mode) {
+		this.mode = mode;
+	}
+
+	public GreedyMode getMode() {
+		return mode;
+	}
+
 	@Override
 	protected String buildRegex() {
-		return "(?:" + option.getRegex() + ")?";
+		return "(?:" + option.getRegex() + ")?" + mode.getDecorator();
 	}
 
 	@Override

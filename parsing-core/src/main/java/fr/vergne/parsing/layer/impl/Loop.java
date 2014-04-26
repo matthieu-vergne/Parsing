@@ -488,7 +488,17 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 		} else {
 			decorator = "{" + min + "," + max + "}";
 		}
-		return decorator;
+		return decorator + mode.getDecorator();
+	}
+
+	private GreedyMode mode = GreedyMode.GREEDY;
+
+	public GreedyMode getMode() {
+		return mode;
+	}
+
+	public void setMode(GreedyMode mode) {
+		this.mode = mode;
 	}
 
 	/**
