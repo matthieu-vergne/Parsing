@@ -61,7 +61,7 @@ public class Suite extends AbstractLayer {
 	protected String buildRegex() {
 		String regex = "";
 		for (Layer layer : sequence) {
-			regex += layer.getRegex();
+			regex += "(?:" + layer.getRegex() + ")";
 		}
 		return regex;
 	}
