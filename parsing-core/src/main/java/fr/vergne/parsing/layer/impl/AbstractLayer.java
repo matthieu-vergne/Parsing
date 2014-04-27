@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.Map;
 
 import fr.vergne.parsing.layer.Layer;
+import fr.vergne.parsing.layer.impl.base.Any;
 
 public abstract class AbstractLayer implements Layer {
 
@@ -55,7 +56,7 @@ public abstract class AbstractLayer implements Layer {
 			Class<? extends AbstractLayer> clazz = getClass();
 			int value = calls.containsKey(clazz) ? calls.get(clazz) : 0;
 			if (value >= recursivityDepth) {
-				return ".*";
+				return new Any().getRegex();
 			} else {
 				calls.put(clazz, value + 1);
 				String regex = buildRegex();
