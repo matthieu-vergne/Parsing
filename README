@@ -1,6 +1,6 @@
 OBJECTIVE
 
-This project aims at implementing a generic, user-friendly parser able to deal with many kind of grammars and manage read/write facilities. For instance, one should be able to extend the implemented classes to build his own structures as a hierarchy and, by providing the textual content, the structure should be completely updated. Then, accessing the different parts and by modifying them, the content is progressively updated and getting the content from the main structure allows to get the fully updated textual content.
+This project aims at implementing a generic, user-friendly parser able to deal with many kind of grammars and manage read/write facilities. For instance, one should be able to extend the implemented classes to build his own structures as a hierarchy and, by providing the textual content, the structure should be completely filled. Then, by accessing the different parts and by modifying them, the content is progressively updated and getting the content from the main structure allows to get the fully updated textual content.
 
 HOW IT WORKS
 
