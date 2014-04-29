@@ -32,6 +32,4 @@ If you use Maven, you can use this dependency:
 
 Otherwise, you can download the JAR on the central repository of Maven or build it from the sources. You can find an example of use in parsing-sample, which have a simple (but recursive!) architecture for an XML file. The file's content is displayed, parsed, modified and the updated version is displayed. You can see the simplicity of the sample and how the different classes extending the Suite/Loop/... are also quite straightforward. The most subtle elements are the Blank elements, which are used in a way to preserve the indentation of the XML content.
 
-Basically, you start from the highest level of your text (e.g. Xml) and decide how you want to cut it (e.g. XmlHeader followed by XmlTree) in order to choose which 
-class to extend (e.g. Suite). Then, you redo the same process for each sublevel (e.g. XmlHeader = Suite "<?xml" + Fields + "?>", Fields = Loop of Field, etc.). Each 
-class is simple and documented, so you should be able to use them easily. If you have any problem, please post an issue.
+Basically, you start from the highest level of your text (e.g. Xml) and decide how you want to cut it (e.g. XmlHeader followed by XmlTree) in order to choose which class to extend (e.g. Suite). Then, you redo the same process for each sublevel (e.g. XmlHeader = Suite "<?xml" + Fields + "?>", Fields = Loop of Field, etc.). Each class is simple and documented, so you should be able to use them easily. If you have any problem, please post an issue.
