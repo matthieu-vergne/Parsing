@@ -1,4 +1,4 @@
-package fr.vergne.parsing.layer.impl;
+package fr.vergne.parsing.layer.standard;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -6,7 +6,7 @@ import java.util.HashSet;
 import java.util.Map;
 
 import fr.vergne.parsing.layer.Layer;
-import fr.vergne.parsing.layer.impl.base.Any;
+import fr.vergne.parsing.layer.util.Any;
 
 public abstract class AbstractLayer implements Layer {
 

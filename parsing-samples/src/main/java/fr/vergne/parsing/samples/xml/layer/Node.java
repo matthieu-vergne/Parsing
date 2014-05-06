@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 import fr.vergne.parsing.layer.Layer;
-import fr.vergne.parsing.layer.impl.Choice;
+import fr.vergne.parsing.layer.standard.Choice;
 
 public class Node extends Choice {
 

@@ -1,4 +1,4 @@
-package fr.vergne.parsing.layer.impl;
+package fr.vergne.parsing.layer.standard;
 
 import java.util.Arrays;
 import java.util.Collection;

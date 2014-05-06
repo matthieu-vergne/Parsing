@@ -3,8 +3,8 @@ package fr.vergne.parsing.samples.xml.layer;
 import java.util.Iterator;
 import java.util.List;
 
-import fr.vergne.parsing.layer.impl.Atom;
-import fr.vergne.parsing.layer.impl.Suite;
+import fr.vergne.parsing.layer.standard.Atom;
+import fr.vergne.parsing.layer.standard.Suite;
 
 public class XmlTree extends Suite implements Iterable<Node> {
 

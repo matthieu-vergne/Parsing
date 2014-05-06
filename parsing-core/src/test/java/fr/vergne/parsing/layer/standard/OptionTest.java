@@ -1,11 +1,10 @@
-package fr.vergne.parsing.layer.impl.base;
+package fr.vergne.parsing.layer.standard;
 
 import static org.junit.Assert.*;
 
 import org.junit.Test;
 
 import fr.vergne.parsing.layer.exception.ParsingException;
-import fr.vergne.parsing.layer.impl.Formula;
 
 public class OptionTest {
 
@@ -65,7 +64,8 @@ public class OptionTest {
 		try {
 			option.setContent("abd");
 		} catch (ParsingException e) {
-			assertEquals("Unable to parse Formula[[abc]+] for Formula[[abc]+](opt) from (1,1): \"abd\"",
+			assertEquals(
+					"Unable to parse Formula[[abc]+] for Formula[[abc]+](opt) from (1,1): \"abd\"",
 					e.getMessage());
 		}
 	}

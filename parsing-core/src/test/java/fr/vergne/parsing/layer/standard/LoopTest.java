@@ -1,4 +1,4 @@
-package fr.vergne.parsing.layer.impl;
+package fr.vergne.parsing.layer.standard;
 
 import static org.junit.Assert.*;
 
@@ -10,7 +10,7 @@ import org.junit.Test;
 
 import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.exception.ParsingException;
-import fr.vergne.parsing.layer.impl.Loop.Generator;
+import fr.vergne.parsing.layer.standard.Loop.Generator;
 
 public class LoopTest {
 

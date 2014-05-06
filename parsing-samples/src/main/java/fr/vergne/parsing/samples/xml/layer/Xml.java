@@ -1,6 +1,6 @@
 package fr.vergne.parsing.samples.xml.layer;
 
-import fr.vergne.parsing.layer.impl.Suite;
+import fr.vergne.parsing.layer.standard.Suite;
 
 public class Xml extends Suite {
 

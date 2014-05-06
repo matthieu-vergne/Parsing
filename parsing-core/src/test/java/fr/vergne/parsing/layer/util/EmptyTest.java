@@ -1,4 +1,4 @@
-package fr.vergne.parsing.layer.impl.base;
+package fr.vergne.parsing.layer.util;
 
 import static org.junit.Assert.*;
 

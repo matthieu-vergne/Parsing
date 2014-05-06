@@ -1,6 +1,6 @@
 package fr.vergne.parsing.samples.xml.layer;
 
-import fr.vergne.parsing.layer.impl.Formula;
+import fr.vergne.parsing.layer.standard.Formula;
 
 public class Blank extends Formula {
 

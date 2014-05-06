@@ -4,7 +4,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
-import fr.vergne.parsing.layer.impl.Loop;
+import fr.vergne.parsing.layer.standard.Loop;
 
 public class NodeList extends Loop<Node> {
 

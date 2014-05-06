@@ -1,9 +1,7 @@
-package fr.vergne.parsing.layer.impl.base;
+package fr.vergne.parsing.layer.standard;
 
 import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.exception.ParsingException;
-import fr.vergne.parsing.layer.impl.AbstractLayer;
-import fr.vergne.parsing.layer.impl.GreedyMode;
 
 /**
  * An {@link Option} make a {@link Layer} optional. Thus, a compatible content

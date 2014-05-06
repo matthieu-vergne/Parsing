@@ -3,7 +3,7 @@ package fr.vergne.parsing.layer;
 import javax.sound.midi.Sequence;
 
 import fr.vergne.parsing.layer.exception.ParsingException;
-import fr.vergne.parsing.layer.impl.Choice;
+import fr.vergne.parsing.layer.standard.Choice;
 
 /**
  * A {@link Layer} aims at representing the semantics of a piece of text. By

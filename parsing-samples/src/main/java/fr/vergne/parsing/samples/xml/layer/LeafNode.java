@@ -1,7 +1,7 @@
 package fr.vergne.parsing.samples.xml.layer;
 
-import fr.vergne.parsing.layer.impl.Atom;
-import fr.vergne.parsing.layer.impl.Suite;
+import fr.vergne.parsing.layer.standard.Atom;
+import fr.vergne.parsing.layer.standard.Suite;
 
 public class LeafNode extends Suite {
 

@@ -6,7 +6,7 @@ import java.net.URISyntaxException;
 
 import org.apache.commons.io.FileUtils;
 
-import fr.vergne.parsing.layer.impl.Formula;
+import fr.vergne.parsing.layer.standard.Formula;
 import fr.vergne.parsing.samples.xml.layer.Node;
 import fr.vergne.parsing.samples.xml.layer.NodeList;
 import fr.vergne.parsing.samples.xml.layer.Xml;

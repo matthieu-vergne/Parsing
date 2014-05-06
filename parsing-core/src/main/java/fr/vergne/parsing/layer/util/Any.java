@@ -1,7 +1,7 @@
-package fr.vergne.parsing.layer.impl.base;
+package fr.vergne.parsing.layer.util;
 
 import fr.vergne.parsing.layer.Layer;
-import fr.vergne.parsing.layer.impl.Formula;
+import fr.vergne.parsing.layer.standard.Formula;
 
 /**
  * {@link Any} represents any kind of string. Empty, newlines, any kind of

@@ -1,7 +1,7 @@
-package fr.vergne.parsing.layer.impl.base;
+package fr.vergne.parsing.layer.util;
 
 import fr.vergne.parsing.layer.Layer;
-import fr.vergne.parsing.layer.impl.Atom;
+import fr.vergne.parsing.layer.standard.Atom;
 
 /**
  * {@link Empty} is a generic-purpose {@link Layer} which matches only empty

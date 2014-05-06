@@ -2,7 +2,7 @@ package fr.vergne.parsing.samples.xml.layer;
 
 import java.util.NoSuchElementException;
 
-import fr.vergne.parsing.layer.impl.Loop;
+import fr.vergne.parsing.layer.standard.Loop;
 
 public class Fields extends Loop<Field> {
 

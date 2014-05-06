@@ -1,8 +1,8 @@
-package fr.vergne.parsing.layer.impl.base;
+package fr.vergne.parsing.layer.util;
 
-import fr.vergne.parsing.layer.impl.Atom;
-import fr.vergne.parsing.layer.impl.Formula;
-import fr.vergne.parsing.layer.impl.Suite;
+import fr.vergne.parsing.layer.standard.Atom;
+import fr.vergne.parsing.layer.standard.Formula;
+import fr.vergne.parsing.layer.standard.Suite;
 
 /**
  * An {@link IntNumber} represents an integer. It can accept or not negative

@@ -1,4 +1,4 @@
-package fr.vergne.parsing.layer.impl.base;
+package fr.vergne.parsing.layer.util;
 
 import static org.junit.Assert.*;
 
@@ -7,8 +7,8 @@ import java.util.Arrays;
 import org.junit.Test;
 
 import fr.vergne.parsing.layer.exception.ParsingException;
-import fr.vergne.parsing.layer.impl.Formula;
-import fr.vergne.parsing.layer.impl.Suite;
+import fr.vergne.parsing.layer.standard.Formula;
+import fr.vergne.parsing.layer.standard.Suite;
 
 public class NewlineTest {
 
