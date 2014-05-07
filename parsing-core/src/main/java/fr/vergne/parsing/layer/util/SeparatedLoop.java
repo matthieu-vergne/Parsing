@@ -43,6 +43,7 @@ public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 		});
 		option = new Option<Element>(head);
 		overall = new Choice(option, new Suite(head, loop));
+		overall.setReferenceAlternative(overall.getAlternative(1));
 	}
 
 	@Override

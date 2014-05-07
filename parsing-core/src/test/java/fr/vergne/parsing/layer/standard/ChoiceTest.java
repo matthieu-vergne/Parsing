@@ -6,6 +6,7 @@ import java.util.Arrays;
 
 import org.junit.Test;
 
+import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.exception.ParsingException;
 
 public class ChoiceTest {
@@ -136,6 +137,99 @@ public class ChoiceTest {
 		assertEquals(3, new Choice(Arrays.asList(lower, upper, number)).size());
 		assertEquals(4,
 				new Choice(Arrays.asList(lower, upper, number, test)).size());
+	}
+
+	@Test
+	public void testReferenceAlternative() {
+		Formula partial = new Formula("[a-z]");
+		Formula lessPartial = new Formula("[A-Z][a-z]");
+		Formula complete = new Formula("[A-Z][a-z][a-z]");
+		Choice choice = new Choice(
+				Arrays.asList(partial, lessPartial, complete));
+
+		String content = "123";
+		for (Layer layer1 : Arrays.asList(partial, lessPartial, complete)) {
+			try {
+				layer1.setContent(content);
+				fail("No exception thrown, change the content to throw one.");
+			} catch (ParsingException e1) {
+				for (Layer layer2 : Arrays.asList(partial, lessPartial,
+						complete)) {
+					try {
+						layer2.setContent(content);
+						fail("No exception thrown, change the content to throw one.");
+					} catch (ParsingException e2) {
+						assertEquals(layer1.equals(layer2), e1.getMessage()
+								.equals(e2.getMessage()));
+					}
+				}
+			}
+		}
+
+		try {
+			choice.setContent(content);
+			fail("No exception thrown.");
+		} catch (ParsingException e1) {
+			for (Layer layer : Arrays.asList(partial, lessPartial, complete)) {
+				try {
+					layer.setContent(content);
+					fail("No exception thrown while its parent throws one.");
+				} catch (ParsingException e2) {
+					assertNull(e1.getCause());
+				}
+			}
+		}
+
+		choice.setReferenceAlternative(partial);
+		assertSame(partial, choice.getReferenceAlternative());
+		try {
+			choice.setContent(content);
+			fail("No exception thrown.");
+		} catch (ParsingException e1) {
+			for (Layer layer : Arrays.asList(partial, lessPartial, complete)) {
+				try {
+					layer.setContent(content);
+					fail("No exception thrown while its parent throws one.");
+				} catch (ParsingException e2) {
+					assertEquals(partial.equals(layer), e1.getCause()
+							.getMessage().equals(e2.getMessage()));
+				}
+			}
+		}
+
+		choice.setReferenceAlternative(lessPartial);
+		assertSame(lessPartial, choice.getReferenceAlternative());
+		try {
+			choice.setContent(content);
+			fail("No exception thrown.");
+		} catch (ParsingException e1) {
+			for (Layer layer : Arrays.asList(partial, lessPartial, complete)) {
+				try {
+					layer.setContent(content);
+					fail("No exception thrown while its parent throws one.");
+				} catch (ParsingException e2) {
+					assertEquals(lessPartial.equals(layer), e1.getCause()
+							.getMessage().equals(e2.getMessage()));
+				}
+			}
+		}
+
+		choice.setReferenceAlternative(complete);
+		assertSame(complete, choice.getReferenceAlternative());
+		try {
+			choice.setContent(content);
+			fail("No exception thrown.");
+		} catch (ParsingException e1) {
+			for (Layer layer : Arrays.asList(partial, lessPartial, complete)) {
+				try {
+					layer.setContent(content);
+					fail("No exception thrown while its parent throws one.");
+				} catch (ParsingException e2) {
+					assertEquals(complete.equals(layer), e1.getCause()
+							.getMessage().equals(e2.getMessage()));
+				}
+			}
+		}
 	}
 
 }
