@@ -51,7 +51,7 @@ public abstract class AbstractLayer implements Layer {
 	protected abstract void setInternalContent(String content);
 
 	@Override
-	public String getRegex() {
+	public final String getRegex() {
 		synchronized (calls) {
 			Class<? extends AbstractLayer> clazz = getClass();
 			int value = calls.containsKey(clazz) ? calls.get(clazz) : 0;
