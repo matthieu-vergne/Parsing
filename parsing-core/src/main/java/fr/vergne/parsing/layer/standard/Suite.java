@@ -103,18 +103,9 @@ public class Suite extends AbstractLayer {
 				matcher = Pattern.compile("^" + regex).matcher(content);
 			} while (!matcher.find());
 
-			LinkedList<Layer> postOk = new LinkedList<Layer>(innerKo);
-			innerKo.clear();
-			do {
-				innerKo.addLast(postOk.removeFirst());
-				String regex = buildCapturingRegex(postOk);
-				matcher = Pattern.compile(regex + "$").matcher(content);
-			} while (!matcher.find());
-
 			List<Layer> fakeSequence = new LinkedList<Layer>(preOk);
 			Formula remaining = new Formula("[\\s\\S]*");
 			fakeSequence.add(remaining);
-			// fakeSequence.addAll(postOk);
 			new Suite(fakeSequence).setContent(content);
 			String incompatible = remaining.getContent();
 			try {
@@ -126,8 +117,6 @@ public class Suite extends AbstractLayer {
 				}
 				throw new ParsingException(this, innerKo.getFirst(), content,
 						start + e.getStart(), start + e.getEnd(), e);
-				// throw new ParsingException(this, innerKo.getFirst(), content,
-				// start + e.getStart(), start + e.getEnd(), e);
 			}
 			throw new IllegalStateException(
 					"No exception thrown while it should not be parsable.");
