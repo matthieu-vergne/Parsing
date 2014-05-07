@@ -255,8 +255,12 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 				throw new ParsingException(this, getTemplate(), content,
 						content.length(), content.length());
 			} else {
-				throw new ParsingException(this, getTemplate(), content, start,
-						content.length());
+				try {
+					getTemplate().setContent(content.substring(start));
+				} catch (ParsingException e) {
+					throw new ParsingException(this, getTemplate(), content,
+							start + e.getStart(), content.length(), e);
+				}
 			}
 		}
 	}
@@ -358,7 +362,17 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 		} else {
 			CLayer occurrence = generator.generates();
 			if (occurrence != getTemplate()) {
-				occurrence.setContent(contents.get(index));
+				String content = contents.get(index);
+				try {
+					occurrence.setContent(content);
+				} catch (ParsingException e) {
+					int start = 0;
+					for (int i = 0; i < index; i++) {
+						start += get(i).getContent().length();
+					}
+					throw new ParsingException(this, occurrence, getContent(),
+							start + e.getStart(), start + content.length(), e);
+				}
 				occurrences.set(index, occurrence);
 				contents.set(index, null);
 				return occurrence;

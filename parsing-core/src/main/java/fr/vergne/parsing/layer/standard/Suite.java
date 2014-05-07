@@ -85,30 +85,49 @@ public class Suite extends AbstractLayer {
 				String match = matcher.group(i);
 				int subStart = delta;
 				int subEnd = subStart + match.length();
-				sequence.get(i - 1).setContent(
-						content.substring(subStart, subEnd));
+				Layer item = sequence.get(i - 1);
+				try {
+					item.setContent(content.substring(subStart, subEnd));
+				} catch (ParsingException e) {
+					throw new ParsingException(this, item, content, subStart
+							+ e.getStart(), subEnd, e);
+				}
 				delta += match.length();
 			}
 		} else {
 			LinkedList<Layer> preOk = new LinkedList<Layer>(sequence);
-			LinkedList<Layer> postKo = new LinkedList<Layer>();
+			LinkedList<Layer> innerKo = new LinkedList<Layer>();
 			do {
-				postKo.addFirst(preOk.removeLast());
+				innerKo.addFirst(preOk.removeLast());
 				String regex = buildCapturingRegex(preOk);
 				matcher = Pattern.compile("^" + regex).matcher(content);
+			} while (!matcher.find());
+
+			LinkedList<Layer> postOk = new LinkedList<Layer>(innerKo);
+			innerKo.clear();
+			do {
+				innerKo.addLast(postOk.removeFirst());
+				String regex = buildCapturingRegex(postOk);
+				matcher = Pattern.compile(regex + "$").matcher(content);
 			} while (!matcher.find());
 
 			List<Layer> fakeSequence = new LinkedList<Layer>(preOk);
 			Formula remaining = new Formula("[\\s\\S]*");
 			fakeSequence.add(remaining);
+			// fakeSequence.addAll(postOk);
 			new Suite(fakeSequence).setContent(content);
 			String incompatible = remaining.getContent();
 			try {
-				postKo.getFirst().setContent(incompatible);
+				innerKo.getFirst().setContent(incompatible);
 			} catch (ParsingException e) {
-				throw new ParsingException(this, postKo.getFirst(), content,
-						content.length() - incompatible.length(),
-						content.length(), e);
+				int start = 0;
+				for (Layer layer : preOk) {
+					start += layer.getContent().length();
+				}
+				throw new ParsingException(this, innerKo.getFirst(), content,
+						start + e.getStart(), start + e.getEnd(), e);
+				// throw new ParsingException(this, innerKo.getFirst(), content,
+				// start + e.getStart(), start + e.getEnd(), e);
 			}
 			throw new IllegalStateException(
 					"No exception thrown while it should not be parsable.");
