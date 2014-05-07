@@ -357,7 +357,10 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 	 * @return the occurrence
 	 */
 	public CLayer get(final int index) {
-		if (occurrences.get(index) != null) {
+		if (index >= size() || index < 0) {
+			throw new IndexOutOfBoundsException(index
+					+ " is not between 0 and " + size());
+		} else if (occurrences.get(index) != null) {
 			return occurrences.get(index);
 		} else {
 			CLayer occurrence = generator.generates();
