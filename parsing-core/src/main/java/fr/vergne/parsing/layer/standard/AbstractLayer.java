@@ -21,7 +21,7 @@ public abstract class AbstractLayer implements Layer {
 	 * long as it is not recursive, a really deep structure is completely
 	 * browsed.
 	 */
-	public static int recursivityDepth = 3;
+	public static int recursivityDepth = 10;
 	private static final Map<Class<?>, Integer> calls = new HashMap<Class<?>, Integer>();
 	private final Collection<ContentListener> listeners = new HashSet<ContentListener>();
 
