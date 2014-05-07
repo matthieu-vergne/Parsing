@@ -11,11 +11,15 @@ public class ParsingException extends IllegalArgumentException {
 	private final int end;
 
 	public ParsingException(String regex, String content) {
+		this(regex, content, null);
+	}
+
+	public ParsingException(String regex, String content, Throwable cause) {
 		super(
 				"Incompatible regex "
 						+ (regex == null ? "(empty)" : "\""
 								+ formatRegex(regex) + "\"")
-						+ " for content \"" + format(content) + "\"");
+						+ " for content \"" + format(content) + "\"", cause);
 		this.regex = regex;
 		this.content = content;
 		this.start = 0;
