@@ -109,4 +109,33 @@ public class ChoiceTest {
 		assertSame(test, choice.getCurrent());
 	}
 
+	@Test
+	public void testGetAlternative() {
+		Formula lower = new Formula("[a-z]+");
+		Formula upper = new Formula("[A-Z]+");
+		Formula number = new Formula("[0-9]+");
+		Atom test = new Atom("T35T");
+		Choice choice = new Choice(Arrays.asList(lower, upper, number, test));
+
+		assertSame(lower, choice.getAlternative(0));
+		assertSame(upper, choice.getAlternative(1));
+		assertSame(number, choice.getAlternative(2));
+		assertSame(test, choice.getAlternative(3));
+	}
+
+	@Test
+	public void testSize() {
+		Formula lower = new Formula("[a-z]+");
+		Formula upper = new Formula("[A-Z]+");
+		Formula number = new Formula("[0-9]+");
+		Atom test = new Atom("T35T");
+
+		assertEquals(0, new Choice().size());
+		assertEquals(1, new Choice(Arrays.asList(lower)).size());
+		assertEquals(2, new Choice(Arrays.asList(lower, upper)).size());
+		assertEquals(3, new Choice(Arrays.asList(lower, upper, number)).size());
+		assertEquals(4,
+				new Choice(Arrays.asList(lower, upper, number, test)).size());
+	}
+
 }

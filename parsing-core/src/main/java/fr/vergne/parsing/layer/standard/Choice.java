@@ -60,13 +60,22 @@ public class Choice extends AbstractLayer {
 		throw new ParsingException(getRegex(), content);
 	}
 
-	@Override
-	public String toString() {
-		List<String> choices = new LinkedList<String>();
-		for (Layer layer : alternatives) {
-			choices.add(layer.getClass().getSimpleName());
-		}
-		return "CHOOSE" + choices;
+	/**
+	 * 
+	 * @return the number of alternatives managed by this {@link Choice}
+	 */
+	public int size() {
+		return alternatives.size();
+	}
+
+	/**
+	 * 
+	 * @param index
+	 *            the alternative index
+	 * @return the alternative
+	 */
+	public Layer getAlternative(int index) {
+		return alternatives.get(index);
 	}
 
 	/**
@@ -75,5 +84,14 @@ public class Choice extends AbstractLayer {
 	 */
 	public Layer getCurrent() {
 		return alternatives.get(currentAlternative);
+	}
+
+	@Override
+	public String toString() {
+		List<String> choices = new LinkedList<String>();
+		for (Layer layer : alternatives) {
+			choices.add(layer.getClass().getSimpleName());
+		}
+		return "CHOICE" + choices;
 	}
 }
