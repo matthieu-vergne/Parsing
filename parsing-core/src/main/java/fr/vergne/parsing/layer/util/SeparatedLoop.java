@@ -1,5 +1,7 @@
 package fr.vergne.parsing.layer.util;
 
+import java.util.Iterator;
+
 import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.exception.ParsingException;
 import fr.vergne.parsing.layer.standard.AbstractLayer;
@@ -23,7 +25,7 @@ import fr.vergne.parsing.layer.standard.Suite;
  * @param <Separator>
  */
 public class SeparatedLoop<Element extends Layer, Separator extends Layer>
-		extends AbstractLayer {
+		extends AbstractLayer implements Iterable<Element> {
 
 	private final Choice overall;
 	private final Option<Element> option;
@@ -107,5 +109,29 @@ public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 			throw new IndexOutOfBoundsException("The index (" + index
 					+ ") should be between 0 and " + size());
 		}
+	}
+
+	@Override
+	public Iterator<Element> iterator() {
+		return new Iterator<Element>() {
+
+			private int currentIndex = -1;
+
+			@Override
+			public boolean hasNext() {
+				return currentIndex < size() - 1;
+			}
+
+			@Override
+			public Element next() {
+				return get(++currentIndex);
+			}
+
+			@Override
+			public void remove() {
+				throw new RuntimeException(
+						"You cannot remove an element from this iterator.");
+			}
+		};
 	}
 }

@@ -2,6 +2,8 @@ package fr.vergne.parsing.layer.util;
 
 import static org.junit.Assert.*;
 
+import java.util.Iterator;
+
 import org.junit.Test;
 
 import fr.vergne.parsing.layer.exception.ParsingException;
@@ -174,6 +176,38 @@ public class SeparatedLoopTest {
 			fail("No exception thrown.");
 		} catch (ParsingException e) {
 		}
+	}
+	
+	@Test
+	public void testIterator() {
+		SeparatedLoop<IntNumber, Atom> separatedLoop = new SeparatedLoop<IntNumber, Atom>(
+				new Generator<IntNumber>() {
+
+					@Override
+					public IntNumber generates() {
+						return new IntNumber();
+					}
+				}, new Generator<Atom>() {
+
+					@Override
+					public Atom generates() {
+						return new Atom("-");
+					}
+				});
+
+		separatedLoop.setContent("1-2-3-4-5");
+		Iterator<IntNumber> iterator = separatedLoop.iterator();
+		assertTrue(iterator.hasNext());
+		assertEquals("1", iterator.next().getContent());
+		assertTrue(iterator.hasNext());
+		assertEquals("2", iterator.next().getContent());
+		assertTrue(iterator.hasNext());
+		assertEquals("3", iterator.next().getContent());
+		assertTrue(iterator.hasNext());
+		assertEquals("4", iterator.next().getContent());
+		assertTrue(iterator.hasNext());
+		assertEquals("5", iterator.next().getContent());
+		assertFalse(iterator.hasNext());
 	}
 
 }
