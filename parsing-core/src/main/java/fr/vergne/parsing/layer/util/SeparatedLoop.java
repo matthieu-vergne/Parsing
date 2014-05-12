@@ -5,7 +5,6 @@ import java.util.Iterator;
 import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.exception.ParsingException;
 import fr.vergne.parsing.layer.standard.AbstractLayer;
-import fr.vergne.parsing.layer.standard.Choice;
 import fr.vergne.parsing.layer.standard.GreedyMode;
 import fr.vergne.parsing.layer.standard.Loop;
 import fr.vergne.parsing.layer.standard.Loop.Generator;
@@ -27,8 +26,7 @@ import fr.vergne.parsing.layer.standard.Suite;
 public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 		extends AbstractLayer implements Iterable<Element> {
 
-	private final Choice overall;
-	private final Option<Element> option;
+	private final Option<Suite> overall;
 	private final Element head;
 	private final Loop<Suite> loop;
 
@@ -43,9 +41,7 @@ public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 						itemGenerator.generates());
 			}
 		});
-		option = new Option<Element>(head);
-		overall = new Choice(option, new Suite(head, loop));
-		overall.setReferenceAlternative(overall.getAlternative(1));
+		overall = new Option<Suite>(new Suite(head, loop));
 	}
 
 	@Override
@@ -73,7 +69,7 @@ public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 	}
 
 	public void setMode(GreedyMode mode) {
-		option.setMode(mode);
+		overall.setMode(mode);
 		loop.setMode(mode);
 	}
 
@@ -82,8 +78,8 @@ public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 	 * @return the number of {@link Element}s of this {@link SeparatedLoop}
 	 */
 	public int size() {
-		if (overall.getCurrent() instanceof Option) {
-			return option.isPresent() ? 1 : 0;
+		if (!overall.isPresent()) {
+			return 0;
 		} else {
 			return 1 + loop.size();
 		}
@@ -99,11 +95,7 @@ public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 	 */
 	@SuppressWarnings("unchecked")
 	public Element get(int index) throws IndexOutOfBoundsException {
-		if (overall.getCurrent() instanceof Option && option.isPresent()
-				&& index == 0) {
-			return option.getOption();
-		} else if (overall.getCurrent() instanceof Suite
-				&& loop.size() > index - 1 && index >= 0) {
+		if (overall.isPresent() && loop.size() > index - 1 && index >= 0) {
 			return index == 0 ? head : (Element) loop.get(index - 1).get(1);
 		} else {
 			throw new IndexOutOfBoundsException("The index (" + index
