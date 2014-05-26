@@ -34,7 +34,7 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 	private final int max;
 	private CLayer template = null;
 	private Integer currentIndex = null;
-	public final Logger log = LoggerConfiguration.getSimpleLogger();
+	public static final Logger log = LoggerConfiguration.getSimpleLogger();
 	private final ContentListener templateUpdater = new ContentListener() {
 
 		@Override
