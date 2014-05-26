@@ -269,7 +269,7 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 	public String getContent() {
 		String content = "";
 		for (int i = 0; i < contents.size(); i++) {
-			content += get(i).getContent();
+			content += getContent(i);
 		}
 		return content;
 	}
@@ -384,6 +384,30 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 				getTemplate().setContent(contents.get(index));
 				return getTemplate();
 			}
+		}
+	}
+
+	/**
+	 * This method provides the content of the index-th occurrence found in the
+	 * total content. If you want to retrieve the content of each occurrence,
+	 * you should prefer this method to {@link #get(int)} followed by
+	 * {@link Layer#getContent()}, in order to minimize the cost of the
+	 * instantiation.
+	 * 
+	 * @param index
+	 *            the index of the occurrence
+	 * @return the content of the occurrence
+	 * @throws IndexOutOfBoundsException
+	 *             if the index does not correspond to a current occurrence
+	 */
+	public String getContent(final int index) {
+		if (index >= size() || index < 0) {
+			throw new IndexOutOfBoundsException(index
+					+ " is not between 0 and " + size());
+		} else if (occurrences.get(index) != null) {
+			return occurrences.get(index).getContent();
+		} else {
+			return contents.get(index);
 		}
 	}
 

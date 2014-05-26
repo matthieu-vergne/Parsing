@@ -82,6 +82,51 @@ public class LoopTest {
 	}
 
 	@Test
+	public void testGetOccurrenceContent() {
+		for (Loop<Formula> loop : createLoops("[a-zA-Z\n]", 0, 10)) {
+			{
+				String content = "test";
+				loop.setContent(content);
+				assertEquals("t", loop.getContent(0));
+				assertEquals("e", loop.getContent(1));
+				assertEquals("s", loop.getContent(2));
+				assertEquals("t", loop.getContent(3));
+			}
+			{
+				String content = "test\ntest";
+				loop.setContent(content);
+				assertEquals("t", loop.getContent(0));
+				assertEquals("e", loop.getContent(1));
+				assertEquals("s", loop.getContent(2));
+				assertEquals("t", loop.getContent(3));
+				assertEquals("\n", loop.getContent(4));
+				assertEquals("t", loop.getContent(5));
+				assertEquals("e", loop.getContent(6));
+				assertEquals("s", loop.getContent(7));
+				assertEquals("t", loop.getContent(8));
+			}
+		}
+	}
+
+	@Test
+	public void testInexistentOccurrenceContent() {
+		for (Loop<Formula> loop : createLoops("[a-zA-Z\n]", 0, 10)) {
+			String content = "test";
+			loop.setContent(content);
+			try {
+				loop.getContent(-1);
+				fail("Exception not thrown.");
+			} catch (IndexOutOfBoundsException e) {
+			}
+			try {
+				loop.getContent(4);
+				fail("Exception not thrown.");
+			} catch (IndexOutOfBoundsException e) {
+			}
+		}
+	}
+
+	@Test
 	public void testDifferent() {
 		for (Loop<Formula> loop : createLoops("[a-zA-Z\n]", 0, 20)) {
 			try {
