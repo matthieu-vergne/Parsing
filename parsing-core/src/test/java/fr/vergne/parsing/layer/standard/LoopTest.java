@@ -9,10 +9,18 @@ import java.util.LinkedList;
 import org.junit.Test;
 
 import fr.vergne.parsing.layer.Layer;
+import fr.vergne.parsing.layer.LayerTest;
 import fr.vergne.parsing.layer.exception.ParsingException;
 import fr.vergne.parsing.layer.standard.Loop.Generator;
 
-public class LoopTest {
+public class LoopTest extends LayerTest {
+
+	@Override
+	protected Layer instantiateFilledLayer() {
+		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]"), false);
+		loop.setContent("test");
+		return loop;
+	}
 
 	/**
 	 * This methods generates several {@link Loop}s to cover the different

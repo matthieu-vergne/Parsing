@@ -7,9 +7,21 @@ import java.util.Arrays;
 import org.junit.Test;
 
 import fr.vergne.parsing.layer.Layer;
+import fr.vergne.parsing.layer.LayerTest;
 import fr.vergne.parsing.layer.exception.ParsingException;
 
-public class ChoiceTest {
+public class ChoiceTest extends LayerTest {
+	
+	@Override
+	protected Layer instantiateFilledLayer() {
+		String content = "test";
+		Formula contiguous = new Formula("[a-z]+");
+		Formula newline = new Formula("[A-Z\n]+");
+		Formula empty = new Formula("");
+		Choice choice = new Choice(contiguous, newline, empty);
+		choice.setContent(content);
+		return choice;
+	}
 
 	@Test
 	public void testSetGetContent() {

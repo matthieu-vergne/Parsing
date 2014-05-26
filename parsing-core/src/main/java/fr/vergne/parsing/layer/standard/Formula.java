@@ -1,5 +1,8 @@
 package fr.vergne.parsing.layer.standard;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringReader;
 import java.util.regex.Pattern;
 
 import fr.vergne.parsing.layer.Layer;
@@ -39,6 +42,18 @@ public class Formula extends AbstractLayer {
 	@Override
 	public String getContent() {
 		return content;
+	}
+
+	@Override
+	public InputStream getInputStream() {
+		return new InputStream() {
+			private final StringReader reader = new StringReader(content);
+
+			@Override
+			public int read() throws IOException {
+				return reader.read();
+			}
+		};
 	}
 
 	@Override

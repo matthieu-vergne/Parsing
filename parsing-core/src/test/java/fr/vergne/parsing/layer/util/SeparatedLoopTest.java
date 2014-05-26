@@ -6,11 +6,33 @@ import java.util.Iterator;
 
 import org.junit.Test;
 
+import fr.vergne.parsing.layer.Layer;
+import fr.vergne.parsing.layer.LayerTest;
 import fr.vergne.parsing.layer.exception.ParsingException;
 import fr.vergne.parsing.layer.standard.Atom;
 import fr.vergne.parsing.layer.standard.Loop.Generator;
 
-public class SeparatedLoopTest {
+public class SeparatedLoopTest extends LayerTest {
+
+	@Override
+	protected Layer instantiateFilledLayer() {
+		SeparatedLoop<IntNumber, Atom> separatedLoop = new SeparatedLoop<IntNumber, Atom>(
+				new Generator<IntNumber>() {
+
+					@Override
+					public IntNumber generates() {
+						return new IntNumber();
+					}
+				}, new Generator<Atom>() {
+
+					@Override
+					public Atom generates() {
+						return new Atom("-");
+					}
+				});
+		separatedLoop.setContent("9-8-7");
+		return separatedLoop;
+	}
 
 	@Test
 	public void testSize() {
@@ -177,7 +199,7 @@ public class SeparatedLoopTest {
 		} catch (ParsingException e) {
 		}
 	}
-	
+
 	@Test
 	public void testIterator() {
 		SeparatedLoop<IntNumber, Atom> separatedLoop = new SeparatedLoop<IntNumber, Atom>(

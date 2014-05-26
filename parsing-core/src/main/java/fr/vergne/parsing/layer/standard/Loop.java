@@ -1,5 +1,8 @@
 package fr.vergne.parsing.layer.standard;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringReader;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -272,6 +275,45 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 			content += getContent(i);
 		}
 		return content;
+	}
+
+	@Override
+	public InputStream getInputStream() {
+		return new InputStream() {
+			private InputStream reader = new InputStream() {
+
+				@Override
+				public int read() throws IOException {
+					return -1;
+				}
+			};
+			private int index = 0;
+
+			@Override
+			public int read() throws IOException {
+				int character = reader.read();
+				if (character == -1 && index < contents.size()) {
+					if (occurrences.get(index) != null) {
+						reader = occurrences.get(index).getInputStream();
+					} else {
+						reader = new InputStream() {
+							private final StringReader reader = new StringReader(
+									contents.get(index));
+
+							@Override
+							public int read() throws IOException {
+								return reader.read();
+							}
+						};
+					}
+					index++;
+					character = reader.read();
+				} else {
+					// keep the current reader
+				}
+				return character;
+			}
+		};
 	}
 
 	/**

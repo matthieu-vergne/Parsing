@@ -1,5 +1,7 @@
 package fr.vergne.parsing.layer;
 
+import java.io.InputStream;
+
 import javax.sound.midi.Sequence;
 
 import fr.vergne.parsing.layer.exception.ParsingException;
@@ -54,6 +56,16 @@ public interface Layer {
 	 * @return the current content of this {@link Layer}
 	 */
 	public String getContent();
+
+	/**
+	 * This method should provide an {@link InputStream} which retrieves the
+	 * current content of this {@link Layer}. This method is intended to fasten
+	 * the writing of the content, avoiding the need to rebuild and keep in
+	 * memory the full content.
+	 * 
+	 * @return an {@link InputStream} on this {@link Layer}
+	 */
+	public InputStream getInputStream();
 
 	/**
 	 * 

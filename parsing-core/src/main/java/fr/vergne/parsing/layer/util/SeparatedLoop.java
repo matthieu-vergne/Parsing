@@ -1,5 +1,8 @@
 package fr.vergne.parsing.layer.util;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringReader;
 import java.util.Iterator;
 
 import fr.vergne.parsing.layer.Layer;
@@ -62,6 +65,18 @@ public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 	@Override
 	public String getContent() {
 		return overall.getContent();
+	}
+
+	@Override
+	public InputStream getInputStream() {
+		return new InputStream() {
+			private final StringReader reader = new StringReader(getContent());
+
+			@Override
+			public int read() throws IOException {
+				return reader.read();
+			}
+		};
 	}
 
 	public GreedyMode getMode() {

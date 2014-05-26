@@ -1,7 +1,10 @@
 package fr.vergne.parsing.layer.standard;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -73,6 +76,33 @@ public class Suite extends AbstractLayer {
 			content += layer.getContent();
 		}
 		return content;
+	}
+
+	@Override
+	public InputStream getInputStream() {
+		return new InputStream() {
+			private InputStream reader = new InputStream() {
+
+				@Override
+				public int read() throws IOException {
+					return -1;
+				}
+			};
+			private final Iterator<? extends Layer> iterator = sequence
+					.iterator();
+
+			@Override
+			public int read() throws IOException {
+				int character = reader.read();
+				if (character == -1 && iterator.hasNext()) {
+					reader = iterator.next().getInputStream();
+					character = reader.read();
+				} else {
+					// current reader not finished yet
+				}
+				return character;
+			}
+		};
 	}
 
 	@Override

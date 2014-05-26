@@ -1,5 +1,8 @@
 package fr.vergne.parsing.layer.standard;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringReader;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -48,6 +51,18 @@ public class Choice extends AbstractLayer {
 	@Override
 	public String getContent() {
 		return getCurrent().getContent();
+	}
+
+	@Override
+	public InputStream getInputStream() {
+		return new InputStream() {
+			private final StringReader reader = new StringReader(getContent());
+
+			@Override
+			public int read() throws IOException {
+				return reader.read();
+			}
+		};
 	}
 
 	@Override

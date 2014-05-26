@@ -4,10 +4,19 @@ import static org.junit.Assert.*;
 
 import org.junit.Test;
 
+import fr.vergne.parsing.layer.Layer;
+import fr.vergne.parsing.layer.LayerTest;
 import fr.vergne.parsing.layer.exception.ParsingException;
 
-public class AtomTest {
+public class AtomTest extends LayerTest {
 
+	@Override
+	protected Layer instantiateFilledLayer() {
+		Atom atom = new Atom("test");
+		atom.setContent("test");
+		return atom;
+	}
+	
 	@Test
 	public void testSetGetContent() {
 		{

@@ -6,9 +6,22 @@ import java.util.Arrays;
 
 import org.junit.Test;
 
+import fr.vergne.parsing.layer.Layer;
+import fr.vergne.parsing.layer.LayerTest;
 import fr.vergne.parsing.layer.exception.ParsingException;
 
-public class SuiteTest {
+public class SuiteTest extends LayerTest {
+
+	@Override
+	protected Layer instantiateFilledLayer() {
+		Formula letter1 = new Formula("[a-zA-Z]");
+		Atom letter2 = new Atom("e");
+		Atom letter3 = new Atom("s");
+		Formula letter4 = new Formula("[a-zA-Z]");
+		Suite suite = new Suite(letter1, letter2, letter3, letter4);
+		suite.setContent("test");
+		return suite;
+	}
 
 	@Test
 	public void testSetGetContent() {

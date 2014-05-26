@@ -4,9 +4,18 @@ import static org.junit.Assert.*;
 
 import org.junit.Test;
 
+import fr.vergne.parsing.layer.Layer;
+import fr.vergne.parsing.layer.LayerTest;
 import fr.vergne.parsing.layer.exception.ParsingException;
 
-public class OptionTest {
+public class OptionTest extends LayerTest {
+
+	@Override
+	protected Layer instantiateFilledLayer() {
+		Option<Formula> option = new Option<Formula>(new Formula("[abc]+"));
+		option.setContent("aabbababcbcbc");
+		return option;
+	}
 
 	@Test
 	public void testSetGetContent() {

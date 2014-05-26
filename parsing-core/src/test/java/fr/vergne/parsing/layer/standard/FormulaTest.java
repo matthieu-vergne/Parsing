@@ -4,10 +4,20 @@ import static org.junit.Assert.*;
 
 import org.junit.Test;
 
+import fr.vergne.parsing.layer.Layer;
+import fr.vergne.parsing.layer.LayerTest;
 import fr.vergne.parsing.layer.exception.ParsingException;
 
-public class FormulaTest {
+public class FormulaTest extends LayerTest {
 
+	@Override
+	protected Layer instantiateFilledLayer() {
+		String content = "test";
+		Formula formula = new Formula("[a-z]{4}");
+		formula.setContent(content);
+		return formula;
+	}
+	
 	@Test
 	public void testSetGetContent() {
 		{
