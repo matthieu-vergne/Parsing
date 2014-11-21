@@ -1,0 +1,12 @@
+query	stakeholders	roles	topics	concepts	rounds	time (ms)
+tiramisu	3	0	3	3	10000	11642
+tiramisu	3	0	2	1	1000	3934
+tiramisu	3	0	2	3	3000	3958
+tiramisu	3	0	2	10	300	600
+mongolian	3	0	1	10	1000	9588
+tiramisu	3	0	2	10	30	227
+mongolian	3	0	3	10	30	28237
+mongolian	3	0	3	1	10000	12099
+mongolian	3	0	1	3	100	433
+tiramisu	3	0	3	3	300	278
+mongolian	3	0	1	3	100	447
