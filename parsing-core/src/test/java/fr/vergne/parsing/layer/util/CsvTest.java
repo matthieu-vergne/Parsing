@@ -51,6 +51,9 @@ public class CsvTest {
 
 		csv.setContent("H1,H2,H3\nA1,A2,A3\nB1,B2,B3");
 		assertEquals(2, csv.getRowsCount());
+
+		csv.setContent("H1,H2,H3\nA1,A2,A3\nB1,B2,B3\n");
+		assertEquals(2, csv.getRowsCount());
 	}
 
 	@Test

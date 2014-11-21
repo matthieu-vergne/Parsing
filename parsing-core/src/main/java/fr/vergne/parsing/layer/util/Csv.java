@@ -186,7 +186,7 @@ public class Csv extends Suite {
 				public Atom generates() {
 					return new Atom("" + separator);
 				}
-			});
+			}, 1, Integer.MAX_VALUE);
 			this.assigner = assigner;
 			setMode(GreedyMode.POSSESSIVE);
 		}
