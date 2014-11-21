@@ -231,5 +231,52 @@ public class SeparatedLoopTest extends LayerTest {
 		assertEquals("5", iterator.next().getContent());
 		assertFalse(iterator.hasNext());
 	}
+	
+	@Test
+	public void testMinMax() {
+		SeparatedLoop<IntNumber, Atom> separatedLoop = new SeparatedLoop<IntNumber, Atom>(
+				new Generator<IntNumber>() {
+
+					@Override
+					public IntNumber generates() {
+						return new IntNumber();
+					}
+				}, new Generator<Atom>() {
+
+					@Override
+					public Atom generates() {
+						return new Atom("-");
+					}
+				}, 2, 5);
+
+		try {
+			separatedLoop.setContent("");
+			fail("No exception thrown.");
+		} catch (ParsingException e) {
+		}
+
+		try {
+			separatedLoop.setContent("1");
+			fail("No exception thrown.");
+		} catch (ParsingException e) {
+		}
+
+		separatedLoop.setContent("1-2");
+		separatedLoop.setContent("1-2-3");
+		separatedLoop.setContent("1-2-3-4");
+		separatedLoop.setContent("1-2-3-4-5");
+		
+		try {
+			separatedLoop.setContent("1-2-3-4-5-6");
+			fail("No exception thrown.");
+		} catch (ParsingException e) {
+		}
+		
+		try {
+			separatedLoop.setContent("1-2-3-4-5-6-7");
+			fail("No exception thrown.");
+		} catch (ParsingException e) {
+		}
+	}
 
 }

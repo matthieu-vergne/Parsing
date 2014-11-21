@@ -29,13 +29,20 @@ import fr.vergne.parsing.layer.standard.Suite;
 public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 		extends AbstractLayer implements Iterable<Element> {
 
-	private final Option<Suite> overall;
+	private final Layer overall;
 	private final Element head;
 	private final Loop<Suite> loop;
 
 	public SeparatedLoop(final Generator<Element> itemGenerator,
 			final Generator<Separator> separatorGenerator) {
+		this(itemGenerator, separatorGenerator, 0, Integer.MAX_VALUE);
+	}
+
+	public SeparatedLoop(final Generator<Element> itemGenerator,
+			final Generator<Separator> separatorGenerator, int min, int max) {
 		head = itemGenerator.generates();
+		int loopMin = Math.max(0, min - 1);
+		int loopMax = max == Integer.MAX_VALUE ? max : Math.max(0, max - 1);
 		loop = new Loop<Suite>(new Generator<Suite>() {
 
 			@Override
@@ -43,8 +50,10 @@ public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 				return new Suite(separatorGenerator.generates(),
 						itemGenerator.generates());
 			}
-		});
-		overall = new Option<Suite>(new Suite(head, loop));
+		}, loopMin, loopMax);
+
+		Suite suite = new Suite(head, loop);
+		overall = min == 0 ? new Option<Suite>(suite) : suite;
 	}
 
 	@Override
@@ -83,8 +92,13 @@ public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 		return loop.getMode();
 	}
 
+	@SuppressWarnings("unchecked")
 	public void setMode(GreedyMode mode) {
-		overall.setMode(mode);
+		if (overall instanceof Option) {
+			((Option<Suite>) overall).setMode(mode);
+		} else {
+			// no mode for suites
+		}
 		loop.setMode(mode);
 	}
 
@@ -92,8 +106,9 @@ public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 	 * 
 	 * @return the number of {@link Element}s of this {@link SeparatedLoop}
 	 */
+	@SuppressWarnings("unchecked")
 	public int size() {
-		if (!overall.isPresent()) {
+		if (overall instanceof Option && !((Option<Suite>) overall).isPresent()) {
 			return 0;
 		} else {
 			return 1 + loop.size();
@@ -110,7 +125,8 @@ public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 	 */
 	@SuppressWarnings("unchecked")
 	public Element get(int index) throws IndexOutOfBoundsException {
-		if (overall.isPresent() && loop.size() > index - 1 && index >= 0) {
+		if ((overall instanceof Suite || ((Option<Suite>) overall).isPresent())
+				&& loop.size() > index - 1 && index >= 0) {
 			return index == 0 ? head : (Element) loop.get(index - 1).get(1);
 		} else {
 			throw new IndexOutOfBoundsException("The index (" + index
