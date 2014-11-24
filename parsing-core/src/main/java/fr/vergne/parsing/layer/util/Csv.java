@@ -70,7 +70,7 @@ public class Csv extends Suite {
 	 *            {@link Transformer} to assign to each {@link Value}
 	 */
 	public Csv(final char separator, final TranformerAssigner assigner) {
-		super(new Header(separator, assigner), new Newline(),
+		super(new Header(separator), new Newline(),
 				new SeparatedLoop<Record, Newline>(new Generator<Record>() {
 					@Override
 					public Record generates() {
@@ -82,8 +82,8 @@ public class Csv extends Suite {
 						return new Newline();
 					}
 				}), new Option<Newline>(new Newline()));
-		this.<SeparatedLoop<Record, Newline>> get(2)
-				.setMode(GreedyMode.POSSESSIVE);
+		this.<SeparatedLoop<Record, Newline>> get(2).setMode(
+				GreedyMode.POSSESSIVE);
 	}
 
 	/**
@@ -108,32 +108,8 @@ public class Csv extends Suite {
 	 * 
 	 */
 	public static class Value extends Formula {
-		private Transformer<?> transformer = null;
-		private Object transformedValue = null;
-
 		public Value(char separator) {
 			super("[^" + separator + "\\n\\r]++");
-		}
-
-		/**
-		 * 
-		 * @param transformer
-		 *            the {@link Transformer} to use for {@link #transform()}
-		 */
-		public void setTransformer(Transformer<?> transformer) {
-			this.transformer = transformer;
-			transformedValue = null;
-		}
-
-		/**
-		 * 
-		 * @return the object which corresponds to this {@link Value}'s content
-		 */
-		@SuppressWarnings("unchecked")
-		public <T> T transform() {
-			transformedValue = transformedValue == null ? transformer
-					.transform(getContent()) : transformedValue;
-			return (T) transformedValue;
 		}
 	}
 
@@ -172,10 +148,8 @@ public class Csv extends Suite {
 	 * @author Matthieu Vergne <matthieu.vergne@gmail.com>
 	 * 
 	 */
-	private static class Row extends SeparatedLoop<Value, Atom> {
-		private final TranformerAssigner assigner;
-
-		public Row(final char separator, final TranformerAssigner assigner) {
+	public static class Row extends SeparatedLoop<Value, Atom> {
+		public Row(final char separator) {
 			super(new Generator<Value>() {
 				@Override
 				public Value generates() {
@@ -187,15 +161,7 @@ public class Csv extends Suite {
 					return new Atom("" + separator);
 				}
 			}, 1, Integer.MAX_VALUE);
-			this.assigner = assigner;
 			setMode(GreedyMode.POSSESSIVE);
-		}
-
-		@Override
-		public Value get(int index) throws IndexOutOfBoundsException {
-			Value value = super.get(index);
-			value.setTransformer(assigner.assign(index));
-			return value;
 		}
 	}
 
@@ -208,38 +174,34 @@ public class Csv extends Suite {
 	 * 
 	 */
 	public static class Header extends Row {
-		public Header(char separator, final TranformerAssigner assigner) {
-			super(separator, new TranformerAssigner() {
-
-				@Override
-				public Transformer<?> assign(int valueIndex) {
-					/*
-					 * First, check that the assigner used for the other rows is
-					 * able to provide a Transformer for such an index. If not,
-					 * then an exception should be thrown. In such a case, we
-					 * reuse this exception by throwing it too. Otherwise, we
-					 * just use the default transformer which keep the String
-					 * content as is.
-					 */
-					assigner.assign(valueIndex);
-
-					return STRING_TRANSFORMER;
-				}
-			});
+		public Header(char separator) {
+			super(separator);
 		}
 	}
 
 	/**
 	 * An {@link Record} is a particular {@link Row} inside a {@link Csv}. It
-	 * represents a specific "instance" of the {@link Header}, meaning a complete entry
-	 * with all the values set.
+	 * represents a specific "instance" of the {@link Header}, meaning a
+	 * complete entry with all the values set.
 	 * 
 	 * @author Matthieu Vergne <matthieu.vergne@gmail.com>
 	 * 
 	 */
 	public static class Record extends Row {
+		private final TranformerAssigner assigner;
+
 		public Record(char separator, final TranformerAssigner assigner) {
-			super(separator, assigner);
+			super(separator);
+			this.assigner = assigner;
+		}
+
+		public String getStringValue(int index) {
+			return get(index).getContent();
+		}
+
+		@SuppressWarnings("unchecked")
+		public <T> T getObjectValue(int index) {
+			return (T) assigner.assign(index).transform(getStringValue(index));
 		}
 	}
 

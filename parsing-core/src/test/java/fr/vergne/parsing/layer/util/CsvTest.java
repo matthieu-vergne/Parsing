@@ -13,7 +13,6 @@ import org.junit.Test;
 import fr.vergne.parsing.layer.util.Csv.Record;
 import fr.vergne.parsing.layer.util.Csv.TranformerAssigner;
 import fr.vergne.parsing.layer.util.Csv.Transformer;
-import fr.vergne.parsing.layer.util.Csv.Value;
 
 public class CsvTest {
 
@@ -88,19 +87,19 @@ public class CsvTest {
 		csv.setContent("H1,H2,H3\nA1,A2,A3\nB1,B2,B3\nC1,C2,C3");
 
 		Record record = csv.getRecord(0);
-		assertEquals("A1", record.get(0).getContent());
-		assertEquals("A2", record.get(1).getContent());
-		assertEquals("A3", record.get(2).getContent());
+		assertEquals("A1", record.getStringValue(0));
+		assertEquals("A2", record.getStringValue(1));
+		assertEquals("A3", record.getStringValue(2));
 
 		record = csv.getRecord(1);
-		assertEquals("B1", record.get(0).getContent());
-		assertEquals("B2", record.get(1).getContent());
-		assertEquals("B3", record.get(2).getContent());
+		assertEquals("B1", record.getStringValue(0));
+		assertEquals("B2", record.getStringValue(1));
+		assertEquals("B3", record.getStringValue(2));
 
 		record = csv.getRecord(2);
-		assertEquals("C1", record.get(0).getContent());
-		assertEquals("C2", record.get(1).getContent());
-		assertEquals("C3", record.get(2).getContent());
+		assertEquals("C1", record.getStringValue(0));
+		assertEquals("C2", record.getStringValue(1));
+		assertEquals("C3", record.getStringValue(2));
 	}
 
 	@Test
@@ -121,14 +120,14 @@ public class CsvTest {
 		csv.setContent("H1,H2,H3\n1,2,3\n6,5,4");
 
 		Record record = csv.getRecord(0);
-		assertEquals(1, record.get(0).transform());
-		assertEquals(2, record.get(1).transform());
-		assertEquals(3, record.get(2).transform());
+		assertEquals(1, record.getObjectValue(0));
+		assertEquals(2, record.getObjectValue(1));
+		assertEquals(3, record.getObjectValue(2));
 
 		record = csv.getRecord(1);
-		assertEquals(6, record.get(0).transform());
-		assertEquals(5, record.get(1).transform());
-		assertEquals(4, record.get(2).transform());
+		assertEquals(6, record.getObjectValue(0));
+		assertEquals(5, record.getObjectValue(1));
+		assertEquals(4, record.getObjectValue(2));
 	}
 
 	@Test
@@ -149,30 +148,7 @@ public class CsvTest {
 		csv.setContent("H1,H2,H3\n1,2,3\n6,5,4");
 
 		Record record = csv.getRecord(0);
-		assertTrue(record.get(0).transform() instanceof Integer);
-	}
-
-	@Test
-	public void testTransformersSetWithIterator() {
-		Csv csv = new Csv(new TranformerAssigner() {
-
-			@Override
-			public Transformer<?> assign(int valueIndex) {
-				return new Transformer<Integer>() {
-
-					@Override
-					public Integer transform(String value) {
-						return Integer.parseInt(value);
-					}
-				};
-			}
-		});
-		csv.setContent("H1,H2,H3\n1,2,3\n6,5,4");
-
-		Record record = csv.getRecord(0);
-		for (Value value : record) {
-			assertTrue(value.transform() instanceof Integer);
-		}
+		assertTrue(record.getObjectValue(0) instanceof Integer);
 	}
 
 	@Test
