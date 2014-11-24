@@ -10,7 +10,7 @@ import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 
-import fr.vergne.parsing.layer.util.Csv.Row;
+import fr.vergne.parsing.layer.util.Csv.Record;
 import fr.vergne.parsing.layer.util.Csv.TranformerAssigner;
 import fr.vergne.parsing.layer.util.Csv.Transformer;
 import fr.vergne.parsing.layer.util.Csv.Value;
@@ -40,20 +40,20 @@ public class CsvTest {
 	}
 
 	@Test
-	public void testRowCount() {
+	public void testRecordCount() {
 		Csv csv = new Csv();
 
 		csv.setContent("H1,H2,H3\nA1,A2,A3");
-		assertEquals(1, csv.getRowsCount());
+		assertEquals(1, csv.getRecordsCount());
 
 		csv.setContent("H1,H2,H3\nA1,A2,A3\nB1,B2,B3\nC1,C2,C3");
-		assertEquals(3, csv.getRowsCount());
+		assertEquals(3, csv.getRecordsCount());
 
 		csv.setContent("H1,H2,H3\nA1,A2,A3\nB1,B2,B3");
-		assertEquals(2, csv.getRowsCount());
+		assertEquals(2, csv.getRecordsCount());
 
 		csv.setContent("H1,H2,H3\nA1,A2,A3\nB1,B2,B3\n");
-		assertEquals(2, csv.getRowsCount());
+		assertEquals(2, csv.getRecordsCount());
 	}
 
 	@Test
@@ -68,11 +68,11 @@ public class CsvTest {
 	}
 
 	@Test
-	public void testGetRows() {
+	public void testGetRecords() {
 		Csv csv = new Csv();
 
 		csv.setContent("H1,H2,H3\nA1,A2,A3\nB1,B2,B3\nC1,C2,C3");
-		Iterator<Row> iterator = csv.getRows().iterator();
+		Iterator<Record> iterator = csv.getRecords().iterator();
 		assertTrue(iterator.hasNext());
 		assertEquals("A1,A2,A3", iterator.next().getContent());
 		assertTrue(iterator.hasNext());
@@ -83,24 +83,24 @@ public class CsvTest {
 	}
 
 	@Test
-	public void testRowValues() {
+	public void testRecordValues() {
 		Csv csv = new Csv();
 		csv.setContent("H1,H2,H3\nA1,A2,A3\nB1,B2,B3\nC1,C2,C3");
 
-		Row row = csv.getRow(0);
-		assertEquals("A1", row.get(0).getContent());
-		assertEquals("A2", row.get(1).getContent());
-		assertEquals("A3", row.get(2).getContent());
+		Record record = csv.getRecord(0);
+		assertEquals("A1", record.get(0).getContent());
+		assertEquals("A2", record.get(1).getContent());
+		assertEquals("A3", record.get(2).getContent());
 
-		row = csv.getRow(1);
-		assertEquals("B1", row.get(0).getContent());
-		assertEquals("B2", row.get(1).getContent());
-		assertEquals("B3", row.get(2).getContent());
+		record = csv.getRecord(1);
+		assertEquals("B1", record.get(0).getContent());
+		assertEquals("B2", record.get(1).getContent());
+		assertEquals("B3", record.get(2).getContent());
 
-		row = csv.getRow(2);
-		assertEquals("C1", row.get(0).getContent());
-		assertEquals("C2", row.get(1).getContent());
-		assertEquals("C3", row.get(2).getContent());
+		record = csv.getRecord(2);
+		assertEquals("C1", record.get(0).getContent());
+		assertEquals("C2", record.get(1).getContent());
+		assertEquals("C3", record.get(2).getContent());
 	}
 
 	@Test
@@ -120,15 +120,15 @@ public class CsvTest {
 		});
 		csv.setContent("H1,H2,H3\n1,2,3\n6,5,4");
 
-		Row row = csv.getRow(0);
-		assertEquals(1, row.get(0).transform());
-		assertEquals(2, row.get(1).transform());
-		assertEquals(3, row.get(2).transform());
+		Record record = csv.getRecord(0);
+		assertEquals(1, record.get(0).transform());
+		assertEquals(2, record.get(1).transform());
+		assertEquals(3, record.get(2).transform());
 
-		row = csv.getRow(1);
-		assertEquals(6, row.get(0).transform());
-		assertEquals(5, row.get(1).transform());
-		assertEquals(4, row.get(2).transform());
+		record = csv.getRecord(1);
+		assertEquals(6, record.get(0).transform());
+		assertEquals(5, record.get(1).transform());
+		assertEquals(4, record.get(2).transform());
 	}
 
 	@Test
@@ -148,8 +148,8 @@ public class CsvTest {
 		});
 		csv.setContent("H1,H2,H3\n1,2,3\n6,5,4");
 
-		Row row = csv.getRow(0);
-		assertTrue(row.get(0).transform() instanceof Integer);
+		Record record = csv.getRecord(0);
+		assertTrue(record.get(0).transform() instanceof Integer);
 	}
 
 	@Test
@@ -169,21 +169,23 @@ public class CsvTest {
 		});
 		csv.setContent("H1,H2,H3\n1,2,3\n6,5,4");
 
-		Row row = csv.getRow(0);
-		for (Value value : row) {
+		Record record = csv.getRecord(0);
+		for (Value value : record) {
 			assertTrue(value.transform() instanceof Integer);
 		}
 	}
-	
+
 	@Test
 	public void testSmallFile() throws IOException {
 		Csv csv = new Csv('\t');
-		csv.setContent(FileUtils.readFileToString(new File("src/test/resources/smallFile.csv")));
+		csv.setContent(FileUtils.readFileToString(new File(
+				"src/test/resources/smallFile.csv")));
 	}
-	
+
 	@Test
 	public void testBigFile() throws IOException {
 		Csv csv = new Csv('\t');
-		csv.setContent(FileUtils.readFileToString(new File("src/test/resources/bigFile.csv")));
+		csv.setContent(FileUtils.readFileToString(new File(
+				"src/test/resources/bigFile.csv")));
 	}
 }

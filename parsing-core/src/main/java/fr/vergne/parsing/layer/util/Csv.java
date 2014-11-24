@@ -71,10 +71,10 @@ public class Csv extends Suite {
 	 */
 	public Csv(final char separator, final TranformerAssigner assigner) {
 		super(new Header(separator, assigner), new Newline(),
-				new SeparatedLoop<Row, Newline>(new Generator<Row>() {
+				new SeparatedLoop<Record, Newline>(new Generator<Record>() {
 					@Override
-					public Row generates() {
-						return new Row(separator, assigner);
+					public Record generates() {
+						return new Record(separator, assigner);
 					}
 				}, new Generator<Newline>() {
 					@Override
@@ -82,7 +82,7 @@ public class Csv extends Suite {
 						return new Newline();
 					}
 				}), new Option<Newline>(new Newline()));
-		this.<SeparatedLoop<Row, Newline>> get(2)
+		this.<SeparatedLoop<Record, Newline>> get(2)
 				.setMode(GreedyMode.POSSESSIVE);
 	}
 
@@ -172,7 +172,7 @@ public class Csv extends Suite {
 	 * @author Matthieu Vergne <matthieu.vergne@gmail.com>
 	 * 
 	 */
-	public static class Row extends SeparatedLoop<Value, Atom> {
+	private static class Row extends SeparatedLoop<Value, Atom> {
 		private final TranformerAssigner assigner;
 
 		public Row(final char separator, final TranformerAssigner assigner) {
@@ -230,36 +230,49 @@ public class Csv extends Suite {
 	}
 
 	/**
+	 * An {@link Record} is a particular {@link Row} inside a {@link Csv}. It
+	 * represents a specific "instance" of the {@link Header}, meaning a complete entry
+	 * with all the values set.
+	 * 
+	 * @author Matthieu Vergne <matthieu.vergne@gmail.com>
+	 * 
+	 */
+	public static class Record extends Row {
+		public Record(char separator, final TranformerAssigner assigner) {
+			super(separator, assigner);
+		}
+	}
+
+	/**
 	 * 
 	 * @return the number of values contained in each {@link Row}
 	 */
 	public int getColumnsCount() {
-		return getHeaderLine().size();
+		return getHeaderRow().size();
 	}
 
-	private Header getHeaderLine() {
+	private Header getHeaderRow() {
 		return this.<Header> get(0);
 	}
 
 	/**
 	 * 
-	 * @return the number of {@link Row}s contained in this {@link Csv}, without
-	 *         the {@link Header}
+	 * @return the number of {@link Record}s contained in this {@link Csv}
 	 */
-	public int getRowsCount() {
-		return getRowsLayer().size();
+	public int getRecordsCount() {
+		return getRecordsLayer().size();
 	}
 
 	/**
 	 * 
-	 * @return all the {@link Row}s of this {@link Csv}
+	 * @return all the {@link Record}s of this {@link Csv}
 	 */
-	public Iterable<Row> getRows() {
-		return getRowsLayer();
+	public Iterable<Record> getRecords() {
+		return getRecordsLayer();
 	}
 
-	private SeparatedLoop<Row, Newline> getRowsLayer() {
-		return this.<SeparatedLoop<Row, Newline>> get(2);
+	private SeparatedLoop<Record, Newline> getRecordsLayer() {
+		return this.<SeparatedLoop<Record, Newline>> get(2);
 	}
 
 	/**
@@ -268,7 +281,7 @@ public class Csv extends Suite {
 	 */
 	public List<String> getHeaders() {
 		List<String> headers = new LinkedList<String>();
-		for (Value value : getHeaderLine()) {
+		for (Value value : getHeaderRow()) {
 			headers.add(value.getContent());
 		}
 		return headers;
@@ -277,10 +290,10 @@ public class Csv extends Suite {
 	/**
 	 * 
 	 * @param index
-	 *            the index of the {@link Row}
-	 * @return the corresponding {@link Row}
+	 *            the index of the {@link Record}
+	 * @return the corresponding {@link Record}
 	 */
-	public Row getRow(int index) {
-		return getRowsLayer().get(index);
+	public Record getRecord(int index) {
+		return getRecordsLayer().get(index);
 	}
 }
