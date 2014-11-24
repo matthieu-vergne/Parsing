@@ -22,20 +22,6 @@ import fr.vergne.parsing.layer.standard.Suite;
 // FIXME Ensure that all rows and header have the same number of columns
 public class Csv extends Suite {
 
-	private final static Transformer<String> STRING_TRANSFORMER = new Transformer<String>() {
-		@Override
-		public String transform(String value) {
-			return value;
-		}
-	};
-	private final static TranformerAssigner DEFAULT_ASSIGNER = new TranformerAssigner() {
-
-		@Override
-		public Transformer<?> assign(int valueIndex) {
-			return STRING_TRANSFORMER;
-		}
-	};
-
 	/**
 	 * Equivalent to {@link #Csv(char)} where the separator used is a comma.
 	 */
@@ -49,7 +35,7 @@ public class Csv extends Suite {
 	 * String as-is.
 	 */
 	public Csv(char separator) {
-		this(separator, DEFAULT_ASSIGNER);
+		this(separator, null);
 	}
 
 	/**
