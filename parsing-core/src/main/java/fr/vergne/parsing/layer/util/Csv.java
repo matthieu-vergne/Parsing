@@ -187,7 +187,17 @@ public class Csv extends Suite {
 
 		@SuppressWarnings("unchecked")
 		public <T> T getObjectValue(int index) {
-			return (T) assigner.assign(index).transform(getStringValue(index));
+			if (assigner == null) {
+				throw new NullPointerException("No assigner provided");
+			} else {
+				Transformer<?> transformer = assigner.assign(index);
+				if (transformer == null) {
+					throw new NullPointerException(
+							"No transformer available for value " + index);
+				} else {
+					return (T) transformer.transform(getStringValue(index));
+				}
+			}
 		}
 	}
 
