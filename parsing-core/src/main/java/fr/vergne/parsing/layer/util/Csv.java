@@ -199,7 +199,11 @@ public class Csv extends Suite {
 		return getHeaderRow().size();
 	}
 
-	private Header getHeaderRow() {
+	/**
+	 * 
+	 * @return the {@link Row} corresponding to the {@link Header}
+	 */
+	public Header getHeaderRow() {
 		return this.<Header> get(0);
 	}
 
