@@ -33,8 +33,8 @@ public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 	private final Element head;
 	private final Loop<Suite> loop;
 
-	public SeparatedLoop(final Generator<Element> itemGenerator,
-			final Generator<Separator> separatorGenerator) {
+	public SeparatedLoop(Generator<Element> itemGenerator,
+			Generator<Separator> separatorGenerator) {
 		this(itemGenerator, separatorGenerator, 0, Integer.MAX_VALUE);
 	}
 
