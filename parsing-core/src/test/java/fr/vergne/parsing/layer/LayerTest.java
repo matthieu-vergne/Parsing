@@ -24,4 +24,14 @@ public abstract class LayerTest {
 		assertEquals(content, builder.toString());
 	}
 
+	@Test
+	public void testSetNullContent() {
+		Layer layer = instantiateFilledLayer();
+		try {
+			layer.setContent(null);
+			fail("No exception thrown.");
+		} catch (NullPointerException e) {
+		}
+	}
+
 }

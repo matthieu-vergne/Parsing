@@ -37,7 +37,9 @@ public abstract class AbstractLayer implements Layer {
 
 	@Override
 	public final void setContent(String content) {
-		if (listeners.isEmpty()) {
+		if (content == null) {
+			throw new NullPointerException("No content has been provided.");
+		} else if (listeners.isEmpty()) {
 			setInternalContent(content);
 		} else {
 			String oldValue = getContent();
