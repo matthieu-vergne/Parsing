@@ -19,7 +19,7 @@ import fr.vergne.parsing.layer.standard.Suite;
  * @author Matthieu Vergne <matthieu.vergne@gmail.com>
  * 
  */
-// FIXME Ensure that all rows and header have the same number of columns
+// TODO Ensure that all rows and header have the same number of columns
 public class Csv extends Suite {
 
 	/**
