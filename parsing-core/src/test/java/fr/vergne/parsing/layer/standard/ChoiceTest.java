@@ -3,12 +3,14 @@ package fr.vergne.parsing.layer.standard;
 import static org.junit.Assert.*;
 
 import java.util.Arrays;
+import java.util.Collection;
 
 import org.junit.Test;
 
 import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.LayerTest;
 import fr.vergne.parsing.layer.exception.ParsingException;
+import fr.vergne.parsing.layer.util.Any;
 
 public class ChoiceTest extends LayerTest {
 	
@@ -20,6 +22,21 @@ public class ChoiceTest extends LayerTest {
 		Formula empty = new Formula("");
 		Choice choice = new Choice(contiguous, newline, empty);
 		choice.setContent(content);
+		return choice;
+	}
+
+	@Override
+	protected Layer instantiateFilledLayerwithSpecialCharacters(
+			Collection<String> charactersToReuse) {
+		StringBuilder builder = new StringBuilder();
+		for (String character : charactersToReuse) {
+			builder.append(character);
+		}
+		Formula oneCharacter = new Formula(".");
+		Formula oneLine = new Formula(".+");
+		Formula anything = new Any();
+		Choice choice = new Choice(oneCharacter, oneLine, anything);
+		choice.setContent(builder.toString());
 		return choice;
 	}
 

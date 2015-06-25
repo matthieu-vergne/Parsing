@@ -2,6 +2,8 @@ package fr.vergne.parsing.layer.standard;
 
 import static org.junit.Assert.*;
 
+import java.util.Collection;
+
 import org.junit.Test;
 
 import fr.vergne.parsing.layer.Layer;
@@ -16,7 +18,19 @@ public class AtomTest extends LayerTest {
 		atom.setContent("test");
 		return atom;
 	}
-	
+
+	@Override
+	protected Layer instantiateFilledLayerwithSpecialCharacters(
+			Collection<String> charactersToReuse) {
+		StringBuilder builder = new StringBuilder();
+		for (String character : charactersToReuse) {
+			builder.append(character);
+		}
+		Atom atom = new Atom(builder.toString());
+		atom.setContent(builder.toString());
+		return atom;
+	}
+
 	@Test
 	public void testSetGetContent() {
 		{

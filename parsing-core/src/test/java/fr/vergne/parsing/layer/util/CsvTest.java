@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.junit.Test;
 
 import fr.vergne.parsing.layer.util.Csv.Record;
@@ -164,4 +165,19 @@ public class CsvTest {
 		csv.setContent(FileUtils.readFileToString(new File(
 				"src/test/resources/bigFile.csv")));
 	}
+
+	@Test
+	public void testInputStreamPreservesSpecialCharacters() throws IOException {
+		char sep = '\t';
+		String original = "";
+		original += "a" + sep + "b" + sep + "c" + "\n";
+		original += "Σ" + sep + "w(x,y).δQ(y)" + sep + "Σ max(w(x',y).δQ(y))"
+				+ "\n";
+
+		Csv csv = new Csv(sep);
+		csv.setContent(original);
+		String copy = IOUtils.toString(csv.getInputStream());
+		assertEquals(original, copy);
+	}
+
 }

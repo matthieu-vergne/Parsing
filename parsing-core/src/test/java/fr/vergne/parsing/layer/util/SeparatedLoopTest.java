@@ -2,6 +2,7 @@ package fr.vergne.parsing.layer.util;
 
 import static org.junit.Assert.*;
 
+import java.util.Collection;
 import java.util.Iterator;
 
 import org.junit.Test;
@@ -31,6 +32,33 @@ public class SeparatedLoopTest extends LayerTest {
 					}
 				});
 		separatedLoop.setContent("9-8-7");
+		return separatedLoop;
+	}
+
+	@Override
+	protected Layer instantiateFilledLayerwithSpecialCharacters(
+			Collection<String> charactersToReuse) {
+		StringBuilder builder = new StringBuilder();
+		for (String character : charactersToReuse) {
+			builder.append(character + " ");
+		}
+		String s = builder.toString().trim();
+
+		SeparatedLoop<Any, Atom> separatedLoop = new SeparatedLoop<Any, Atom>(
+				new Generator<Any>() {
+
+					@Override
+					public Any generates() {
+						return new Any();
+					}
+				}, new Generator<Atom>() {
+
+					@Override
+					public Atom generates() {
+						return new Atom(" ");
+					}
+				});
+		separatedLoop.setContent(s);
 		return separatedLoop;
 	}
 
@@ -231,7 +259,7 @@ public class SeparatedLoopTest extends LayerTest {
 		assertEquals("5", iterator.next().getContent());
 		assertFalse(iterator.hasNext());
 	}
-	
+
 	@Test
 	public void testMinMax() {
 		SeparatedLoop<IntNumber, Atom> separatedLoop = new SeparatedLoop<IntNumber, Atom>(
@@ -265,13 +293,13 @@ public class SeparatedLoopTest extends LayerTest {
 		separatedLoop.setContent("1-2-3");
 		separatedLoop.setContent("1-2-3-4");
 		separatedLoop.setContent("1-2-3-4-5");
-		
+
 		try {
 			separatedLoop.setContent("1-2-3-4-5-6");
 			fail("No exception thrown.");
 		} catch (ParsingException e) {
 		}
-		
+
 		try {
 			separatedLoop.setContent("1-2-3-4-5-6-7");
 			fail("No exception thrown.");

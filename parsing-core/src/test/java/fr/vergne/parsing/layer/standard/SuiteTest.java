@@ -3,6 +3,9 @@ package fr.vergne.parsing.layer.standard;
 import static org.junit.Assert.*;
 
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
 
 import org.junit.Test;
 
@@ -20,6 +23,20 @@ public class SuiteTest extends LayerTest {
 		Formula letter4 = new Formula("[a-zA-Z]");
 		Suite suite = new Suite(letter1, letter2, letter3, letter4);
 		suite.setContent("test");
+		return suite;
+	}
+
+	@Override
+	protected Layer instantiateFilledLayerwithSpecialCharacters(
+			Collection<String> charactersToReuse) {
+		List<Atom> sequence = new LinkedList<Atom>();
+		StringBuilder builder = new StringBuilder();
+		for (String character : charactersToReuse) {
+			sequence.add(new Atom(character));
+			builder.append(character);
+		}
+		Suite suite = new Suite(sequence);
+		suite.setContent(builder.toString());
 		return suite;
 	}
 

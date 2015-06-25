@@ -2,6 +2,8 @@ package fr.vergne.parsing.layer.standard;
 
 import static org.junit.Assert.*;
 
+import java.util.Collection;
+
 import org.junit.Test;
 
 import fr.vergne.parsing.layer.Layer;
@@ -17,7 +19,19 @@ public class FormulaTest extends LayerTest {
 		formula.setContent(content);
 		return formula;
 	}
-	
+
+	@Override
+	protected Layer instantiateFilledLayerwithSpecialCharacters(
+			Collection<String> charactersToReuse) {
+		StringBuilder builder = new StringBuilder();
+		for (String character : charactersToReuse) {
+			builder.append(character);
+		}
+		Formula formula = new Formula("(?s:.+)");
+		formula.setContent(builder.toString());
+		return formula;
+	}
+
 	@Test
 	public void testSetGetContent() {
 		{
@@ -328,5 +342,4 @@ public class FormulaTest extends LayerTest {
 			assertEquals(regex, new Formula(regex).getRegex());
 		}
 	}
-
 }

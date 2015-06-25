@@ -1,8 +1,7 @@
 package fr.vergne.parsing.layer.standard;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringReader;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -11,6 +10,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+
+import org.apache.commons.io.IOUtils;
 
 import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.exception.ParsingException;
@@ -55,14 +56,7 @@ public class Choice extends AbstractLayer {
 
 	@Override
 	public InputStream getInputStream() {
-		return new InputStream() {
-			private final StringReader reader = new StringReader(getContent());
-
-			@Override
-			public int read() throws IOException {
-				return reader.read();
-			}
-		};
+		return IOUtils.toInputStream(getContent(), Charset.forName("UTF-8"));
 	}
 
 	@Override
@@ -80,8 +74,8 @@ public class Choice extends AbstractLayer {
 		if (referenceAlternativeIndex != null) {
 			Layer reference = alternatives.get(referenceAlternativeIndex);
 			ParsingException cause = exceptions.get(reference);
-			throw new ParsingException(this, reference, content, cause.getStart(),
-					content.length(), cause);
+			throw new ParsingException(this, reference, content,
+					cause.getStart(), content.length(), cause);
 		} else {
 			throw new ParsingException(getRegex(), content);
 		}

@@ -22,6 +22,18 @@ public class LoopTest extends LayerTest {
 		return loop;
 	}
 
+	@Override
+	protected Layer instantiateFilledLayerwithSpecialCharacters(
+			Collection<String> charactersToReuse) {
+		StringBuilder builder = new StringBuilder();
+		for (String character : charactersToReuse) {
+			builder.append(character);
+		}
+		Loop<Formula> loop = new Loop<Formula>(new Formula("(?s:.)"), false);
+		loop.setContent(builder.toString());
+		return loop;
+	}
+
 	/**
 	 * This methods generates several {@link Loop}s to cover the different
 	 * initializations methods (i.e. {@link Generator}, cloneable {@link Layer},

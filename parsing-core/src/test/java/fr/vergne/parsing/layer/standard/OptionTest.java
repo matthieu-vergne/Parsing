@@ -2,6 +2,8 @@ package fr.vergne.parsing.layer.standard;
 
 import static org.junit.Assert.*;
 
+import java.util.Collection;
+
 import org.junit.Test;
 
 import fr.vergne.parsing.layer.Layer;
@@ -14,6 +16,18 @@ public class OptionTest extends LayerTest {
 	protected Layer instantiateFilledLayer() {
 		Option<Formula> option = new Option<Formula>(new Formula("[abc]+"));
 		option.setContent("aabbababcbcbc");
+		return option;
+	}
+
+	@Override
+	protected Layer instantiateFilledLayerwithSpecialCharacters(
+			Collection<String> charactersToReuse) {
+		StringBuilder builder = new StringBuilder();
+		for (String character : charactersToReuse) {
+			builder.append(character);
+		}
+		Option<Formula> option = new Option<Formula>(new Formula("(?s:.+)"));
+		option.setContent(builder.toString());
 		return option;
 	}
 

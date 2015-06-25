@@ -2,7 +2,7 @@ package fr.vergne.parsing.layer.standard;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringReader;
+import java.nio.charset.Charset;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -10,6 +10,8 @@ import java.util.NoSuchElementException;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.apache.commons.io.IOUtils;
 
 import fr.vergne.logging.LoggerConfiguration;
 import fr.vergne.parsing.layer.Layer;
@@ -296,15 +298,8 @@ public class Loop<CLayer extends Layer> extends AbstractLayer implements
 					if (occurrences.get(index) != null) {
 						reader = occurrences.get(index).getInputStream();
 					} else {
-						reader = new InputStream() {
-							private final StringReader reader = new StringReader(
-									contents.get(index));
-
-							@Override
-							public int read() throws IOException {
-								return reader.read();
-							}
-						};
+						reader = IOUtils.toInputStream(contents.get(index),
+								Charset.forName("UTF-8"));
 					}
 					index++;
 					character = reader.read();

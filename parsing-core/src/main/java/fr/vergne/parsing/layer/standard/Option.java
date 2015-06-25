@@ -1,8 +1,9 @@
 package fr.vergne.parsing.layer.standard;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.StringReader;
+import java.nio.charset.Charset;
+
+import org.apache.commons.io.IOUtils;
 
 import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.exception.ParsingException;
@@ -51,14 +52,7 @@ public class Option<CLayer extends Layer> extends AbstractLayer implements
 
 	@Override
 	public InputStream getInputStream() {
-		return new InputStream() {
-			private final StringReader reader = new StringReader(getContent());
-
-			@Override
-			public int read() throws IOException {
-				return reader.read();
-			}
-		};
+		return IOUtils.toInputStream(getContent(), Charset.forName("UTF-8"));
 	}
 
 	@Override

@@ -4,7 +4,10 @@ import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
+import java.util.Collection;
 
+import org.apache.commons.io.IOUtils;
 import org.junit.Test;
 
 public abstract class LayerTest {
@@ -34,4 +37,22 @@ public abstract class LayerTest {
 		}
 	}
 
+	protected abstract Layer instantiateFilledLayerwithSpecialCharacters(
+			Collection<String> charactersToReuse);
+
+	@Test
+	public void testInputStreamPreservesSpecialCharacters() throws IOException {
+		Collection<String> charactersToReuse = Arrays.asList("ê", "\n", "\r",
+				"Σ", "δ");
+
+		Layer layer = instantiateFilledLayerwithSpecialCharacters(charactersToReuse);
+		String original = layer.getContent();
+		for (String character : charactersToReuse) {
+			assertTrue("'" + character + "' not used in \"" + original + "\"",
+					original.contains(character));
+		}
+
+		String copy = IOUtils.toString(layer.getInputStream());
+		assertEquals(original, copy);
+	}
 }
