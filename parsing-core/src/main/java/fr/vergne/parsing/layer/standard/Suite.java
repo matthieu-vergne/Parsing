@@ -53,7 +53,12 @@ public class Suite extends AbstractLayer {
 	private final List<? extends Layer> sequence;
 
 	public Suite(List<? extends Layer> sequence) {
-		this.sequence = Collections.unmodifiableList(sequence);
+		if (sequence == null || sequence.isEmpty()) {
+			throw new IllegalArgumentException(
+					"No layer provided to the suite: " + sequence);
+		} else {
+			this.sequence = Collections.unmodifiableList(sequence);
+		}
 	}
 
 	public Suite(Layer... sequence) {
