@@ -3,21 +3,23 @@ package fr.vergne.parsing.layer.standard;
 import static org.junit.Assert.*;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 
 import org.junit.Test;
 
 import fr.vergne.parsing.layer.Layer;
+import fr.vergne.parsing.layer.Layer.ContentListener;
 import fr.vergne.parsing.layer.LayerTest;
 import fr.vergne.parsing.layer.exception.ParsingException;
+import fr.vergne.parsing.layer.standard.Loop.BoundException;
 import fr.vergne.parsing.layer.standard.Loop.Generator;
 
 public class LoopTest extends LayerTest {
 
 	@Override
 	protected Layer instantiateFilledLayer() {
-		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]"), false);
+		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]"));
 		loop.setContent("test");
 		return loop;
 	}
@@ -29,226 +31,21 @@ public class LoopTest extends LayerTest {
 		for (String character : charactersToReuse) {
 			builder.append(character);
 		}
-		Loop<Formula> loop = new Loop<Formula>(new Formula("(?s:.)"), false);
+		Loop<Formula> loop = new Loop<Formula>(new Formula("(?s:.)"));
 		loop.setContent(builder.toString());
 		return loop;
 	}
 
-	/**
-	 * This methods generates several {@link Loop}s to cover the different
-	 * initializations methods (i.e. {@link Generator}, cloneable {@link Layer},
-	 * uncloneable {@link Layer}). It is a helper to use in tests which could be
-	 * influenced by the initialization of the {@link Loop}. Their
-	 * {@link #toString()} methods are overridden to help identifying which
-	 * {@link Loop} makes fail the test.
-	 * 
-	 * @return potential combinations of {@link Loop}s
-	 */
-	private Collection<Loop<Formula>> createLoops(final String regex, int min,
-			int max) {
-		Collection<Loop<Formula>> combinations = new LinkedList<Loop<Formula>>();
-		combinations.add(new Loop<Formula>(new Generator<Formula>() {
-
-			@Override
-			public Formula generates() {
-				return new Formula(regex);
-			}
-
-		}, min, max) {
-			@Override
-			public String toString() {
-				return "Generator-based";
-			}
-		});
-		combinations.add(new Loop<Formula>(new Formula(regex) {
-			public Object clone() {
-				return new Formula(regex);
-			}
-		}, min, max) {
-			@Override
-			public String toString() {
-				return "Cloneable-based";
-			}
-		});
-		combinations
-				.add(new Loop<Formula>(new Formula(regex), min, max, false) {
-					@Override
-					public String toString() {
-						return "Uncloneable-based";
-					}
-				});
-		return combinations;
-	}
-
 	@Test
-	public void testSetGetContent() {
-		for (Loop<Formula> loop : createLoops("[a-zA-Z\n]", 0, 10)) {
-			{
-				String content = "test";
-				loop.setContent(content);
-				assertEquals(loop.toString(), content, loop.getContent());
-			}
-			{
-				String content = "test\ntest";
-				loop.setContent(content);
-				assertEquals(loop.toString(), content, loop.getContent());
-			}
-			{
-				String content = "";
-				loop.setContent(content);
-				assertEquals(loop.toString(), content, loop.getContent());
-			}
-		}
-	}
-
-	@Test
-	public void testGetOccurrenceContent() {
-		for (Loop<Formula> loop : createLoops("[a-zA-Z\n]", 0, 10)) {
-			{
-				String content = "test";
-				loop.setContent(content);
-				assertEquals("t", loop.getContent(0));
-				assertEquals("e", loop.getContent(1));
-				assertEquals("s", loop.getContent(2));
-				assertEquals("t", loop.getContent(3));
-			}
-			{
-				String content = "test\ntest";
-				loop.setContent(content);
-				assertEquals("t", loop.getContent(0));
-				assertEquals("e", loop.getContent(1));
-				assertEquals("s", loop.getContent(2));
-				assertEquals("t", loop.getContent(3));
-				assertEquals("\n", loop.getContent(4));
-				assertEquals("t", loop.getContent(5));
-				assertEquals("e", loop.getContent(6));
-				assertEquals("s", loop.getContent(7));
-				assertEquals("t", loop.getContent(8));
-			}
-		}
-	}
-
-	@Test
-	public void testInexistentOccurrenceContent() {
-		for (Loop<Formula> loop : createLoops("[a-zA-Z\n]", 0, 10)) {
-			String content = "test";
-			loop.setContent(content);
-			try {
-				loop.getContent(-1);
-				fail("Exception not thrown.");
-			} catch (IndexOutOfBoundsException e) {
-			}
-			try {
-				loop.getContent(4);
-				fail("Exception not thrown.");
-			} catch (IndexOutOfBoundsException e) {
-			}
-		}
-	}
-
-	@Test
-	public void testDifferent() {
-		for (Loop<Formula> loop : createLoops("[a-zA-Z\n]", 0, 20)) {
-			try {
-				loop.setContent("123");
-				fail("Exception not thrown.");
-			} catch (ParsingException e) {
-				assertEquals(loop.toString(),
-						"Unable to parse Formula[[a-zA-Z\\n]] for " + loop
-								+ " from (1,1): \"123\"", e.getMessage());
-			}
-			try {
-				loop.setContent("abc123");
-				fail("Exception not thrown.");
-			} catch (ParsingException e) {
-				assertEquals(loop.toString(),
-						"Unable to parse Formula[[a-zA-Z\\n]] for " + loop
-								+ " from (1,4): \"123\"", e.getMessage());
-			}
-			try {
-				loop.setContent("abc\nabc123");
-				fail("Exception not thrown.");
-			} catch (ParsingException e) {
-				assertEquals(loop.toString(),
-						"Unable to parse Formula[[a-zA-Z\\n]] for " + loop
-								+ " from (2,4): \"123\"", e.getMessage());
-			}
-			try {
-				loop.setContent("abc123abc");
-				fail("Exception not thrown.");
-			} catch (ParsingException e) {
-				assertEquals(loop.toString(),
-						"Unable to parse Formula[[a-zA-Z\\n]] for " + loop
-								+ " from (1,4): \"123abc\"", e.getMessage());
-			}
-		}
-	}
-
-	@Test
-	public void testTooLong() {
-		for (Loop<Formula> loop : createLoops("[0-9\n]", 0, 5)) {
-			{
-				try {
-					loop.setContent("123456789");
-					fail("Exception not thrown.");
-				} catch (ParsingException e) {
-					assertEquals(loop.toString(), "Nothing expected for "
-							+ loop + " from (1,6): \"6789\"", e.getMessage());
-				}
-			}
-			{
-				try {
-					loop.setContent("12\n4567\n9");
-					fail("Exception not thrown.");
-				} catch (ParsingException e) {
-					assertEquals(loop.toString(), "Nothing expected for "
-							+ loop + " from (2,3): \"67\\n9\"", e.getMessage());
-				}
-			}
-		}
-	}
-
-	@Test
-	public void testTooShort() {
-		for (Loop<Formula> loop : createLoops("[0-9\n]", 5, 10)) {
-			{
-				try {
-					loop.setContent("123");
-					fail("Exception not thrown.");
-				} catch (ParsingException e) {
-					assertEquals(loop.toString(),
-							"Unable to parse Formula[[0-9\\n]] for " + loop
-									+ " from (1,4): \"\"", e.getMessage());
-				}
-			}
-			{
-				try {
-					loop.setContent("1\n3");
-					fail("Exception not thrown.");
-				} catch (ParsingException e) {
-					assertEquals(loop.toString(),
-							"Unable to parse Formula[[0-9\\n]] for " + loop
-									+ " from (2,2): \"\"", e.getMessage());
-				}
-				try {
-					loop.setContent("");
-					fail("Exception not thrown.");
-				} catch (ParsingException e) {
-					assertEquals(loop.toString(),
-							"Unable to parse Formula[[0-9\\n]] for " + loop
-									+ " from (1,1): \"\"", e.getMessage());
-				}
-			}
-		}
-	}
-
-	@Test
-	public void testGeneratorInstances() {
+	public void testGeneratorInstanceProperlyGeneratesInstancesWhenRequired() {
+		final Collection<Formula> generated = new HashSet<Formula>();
 		Loop<Formula> loop = new Loop<Formula>(new Generator<Formula>() {
 
 			@Override
 			public Formula generates() {
-				return new Formula("[a-zA-Z]");
+				Formula formula = new Formula("[a-zA-Z]");
+				generated.add(formula);
+				return formula;
 			}
 
 		});
@@ -265,20 +62,26 @@ public class LoopTest extends LayerTest {
 		assertNotSame(loop.get(2), loop.get(0));
 		assertNotSame(loop.get(2), loop.get(1));
 		assertSame(loop.get(2), loop.get(2));
+
+		assertTrue(generated.contains(loop.get(0)));
+		assertTrue(generated.contains(loop.get(1)));
+		assertTrue(generated.contains(loop.get(2)));
 	}
 
 	@Test
-	public void testCloneableClones() {
+	public void testTemplateInstanceProperlyGeneratesClones() {
+		final Collection<Object> clones = new HashSet<Object>();
 		Formula template = new Formula("[a-zA-Z]") {
+			@Override
 			public Object clone() {
-				return new Formula("[a-zA-Z]");
+				Object clone = super.clone();
+				clones.add(clone);
+				return clone;
 			}
 		};
 		Loop<Formula> loop = new Loop<Formula>(template);
 		loop.setContent("abc");
 
-		assertNotSame(template, loop.get(0));
-
 		assertSame(loop.get(0), loop.get(0));
 		assertNotSame(loop.get(0), loop.get(1));
 		assertNotSame(loop.get(0), loop.get(2));
@@ -290,260 +93,659 @@ public class LoopTest extends LayerTest {
 		assertNotSame(loop.get(2), loop.get(0));
 		assertNotSame(loop.get(2), loop.get(1));
 		assertSame(loop.get(2), loop.get(2));
+
+		assertNotSame(template, loop.get(0));
+		assertNotSame(template, loop.get(1));
+		assertNotSame(template, loop.get(2));
+
+		assertTrue(clones.contains(loop.get(0)));
+		assertTrue(clones.contains(loop.get(1)));
+		assertTrue(clones.contains(loop.get(2)));
 	}
 
 	@Test
-	public void testUncloneableReuse() {
-		Formula template = new Formula("[a-zA-Z]");
-		Loop<Formula> loop = new Loop<Formula>(template, false);
-		loop.setContent("abc");
+	public void testInvalidContentForRegexThrowsParsingException() {
+		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z\n]"));
 
-		assertSame(template, loop.get(0));
-
-		assertSame(loop.get(0), loop.get(0));
-		assertSame(loop.get(0), loop.get(1));
-		assertSame(loop.get(0), loop.get(2));
-
-		assertSame(loop.get(1), loop.get(0));
-		assertSame(loop.get(1), loop.get(1));
-		assertSame(loop.get(1), loop.get(2));
-
-		assertSame(loop.get(2), loop.get(0));
-		assertSame(loop.get(2), loop.get(1));
-		assertSame(loop.get(2), loop.get(2));
+		try {
+			loop.setContent("123");
+			fail("Exception not thrown.");
+		} catch (ParsingException e) {
+			assertEquals(loop.toString(),
+					"Unable to parse Formula[[a-zA-Z\\n]] for " + loop
+							+ " from (1,1): \"123\"", e.getMessage());
+		}
+		try {
+			loop.setContent("abc123");
+			fail("Exception not thrown.");
+		} catch (ParsingException e) {
+			assertEquals(loop.toString(),
+					"Unable to parse Formula[[a-zA-Z\\n]] for " + loop
+							+ " from (1,4): \"123\"", e.getMessage());
+		}
+		try {
+			loop.setContent("abc\nabc123");
+			fail("Exception not thrown.");
+		} catch (ParsingException e) {
+			assertEquals(loop.toString(),
+					"Unable to parse Formula[[a-zA-Z\\n]] for " + loop
+							+ " from (2,4): \"123\"", e.getMessage());
+		}
+		try {
+			loop.setContent("abc123abc");
+			fail("Exception not thrown.");
+		} catch (ParsingException e) {
+			assertEquals(loop.toString(),
+					"Unable to parse Formula[[a-zA-Z\\n]] for " + loop
+							+ " from (1,4): \"123abc\"", e.getMessage());
+		}
 	}
 
 	@Test
-	public void testRegex() {
-		Formula letter = new Formula("[a-zA-Z]") {
+	public void testInvalidContentForMinThrowsParsingException() {
+		Loop<Formula> loop = new Loop<Formula>(new Formula("[0-9\n]"), 5, 10);
+
+		try {
+			loop.setContent("123");
+			fail("Exception not thrown.");
+		} catch (ParsingException e) {
+			assertEquals(loop.toString(),
+					"Unable to parse Formula[[0-9\\n]] for " + loop
+							+ " from (1,4): \"\"", e.getMessage());
+		}
+
+		try {
+			loop.setContent("1\n3");
+			fail("Exception not thrown.");
+		} catch (ParsingException e) {
+			assertEquals(loop.toString(),
+					"Unable to parse Formula[[0-9\\n]] for " + loop
+							+ " from (2,2): \"\"", e.getMessage());
+		}
+
+		try {
+			loop.setContent("");
+			fail("Exception not thrown.");
+		} catch (ParsingException e) {
+			assertEquals(loop.toString(),
+					"Unable to parse Formula[[0-9\\n]] for " + loop
+							+ " from (1,1): \"\"", e.getMessage());
+		}
+	}
+
+	@Test
+	public void testInvalidContentForMaxThrowsParsingException() {
+		Loop<Formula> loop = new Loop<Formula>(new Formula("[0-9\n]"), 0, 5);
+
+		try {
+			loop.setContent("123456789");
+			fail("Exception not thrown.");
+		} catch (ParsingException e) {
+			assertEquals("Nothing expected for " + loop
+					+ " from (1,6): \"6789\"", e.getMessage());
+		}
+
+		try {
+			loop.setContent("12\n4567\n9");
+			fail("Exception not thrown.");
+		} catch (ParsingException e) {
+			assertEquals("Nothing expected for " + loop
+					+ " from (2,3): \"67\\n9\"", e.getMessage());
+		}
+	}
+
+	@Test
+	public void testGetContentProperlyReturnsSetContent() {
+		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z\n]"));
+
+		loop.setContent("test");
+		assertEquals("test", loop.getContent());
+
+		loop.setContent("test\ntest");
+		assertEquals("test\ntest", loop.getContent());
+
+		loop.setContent("");
+		assertEquals("", loop.getContent());
+	}
+
+	@Test
+	public void testSetContentProperlyNotifiesListeners() {
+		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]"));
+		final String[] value = new String[] { null };
+		loop.addContentListener(new ContentListener() {
+
 			@Override
-			public Object clone() throws CloneNotSupportedException {
-				return new Formula(getRegex());
+			public void contentSet(String newContent) {
+				value[0] = newContent;
 			}
-		};
-		{
-			String regex = new Loop<Formula>(letter).getRegex();
-			assertTrue(regex, regex.contains(letter.getRegex()));
-			assertTrue(regex, regex.endsWith("*"));
-		}
-		{
-			String regex = new Loop<Formula>(letter, 0, 1).getRegex();
-			assertTrue(regex, regex.contains(letter.getRegex()));
-			assertTrue(regex, regex.endsWith("?"));
-		}
-		{
-			String regex = new Loop<Formula>(letter, 1, Integer.MAX_VALUE)
-					.getRegex();
-			assertTrue(regex, regex.contains(letter.getRegex()));
-			assertTrue(regex, regex.endsWith("+"));
-		}
-		{
-			String regex = new Loop<Formula>(letter, 3).getRegex();
-			assertTrue(regex, regex.contains(letter.getRegex()));
-			assertTrue(regex, regex.endsWith("{3}"));
-		}
-		{
-			String regex = new Loop<Formula>(letter, 3, Integer.MAX_VALUE)
-					.getRegex();
-			assertTrue(regex, regex.contains(letter.getRegex()));
-			assertTrue(regex, regex.endsWith("{3,}"));
-		}
-		{
-			String regex = new Loop<Formula>(letter, 3, 5).getRegex();
-			assertTrue(regex, regex.contains(letter.getRegex()));
-			assertTrue(regex, regex.endsWith("{3,5}"));
-		}
+		});
+
+		loop.setContent("Test");
+		assertEquals(loop.getContent(), value[0]);
+		loop.setContent("aze");
+		assertEquals(loop.getContent(), value[0]);
+		loop.setContent("MUAHAHA");
+		assertEquals(loop.getContent(), value[0]);
 	}
 
 	@Test
-	public void testIterator() {
-		for (Loop<Formula> loop : createLoops("[a-zA-Z]", 0, 50)) {
-			String content = "Test";
-			loop.setContent(content);
+	public void testSizeCorrespondsToNumberOfElementsInLoop() {
+		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]"));
 
-			Iterator<Formula> iterator = loop.iterator();
-			assertTrue(loop.toString(), iterator.hasNext());
-			assertEquals(loop.toString(), "T", iterator.next().getContent());
-			assertTrue(loop.toString(), iterator.hasNext());
-			assertEquals(loop.toString(), "e", iterator.next().getContent());
-			assertTrue(loop.toString(), iterator.hasNext());
-			assertEquals(loop.toString(), "s", iterator.next().getContent());
-			assertTrue(loop.toString(), iterator.hasNext());
-			assertEquals(loop.toString(), "t", iterator.next().getContent());
-			assertFalse(loop.toString(), iterator.hasNext());
-		}
-	}
-
-	@Test
-	public void testInnerContentSynchronization() {
-		for (Loop<Formula> loop : createLoops("[a-zA-Z]", 0, 50)) {
-			String content = "Test";
-			loop.setContent(content);
-
-			Iterator<Formula> iterator = loop.iterator();
-			assertTrue(loop.toString(), iterator.hasNext());
-			iterator.next().setContent("C");
-			assertTrue(loop.toString(), iterator.hasNext());
-			iterator.next().setContent("a");
-			assertTrue(loop.toString(), iterator.hasNext());
-			iterator.next().setContent("s");
-			assertTrue(loop.toString(), iterator.hasNext());
-			iterator.next().setContent("e");
-
-			assertEquals(loop.toString(), "Case", loop.getContent());
-
-			iterator = loop.iterator();
-			iterator.next();
-			iterator.next();
-			iterator.remove();
-			iterator.next();
-			iterator.next();
-			iterator.remove();
-			assertEquals(loop.toString(), "Cs", loop.getContent());
-		}
-	}
-
-	@Test
-	public void testSize() {
-		for (Loop<Formula> loop : createLoops("[a-zA-Z]", 0, 50)) {
-			loop.setContent("Test");
-			assertEquals(loop.toString(), 4, loop.size());
-
-			loop.setContent("a");
-			assertEquals(loop.toString(), 1, loop.size());
-
-			loop.setContent("abcdefghIJKLmnoPQRSTUvWXyZ");
-			assertEquals(loop.toString(), 26, loop.size());
+		loop.setContent("Test");
+		assertEquals(4, loop.size());
+		assertNotNull(loop.get(0));
+		assertNotNull(loop.get(1));
+		assertNotNull(loop.get(2));
+		assertNotNull(loop.get(3));
+		try {
+			loop.get(4);
+		} catch (IndexOutOfBoundsException e) {
 		}
 	}
 
 	@Test
 	public void testIsEmpty() {
-		for (Loop<Formula> loop : createLoops("[a-zA-Z]", 0, 50)) {
-			assertTrue(loop.toString(), loop.isEmpty());
+		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]"));
 
-			loop.setContent("Tes");
-			assertFalse(loop.toString(), loop.isEmpty());
+		loop.setContent("Tes");
+		assertFalse(loop.isEmpty());
 
-			loop.setContent("");
-			assertTrue(loop.toString(), loop.isEmpty());
+		loop.setContent("");
+		assertTrue(loop.isEmpty());
 
-			loop.setContent("a");
-			assertFalse(loop.toString(), loop.isEmpty());
-		}
+		loop.setContent("a");
+		assertFalse(loop.isEmpty());
 	}
 
 	@Test
-	public void testGetIndex() {
-		for (Loop<Formula> loop : createLoops("[a-zA-Z]", 0, 50)) {
-			loop.setContent("Test");
-			assertEquals(loop.toString(), "T", loop.get(0).getContent());
-			assertEquals(loop.toString(), "e", loop.get(1).getContent());
-			assertEquals(loop.toString(), "s", loop.get(2).getContent());
-			assertEquals(loop.toString(), "t", loop.get(3).getContent());
+	public void testOccurrenceContentCorrespondsToLoopContent() {
+		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]---"));
+		loop.setContent("a---b---c---");
 
-			loop.get(0).setContent("C");
-			loop.get(1).setContent("a");
-			loop.get(2).setContent("s");
-			loop.get(3).setContent("e");
-			assertEquals(loop.toString(), "C", loop.get(0).getContent());
-			assertEquals(loop.toString(), "a", loop.get(1).getContent());
-			assertEquals(loop.toString(), "s", loop.get(2).getContent());
-			assertEquals(loop.toString(), "e", loop.get(3).getContent());
-		}
+		assertEquals("a---", loop.get(0).getContent());
+		assertEquals("b---", loop.get(1).getContent());
+		assertEquals("c---", loop.get(2).getContent());
 	}
 
 	@Test
-	public void testRemoveIndex() {
-		for (Loop<Formula> loop : createLoops("[a-zA-Z]", 0, 50)) {
-			loop.setContent("Test");
-			assertEquals(loop.toString(), "Test", loop.getContent());
-			loop.remove(0);
-			assertEquals(loop.toString(), "est", loop.getContent());
-			loop.remove(2);
-			assertEquals(loop.toString(), "es", loop.getContent());
-			loop.remove(0);
-			assertEquals(loop.toString(), "s", loop.getContent());
-			loop.remove(0);
-			assertEquals(loop.toString(), "", loop.getContent());
-		}
+	public void testUpdateOnOccurrenceContentProperlyUpdateLoopContent() {
+		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]"));
+		loop.setContent("Test");
+
+		loop.get(0).setContent("C");
+		assertEquals("Cest", loop.getContent());
+		loop.get(1).setContent("a");
+		assertEquals("Cast", loop.getContent());
+		loop.get(3).setContent("e");
+		assertEquals("Case", loop.getContent());
 	}
 
 	@Test
-	public void testDuplicate() {
-		for (Loop<Formula> loop : createLoops("[a-zA-Z]", 0, 50)) {
-			loop.setContent("Test");
-			assertEquals(loop.toString(), "Test", loop.getContent());
-			loop.duplicate(loop.size()).setContent("i");
-			assertEquals(loop.toString(), "Testi", loop.getContent());
-			loop.duplicate(loop.size()).setContent("n");
-			assertEquals(loop.toString(), "Testin", loop.getContent());
-			loop.duplicate(loop.size()).setContent("g");
-			assertEquals(loop.toString(), "Testing", loop.getContent());
-			loop.duplicate(0).setContent("V");
-			assertEquals(loop.toString(), "VTesting", loop.getContent());
-			loop.duplicate(1).setContent("i");
-			assertEquals(loop.toString(), "ViTesting", loop.getContent());
-			loop.duplicate(2).setContent("v");
-			assertEquals(loop.toString(), "VivTesting", loop.getContent());
-			loop.duplicate(3).setContent("a");
-			assertEquals(loop.toString(), "VivaTesting", loop.getContent());
-			loop.duplicate(3);
-			assertEquals(loop.toString(), "VivaaTesting", loop.getContent());
-			loop.duplicate(3);
-			assertEquals(loop.toString(), "VivaaaTesting", loop.getContent());
-		}
-	}
+	public void testUpdateOnOccurrenceContentNotifiesLoopListeners() {
+		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]"));
+		loop.setContent("Test");
+		final String[] value = new String[] { null };
+		loop.addContentListener(new ContentListener() {
 
-	@Test
-	public void testAddString() {
-		for (Loop<Formula> loop : createLoops("[a-zA-Z]", 0, 50)) {
-			loop.setContent("Test");
-			assertEquals(loop.toString(), "Test", loop.getContent());
-			loop.add(loop.size(), "i");
-			assertEquals(loop.toString(), "Testi", loop.getContent());
-			loop.add(loop.size(), "n");
-			assertEquals(loop.toString(), "Testin", loop.getContent());
-			loop.add(loop.size(), "g");
-			assertEquals(loop.toString(), "Testing", loop.getContent());
-			loop.add(0, "V");
-			assertEquals(loop.toString(), "VTesting", loop.getContent());
-			loop.add(1, "i");
-			assertEquals(loop.toString(), "ViTesting", loop.getContent());
-			loop.add(2, "v");
-			assertEquals(loop.toString(), "VivTesting", loop.getContent());
-			loop.add(3, "a");
-			assertEquals(loop.toString(), "VivaTesting", loop.getContent());
-
-			try {
-				loop.add(5, "!");
-				fail("Exception not thrown with " + loop);
-			} catch (ParsingException e) {
-				assertEquals(loop.toString(),
-						"Incompatible regex \"[a-zA-Z]\" for content \"!\"",
-						e.getMessage());
+			@Override
+			public void contentSet(String newContent) {
+				value[0] = newContent;
 			}
+		});
 
+		loop.get(0).setContent("C");
+		assertEquals(loop.getContent(), value[0]);
+		loop.get(1).setContent("a");
+		assertEquals(loop.getContent(), value[0]);
+		loop.get(2).setContent("s");
+		assertEquals(loop.getContent(), value[0]);
+		loop.get(3).setContent("e");
+		assertEquals(loop.getContent(), value[0]);
+	}
+
+	@Test
+	public void testAddContentProperlyAddsElement() {
+		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]"));
+		loop.setContent("Test");
+
+		loop.add(loop.size(), "i");
+		assertEquals("Testi", loop.getContent());
+		loop.add(loop.size(), "n");
+		assertEquals("Testin", loop.getContent());
+		loop.add(loop.size(), "g");
+		assertEquals("Testing", loop.getContent());
+
+		loop.add(0, "V");
+		assertEquals("VTesting", loop.getContent());
+		loop.add(1, "i");
+		assertEquals("ViTesting", loop.getContent());
+		loop.add(2, "v");
+		assertEquals("VivTesting", loop.getContent());
+		loop.add(3, "a");
+		assertEquals("VivaTesting", loop.getContent());
+	}
+
+	@Test
+	public void testAddContentReturnsCorrectOccurrence() {
+		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]"));
+		loop.setContent("Test");
+
+		assertEquals("a", loop.add(3, "a").getContent());
+		assertEquals("b", loop.add(0, "b").getContent());
+		assertEquals("c", loop.add(loop.size(), "c").getContent());
+	}
+
+	@Test
+	public void testAddContentProperlyNotifiesListeners() {
+		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]"));
+		loop.setContent("Test");
+		final String[] value = new String[] { null };
+		loop.addContentListener(new ContentListener() {
+
+			@Override
+			public void contentSet(String newContent) {
+				value[0] = newContent;
+			}
+		});
+
+		loop.add(loop.size(), "i");
+		assertEquals("Testi", value[0]);
+		loop.add(loop.size(), "n");
+		assertEquals("Testin", value[0]);
+		loop.add(loop.size(), "g");
+		assertEquals("Testing", value[0]);
+
+		loop.add(0, "V");
+		assertEquals("VTesting", value[0]);
+		loop.add(1, "i");
+		assertEquals("ViTesting", value[0]);
+		loop.add(2, "v");
+		assertEquals("VivTesting", value[0]);
+		loop.add(3, "a");
+		assertEquals("VivaTesting", value[0]);
+	}
+
+	@Test
+	public void testUpdateOnAddedContentProperlyNotifiesListeners() {
+		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]"));
+		loop.setContent("Test");
+		Formula added = loop.add(2, "a");
+
+		final String[] value = new String[] { null };
+		loop.addContentListener(new ContentListener() {
+
+			@Override
+			public void contentSet(String newContent) {
+				value[0] = newContent;
+			}
+		});
+
+		added.setContent("C");
+		assertEquals(loop.getContent(), value[0]);
+	}
+
+	@Test
+	public void testAddContentThrowsExceptionOnInvalidContent() {
+		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]"));
+		loop.setContent("Test");
+
+		try {
+			loop.add(3, "!");
+			fail("Exception not thrown with " + loop);
+		} catch (ParsingException e) {
+			assertEquals(loop.toString(),
+					"Incompatible regex \"[a-zA-Z]\" for content \"!\"",
+					e.getMessage());
+		}
+
+		try {
+			loop.add(3, "abc");
+			fail("Exception not thrown with " + loop);
+		} catch (ParsingException e) {
+			assertEquals(loop.toString(),
+					"Incompatible regex \"[a-zA-Z]\" for content \"abc\"",
+					e.getMessage());
+		}
+	}
+
+	@Test
+	public void testAddContentThrowsExceptionOnInvalidIndex() {
+		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]"));
+		loop.setContent("Test");
+
+		try {
+			loop.add(20, "a");
+			fail("Exception not thrown with " + loop);
+		} catch (IndexOutOfBoundsException e) {
+		}
+
+		try {
+			loop.add(-5, "a");
+			fail("Exception not thrown with " + loop);
+		} catch (IndexOutOfBoundsException e) {
+		}
+	}
+
+	@Test
+	public void testAddContentThrowsExceptionIfMaxNotRespected() {
+		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]"), 0, 5);
+		loop.setContent("abcde");
+
+		try {
+			loop.add(2, "a");
+			fail("Exception not thrown with " + loop);
+		} catch (BoundException e) {
+		}
+	}
+
+	@Test
+	public void testAddElementProperlyAddsElement() {
+		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]"));
+		loop.setContent("Test");
+
+		loop.add(loop.size(), new Formula("[a-zA-Z]", "i"));
+		assertEquals("Testi", loop.getContent());
+		loop.add(loop.size(), new Formula("[a-zA-Z]", "n"));
+		assertEquals("Testin", loop.getContent());
+		loop.add(loop.size(), new Formula("[a-zA-Z]", "g"));
+		assertEquals("Testing", loop.getContent());
+
+		loop.add(0, new Formula("[a-zA-Z]", "V"));
+		assertEquals("VTesting", loop.getContent());
+		loop.add(1, new Formula("[a-zA-Z]", "i"));
+		assertEquals("ViTesting", loop.getContent());
+		loop.add(2, new Formula("[a-zA-Z]", "v"));
+		assertEquals("VivTesting", loop.getContent());
+		loop.add(3, new Formula("[a-zA-Z]", "a"));
+		assertEquals("VivaTesting", loop.getContent());
+	}
+
+	@Test
+	public void testAddElementProperlyNotifiesListeners() {
+		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]"));
+		loop.setContent("Test");
+		final String[] value = new String[] { null };
+		loop.addContentListener(new ContentListener() {
+
+			@Override
+			public void contentSet(String newContent) {
+				value[0] = newContent;
+			}
+		});
+
+		loop.add(loop.size(), new Formula("[a-zA-Z]", "i"));
+		assertEquals("Testi", value[0]);
+		loop.add(loop.size(), new Formula("[a-zA-Z]", "n"));
+		assertEquals("Testin", value[0]);
+		loop.add(loop.size(), new Formula("[a-zA-Z]", "g"));
+		assertEquals("Testing", value[0]);
+
+		loop.add(0, new Formula("[a-zA-Z]", "V"));
+		assertEquals("VTesting", value[0]);
+		loop.add(1, new Formula("[a-zA-Z]", "i"));
+		assertEquals("ViTesting", value[0]);
+		loop.add(2, new Formula("[a-zA-Z]", "v"));
+		assertEquals("VivTesting", value[0]);
+		loop.add(3, new Formula("[a-zA-Z]", "a"));
+		assertEquals("VivaTesting", value[0]);
+	}
+
+	@Test
+	public void testUpdateOnAddedElementProperlyNotifiesListeners() {
+		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]"));
+		loop.setContent("Test");
+		Formula added = new Formula("[a-zA-Z]", "a");
+		loop.add(2, added);
+
+		final String[] value = new String[] { null };
+		loop.addContentListener(new ContentListener() {
+
+			@Override
+			public void contentSet(String newContent) {
+				value[0] = newContent;
+			}
+		});
+
+		added.setContent("C");
+		assertEquals(loop.getContent(), value[0]);
+	}
+
+	@Test
+	public void testAddElementThrowsExceptionOnInvalidRegex() {
+		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]"));
+		loop.setContent("Test");
+
+		try {
+			loop.add(3, new Formula("[a-zA-Z!]", "a"));
+			fail("Exception not thrown with " + loop);
+		} catch (IllegalArgumentException e) {
+		}
+	}
+
+	@Test
+	public void testAddElementThrowsExceptionOnInvalidIndex() {
+		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]"));
+		loop.setContent("Test");
+
+		try {
+			loop.add(20, new Formula("[a-zA-Z]", "a"));
+			fail("Exception not thrown with " + loop);
+		} catch (IndexOutOfBoundsException e) {
+		}
+
+		try {
+			loop.add(-5, new Formula("[a-zA-Z]", "a"));
+			fail("Exception not thrown with " + loop);
+		} catch (IndexOutOfBoundsException e) {
+		}
+	}
+
+	@Test
+	public void testAddElementThrowsExceptionIfMaxNotRespected() {
+		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]"), 0, 5);
+		loop.setContent("abcde");
+
+		try {
+			loop.add(2, new Formula("[a-zA-Z]", "a"));
+			fail("Exception not thrown with " + loop);
+		} catch (BoundException e) {
+		}
+	}
+
+	@Test
+	public void testRemoveProperlyRemovesElements() {
+		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]"));
+		loop.setContent("Test");
+
+		loop.remove(0);
+		assertEquals("est", loop.getContent());
+		loop.remove(1);
+		assertEquals("et", loop.getContent());
+		loop.remove(1);
+		assertEquals("e", loop.getContent());
+		loop.remove(0);
+		assertEquals("", loop.getContent());
+	}
+
+	@Test
+	public void testRemoveReturnsCorrectOccurrence() {
+		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]"));
+		loop.setContent("Test");
+
+		assertEquals("T", loop.remove(0).getContent());
+		assertEquals("s", loop.remove(1).getContent());
+		assertEquals("t", loop.remove(1).getContent());
+		assertEquals("e", loop.remove(0).getContent());
+	}
+
+	@Test
+	public void testRemoveProperlyNotifiesListeners() {
+		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]"));
+		loop.setContent("Test");
+		final String[] value = new String[] { null };
+		loop.addContentListener(new ContentListener() {
+
+			@Override
+			public void contentSet(String newContent) {
+				value[0] = newContent;
+			}
+		});
+
+		loop.remove(3);
+		assertEquals("Tes", value[0]);
+		loop.remove(0);
+		assertEquals("es", value[0]);
+		loop.remove(1);
+		assertEquals("e", value[0]);
+		loop.remove(0);
+		assertEquals("", value[0]);
+	}
+
+	@Test
+	public void testUpdateOnRemovedOccurrenceDoesNotNotifyListeners() {
+		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]"));
+		loop.setContent("Test");
+		Formula removed = loop.remove(2);
+
+		final String[] value = new String[] { null };
+		loop.addContentListener(new ContentListener() {
+
+			@Override
+			public void contentSet(String newContent) {
+				value[0] = newContent;
+			}
+		});
+
+		removed.setContent("C");
+		assertEquals(null, value[0]);
+	}
+
+	@Test
+	public void testRemoveThrowsExceptionOnInvalidIndex() {
+		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]"));
+		loop.setContent("Test");
+
+		try {
+			loop.remove(20);
+			fail("Exception not thrown with " + loop);
+		} catch (IndexOutOfBoundsException e) {
+		}
+
+		try {
+			loop.remove(-5);
+			fail("Exception not thrown with " + loop);
+		} catch (IndexOutOfBoundsException e) {
+		}
+	}
+
+	@Test
+	public void testIndexRemoveThrowsExceptionIfMinNotRespected() {
+		Loop<Atom> loop = new Loop<Atom>(new Atom("a"), 5, 10);
+		loop.setContent("aaaaa");
+
+		for (int index = 0; index < loop.size(); index++) {
 			try {
-				loop.add(5, "abc");
-				fail("Exception not thrown with " + loop);
-			} catch (ParsingException e) {
-				assertEquals(loop.toString(),
-						"Incompatible regex \"[a-zA-Z]\" for content \"abc\"",
-						e.getMessage());
+				loop.remove(index);
+				fail("No exception thrown for index " + index);
+			} catch (BoundException e) {
 			}
 		}
 	}
 
 	@Test
-	public void testMove() {
-		for (Loop<Formula> loop : createLoops("[a-zA-Z]", 0, 50)) {
-			loop.setContent("Test");
+	public void testIteratorGivesCorrectSequence() {
+		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]"));
+		loop.setContent("Test");
 
-			loop.move(0, 3);
-			assertEquals(loop.toString(), "estT", loop.getContent());
-			loop.move(2, 0);
-			assertEquals(loop.toString(), "tesT", loop.getContent());
+		Iterator<Formula> iterator = loop.iterator();
+		for (int index = 0; index < loop.size(); index++) {
+			assertTrue("For index " + index, iterator.hasNext());
+			assertEquals("For index " + index, loop.get(index), iterator.next());
+		}
+		assertFalse(iterator.hasNext());
+	}
+
+	@Test
+	public void testIteratorRemoveProperlyRemoves() {
+		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]"));
+		loop.setContent("Test");
+
+		Iterator<Formula> iterator = loop.iterator();
+		iterator.next();
+		iterator.next();
+		iterator.remove();
+		assertEquals("Tst", loop.getContent());
+		iterator.next();
+		iterator.next();
+		iterator.remove();
+		assertEquals("Ts", loop.getContent());
+	}
+
+	@Test
+	public void testIteratorRemoveProperlyNotifiesListener() {
+		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]"));
+		loop.setContent("Test");
+		final String[] value = new String[] { null };
+		loop.addContentListener(new ContentListener() {
+
+			@Override
+			public void contentSet(String newContent) {
+				value[0] = newContent;
+			}
+		});
+
+		Iterator<Formula> iterator = loop.iterator();
+		iterator.next();
+		iterator.next();
+		iterator.remove();
+		assertEquals("Tst", value[0]);
+		iterator.next();
+		iterator.next();
+		iterator.remove();
+		assertEquals("Ts", value[0]);
+	}
+
+	@Test
+	public void testUpdateOnIteratorRemovedOccurrenceDoesNotNotifyListeners() {
+		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]"));
+		loop.setContent("Test");
+
+		Formula removed = loop.get(2);
+		Iterator<Formula> iterator = loop.iterator();
+		iterator.next();
+		iterator.next();
+		iterator.next();
+		iterator.remove();
+
+		final String[] value = new String[] { null };
+		loop.addContentListener(new ContentListener() {
+
+			@Override
+			public void contentSet(String newContent) {
+				value[0] = newContent;
+			}
+		});
+
+		removed.setContent("C");
+		assertEquals(null, value[0]);
+	}
+
+	@Test
+	public void testIteratorRemoveThrowsExceptionIfMinNotRespected() {
+		Loop<Atom> loop = new Loop<Atom>(new Atom("a"), 5, 10);
+		loop.setContent("aaaaa");
+		Iterator<Atom> iterator = loop.iterator();
+
+		int index = 0;
+		while (iterator.hasNext()) {
+			iterator.next();
+			try {
+				iterator.remove();
+				fail("No exception thrown for index " + index);
+			} catch (BoundException e) {
+			}
+			index++;
 		}
 	}
 
@@ -562,7 +764,7 @@ public class LoopTest extends LayerTest {
 	}
 
 	@Test
-	public void testInfiniteLoop() {
+	public void testInfinitelyRecursiveLoopWorksProperly() {
 		A loop = new A();
 		loop.setContent("");
 		loop.setContent("[]");
@@ -578,4 +780,5 @@ public class LoopTest extends LayerTest {
 					e.getMessage());
 		}
 	}
+
 }
