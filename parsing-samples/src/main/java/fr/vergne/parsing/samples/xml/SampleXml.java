@@ -38,7 +38,9 @@ public class SampleXml {
 				id.setContent("modified " + id.getContent());
 
 				NodeList manager = parent.getChildrenManager();
-				Node duplicate = manager.duplicate(manager.size());
+				String duplicateContent = manager.get(manager.size() - 1)
+						.getContent();
+				Node duplicate = manager.add(manager.size(), duplicateContent);
 				duplicate.getField("id").getValue().setContent("new child");
 			} else {
 				// no change
