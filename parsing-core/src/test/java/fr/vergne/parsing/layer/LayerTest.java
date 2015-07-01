@@ -15,7 +15,17 @@ public abstract class LayerTest {
 	protected abstract Layer instantiateFilledLayer();
 
 	@Test
-	public void testContentStreamAlignment() throws IOException {
+	public void testNullContentThrowsNullPointerException() {
+		Layer layer = instantiateFilledLayer();
+		try {
+			layer.setContent(null);
+			fail("No exception thrown.");
+		} catch (NullPointerException e) {
+		}
+	}
+
+	@Test
+	public void testInputStreamPreservesContent() throws IOException {
 		Layer layer = instantiateFilledLayer();
 		String content = layer.getContent();
 		InputStream stream = layer.getInputStream();
@@ -25,16 +35,6 @@ public abstract class LayerTest {
 			builder.appendCodePoint(codePoint);
 		}
 		assertEquals(content, builder.toString());
-	}
-
-	@Test
-	public void testSetNullContent() {
-		Layer layer = instantiateFilledLayer();
-		try {
-			layer.setContent(null);
-			fail("No exception thrown.");
-		} catch (NullPointerException e) {
-		}
 	}
 
 	protected abstract Layer instantiateFilledLayerwithSpecialCharacters(
