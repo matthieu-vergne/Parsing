@@ -31,8 +31,28 @@ public class Formula extends AbstractLayer {
 	private final String regex;
 	private String content;
 
+	/**
+	 * Create a {@link Formula} without any content yet.
+	 * 
+	 * @param regex
+	 *            the regex of this {@link Formula}
+	 */
 	public Formula(String regex) {
 		this.regex = regex;
+	}
+
+	/**
+	 * Create a {@link Formula} with an initial content. The content should be
+	 * compatible with the regex provided.
+	 * 
+	 * @param regex
+	 *            the regex of this {@link Formula}
+	 * @param content
+	 *            the content of this {@link Formula}
+	 */
+	public Formula(String regex, String content) {
+		this(regex);
+		setContent(content);
 	}
 
 	@Override
