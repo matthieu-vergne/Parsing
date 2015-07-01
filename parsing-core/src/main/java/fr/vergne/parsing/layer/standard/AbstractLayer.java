@@ -39,14 +39,24 @@ public abstract class AbstractLayer implements Layer {
 	public final void setContent(String content) {
 		if (content == null) {
 			throw new NullPointerException("No content has been provided.");
-		} else if (listeners.isEmpty()) {
-			setInternalContent(content);
 		} else {
-			String oldValue = getContent();
 			setInternalContent(content);
-			for (ContentListener listener : listeners) {
-				listener.contentSet(oldValue, content);
-			}
+			fireContentUpdate(content);
+		}
+	}
+
+	/**
+	 * This method allows to notify the {@link ContentListener}s registered
+	 * through
+	 * {@link #addContentListener(fr.vergne.parsing.layer.Layer.ContentListener)}
+	 * that the content of the {@link Layer} has changed.
+	 * 
+	 * @param newContent
+	 *            the new content of this {@link Layer}
+	 */
+	protected void fireContentUpdate(String newContent) {
+		for (ContentListener listener : listeners) {
+			listener.contentSet(newContent);
 		}
 	}
 

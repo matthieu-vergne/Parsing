@@ -83,7 +83,9 @@ public interface Layer {
 
 	/**
 	 * A {@link ContentListener} allows to notify other elements when a
-	 * {@link Layer} sees its {@link Layer#setContent(String)} method called.
+	 * {@link Layer} sees its contents modified. It does not necessarily reduce
+	 * the to the call of {@link Layer#setContent(String)}, but can come from
+	 * other methods which modifies part of the content.
 	 * 
 	 * @author Matthieu Vergne <matthieu.vergne@gmail.com>
 	 * 
@@ -91,15 +93,12 @@ public interface Layer {
 	public static interface ContentListener {
 
 		/**
-		 * This method is called just after a new content has been set through
-		 * {@link Layer#setContent(String)}. Thus, the content is already
-		 * changed when this method is called.
+		 * This method is called just after the modification of the content.
+		 * Thus, the content is already changed when this method is called.
 		 * 
-		 * @param oldValue
-		 *            the previous value of the {@link Layer}
-		 * @param newValue
-		 *            the new, current value of the {@link Layer}
+		 * @param newContent
+		 *            the new, current content of the {@link Layer}
 		 */
-		public void contentSet(String oldValue, String newValue);
+		public void contentSet(String newContent);
 	}
 }
