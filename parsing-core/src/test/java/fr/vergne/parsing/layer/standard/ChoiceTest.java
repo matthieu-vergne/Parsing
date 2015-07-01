@@ -4,40 +4,32 @@ import static org.junit.Assert.*;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
 
 import org.junit.Test;
 
 import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.LayerTest;
 import fr.vergne.parsing.layer.exception.ParsingException;
-import fr.vergne.parsing.layer.util.Any;
 
 public class ChoiceTest extends LayerTest {
-	
-	@Override
-	protected Layer instantiateFilledLayer() {
-		String content = "test";
-		Formula contiguous = new Formula("[a-z]+");
-		Formula newline = new Formula("[A-Z\n]+");
-		Formula empty = new Formula("");
-		Choice choice = new Choice(contiguous, newline, empty);
-		choice.setContent(content);
-		return choice;
-	}
 
 	@Override
-	protected Layer instantiateFilledLayerwithSpecialCharacters(
-			Collection<String> charactersToReuse) {
-		StringBuilder builder = new StringBuilder();
-		for (String character : charactersToReuse) {
-			builder.append(character);
+	protected Map<String, Layer> instantiateLayers(
+			Collection<String> specialCharacters) {
+		Collection<Layer> alternatives = new LinkedList<Layer>();
+		for (String content : specialCharacters) {
+			alternatives.add(new Atom(content));
 		}
-		Formula oneCharacter = new Formula(".");
-		Formula oneLine = new Formula(".+");
-		Formula anything = new Any();
-		Choice choice = new Choice(oneCharacter, oneLine, anything);
-		choice.setContent(builder.toString());
-		return choice;
+		Choice choice = new Choice(alternatives);
+
+		Map<String, Layer> map = new HashMap<String, Layer>();
+		for (String content : specialCharacters) {
+			map.put(content, choice);
+		}
+		return map;
 	}
 
 	@Test

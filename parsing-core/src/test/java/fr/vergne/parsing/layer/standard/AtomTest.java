@@ -3,6 +3,8 @@ package fr.vergne.parsing.layer.standard;
 import static org.junit.Assert.*;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.junit.Test;
 
@@ -11,24 +13,15 @@ import fr.vergne.parsing.layer.LayerTest;
 import fr.vergne.parsing.layer.exception.ParsingException;
 
 public class AtomTest extends LayerTest {
-
+	
 	@Override
-	protected Layer instantiateFilledLayer() {
-		Atom atom = new Atom("test");
-		atom.setContent("test");
-		return atom;
-	}
-
-	@Override
-	protected Layer instantiateFilledLayerwithSpecialCharacters(
-			Collection<String> charactersToReuse) {
-		StringBuilder builder = new StringBuilder();
-		for (String character : charactersToReuse) {
-			builder.append(character);
+	protected Map<String, Layer> instantiateLayers(
+			Collection<String> specialCharacters) {
+		Map<String, Layer> map = new HashMap<String, Layer>();
+		for (String content : specialCharacters) {
+			map.put(content, new Atom(content));
 		}
-		Atom atom = new Atom(builder.toString());
-		atom.setContent(builder.toString());
-		return atom;
+		return map;
 	}
 
 	@Test

@@ -3,8 +3,10 @@ package fr.vergne.parsing.layer.standard;
 import static org.junit.Assert.*;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 
 import org.junit.Test;
 
@@ -18,22 +20,23 @@ import fr.vergne.parsing.layer.standard.Loop.Generator;
 public class LoopTest extends LayerTest {
 
 	@Override
-	protected Layer instantiateFilledLayer() {
-		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]"));
-		loop.setContent("test");
-		return loop;
-	}
-
-	@Override
-	protected Layer instantiateFilledLayerwithSpecialCharacters(
-			Collection<String> charactersToReuse) {
+	protected Map<String, Layer> instantiateLayers(
+			Collection<String> specialCharacters) {
 		StringBuilder builder = new StringBuilder();
-		for (String character : charactersToReuse) {
+		for (String character : specialCharacters) {
 			builder.append(character);
 		}
+
 		Loop<Formula> loop = new Loop<Formula>(new Formula("(?s:.)"));
-		loop.setContent(builder.toString());
-		return loop;
+		Map<String, Layer> map = new HashMap<String, Layer>();
+		map.put(builder.toString(), loop);
+
+		Loop<Formula> loop2 = new Loop<Formula>(new Formula("[a-zA-Z\n]"));
+		map.put("test", loop2);
+		map.put("test\ntest", loop2);
+		map.put("", loop2);
+
+		return map;
 	}
 
 	@Test
@@ -67,6 +70,15 @@ public class LoopTest extends LayerTest {
 		assertTrue(generated.contains(loop.get(1)));
 		assertTrue(generated.contains(loop.get(2)));
 	}
+	
+	@Test
+	public void testGeneratorInstanceThrowsExceptionOnNullGenerator() {
+		try {
+			new Loop<Formula>((Generator<Formula>) null);
+			fail("No exception thrown");
+		} catch (NullPointerException e) {
+		}
+	}
 
 	@Test
 	public void testTemplateInstanceProperlyGeneratesClones() {
@@ -82,6 +94,10 @@ public class LoopTest extends LayerTest {
 		Loop<Formula> loop = new Loop<Formula>(template);
 		loop.setContent("abc");
 
+		assertNotSame(template, loop.get(0));
+		assertNotSame(template, loop.get(1));
+		assertNotSame(template, loop.get(2));
+
 		assertSame(loop.get(0), loop.get(0));
 		assertNotSame(loop.get(0), loop.get(1));
 		assertNotSame(loop.get(0), loop.get(2));
@@ -94,13 +110,18 @@ public class LoopTest extends LayerTest {
 		assertNotSame(loop.get(2), loop.get(1));
 		assertSame(loop.get(2), loop.get(2));
 
-		assertNotSame(template, loop.get(0));
-		assertNotSame(template, loop.get(1));
-		assertNotSame(template, loop.get(2));
-
 		assertTrue(clones.contains(loop.get(0)));
 		assertTrue(clones.contains(loop.get(1)));
 		assertTrue(clones.contains(loop.get(2)));
+	}
+
+	@Test
+	public void testTemplateInstanceThrowsExceptionOnNullTemplate() {
+		try {
+			new Loop<Formula>((Formula) null);
+			fail("No exception thrown");
+		} catch (NullPointerException e) {
+		}
 	}
 
 	@Test
@@ -115,6 +136,7 @@ public class LoopTest extends LayerTest {
 					"Unable to parse Formula[[a-zA-Z\\n]] for " + loop
 							+ " from (1,1): \"123\"", e.getMessage());
 		}
+
 		try {
 			loop.setContent("abc123");
 			fail("Exception not thrown.");
@@ -123,6 +145,7 @@ public class LoopTest extends LayerTest {
 					"Unable to parse Formula[[a-zA-Z\\n]] for " + loop
 							+ " from (1,4): \"123\"", e.getMessage());
 		}
+
 		try {
 			loop.setContent("abc\nabc123");
 			fail("Exception not thrown.");
@@ -131,6 +154,7 @@ public class LoopTest extends LayerTest {
 					"Unable to parse Formula[[a-zA-Z\\n]] for " + loop
 							+ " from (2,4): \"123\"", e.getMessage());
 		}
+
 		try {
 			loop.setContent("abc123abc");
 			fail("Exception not thrown.");
@@ -195,40 +219,6 @@ public class LoopTest extends LayerTest {
 	}
 
 	@Test
-	public void testGetContentProperlyReturnsSetContent() {
-		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z\n]"));
-
-		loop.setContent("test");
-		assertEquals("test", loop.getContent());
-
-		loop.setContent("test\ntest");
-		assertEquals("test\ntest", loop.getContent());
-
-		loop.setContent("");
-		assertEquals("", loop.getContent());
-	}
-
-	@Test
-	public void testSetContentProperlyNotifiesListeners() {
-		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]"));
-		final String[] value = new String[] { null };
-		loop.addContentListener(new ContentListener() {
-
-			@Override
-			public void contentSet(String newContent) {
-				value[0] = newContent;
-			}
-		});
-
-		loop.setContent("Test");
-		assertEquals(loop.getContent(), value[0]);
-		loop.setContent("aze");
-		assertEquals(loop.getContent(), value[0]);
-		loop.setContent("MUAHAHA");
-		assertEquals(loop.getContent(), value[0]);
-	}
-
-	@Test
 	public void testSizeCorrespondsToNumberOfElementsInLoop() {
 		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]"));
 
@@ -245,7 +235,7 @@ public class LoopTest extends LayerTest {
 	}
 
 	@Test
-	public void testIsEmpty() {
+	public void testIsEmptyOnlyWhenActuallyEmpty() {
 		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]"));
 
 		loop.setContent("Tes");

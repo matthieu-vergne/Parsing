@@ -2,6 +2,7 @@ package fr.vergne.parsing.layer.standard;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -65,7 +66,9 @@ public class Loop<Element extends Layer> extends AbstractLayer implements
 	 *            {@link Integer#MAX_VALUE}
 	 */
 	public Loop(Generator<Element> generator, int min, int max) {
-		if (min < 0) {
+		if (generator == null) {
+			throw new NullPointerException("No generator provided");
+		} else if (min < 0) {
 			throw new IllegalArgumentException(
 					"The minimum should be positive: " + min);
 		} else if (max < min) {
@@ -124,32 +127,44 @@ public class Loop<Element extends Layer> extends AbstractLayer implements
 	 */
 	public static <Element extends Layer> Generator<Element> createGeneratorFromTemplate(
 			final Element template) {
-		boolean isCloneable;
-		try {
-			Object clone = template.getClass().getMethod("clone")
-					.invoke(template);
-			isCloneable = clone != null && clone != template;
-		} catch (Exception e) {
-			isCloneable = false;
-		}
-
-		if (isCloneable) {
-			return new Generator<Element>() {
-
-				@SuppressWarnings("unchecked")
-				@Override
-				public Element generates() {
-					try {
-						return (Element) template.getClass().getMethod("clone")
-								.invoke(template);
-					} catch (Exception e) {
-						throw new RuntimeException(e);
-					}
-				}
-			};
+		if (template == null) {
+			throw new NullPointerException("No template has been provided");
 		} else {
-			throw new IllegalArgumentException(
-					"The provided template is not clonable");
+			boolean isCloneable;
+			try {
+				Method method = template.getClass().getMethod("clone");
+				method.setAccessible(true);
+				Object clone = method.invoke(template);
+				isCloneable = clone != null && clone != template;
+			} catch (Exception e) {
+				e.printStackTrace();
+				isCloneable = false;
+			}
+
+			if (isCloneable) {
+				try {
+					final Method cloneMethod = template.getClass().getMethod(
+							"clone");
+					cloneMethod.setAccessible(true);
+					return new Generator<Element>() {
+
+						@SuppressWarnings("unchecked")
+						@Override
+						public Element generates() {
+							try {
+								return (Element) cloneMethod.invoke(template);
+							} catch (Exception e) {
+								throw new RuntimeException(e);
+							}
+						}
+					};
+				} catch (Exception e) {
+					throw new RuntimeException(e);
+				}
+			} else {
+				throw new IllegalArgumentException(
+						"The provided template is not clonable: " + template);
+			}
 		}
 	}
 

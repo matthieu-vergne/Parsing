@@ -31,17 +31,15 @@ public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 		extends AbstractLayer implements Iterable<Element> {
 
 	private final Layer overall;
-	private final Element head;
+	private final LayerProxy<Element> head;
 	private final Loop<Suite> loop;
+	private final Separator separatorDefault;
+	private final Generator<Element> elementGenerator;
+	private final Generator<Separator> separatorGenerator;
 
-	public SeparatedLoop(Generator<Element> itemGenerator,
-			Generator<Separator> separatorGenerator) {
-		this(itemGenerator, separatorGenerator, 0, Integer.MAX_VALUE);
-	}
-
-	public SeparatedLoop(final Generator<Element> itemGenerator,
+	public SeparatedLoop(final Generator<Element> elementGenerator,
 			final Generator<Separator> separatorGenerator, int min, int max) {
-		head = itemGenerator.generates();
+		head = new LayerProxy<Element>(elementGenerator.generates());
 		int loopMin = Math.max(0, min - 1);
 		int loopMax = max == Integer.MAX_VALUE ? max : Math.max(0, max - 1);
 		loop = new Loop<Suite>(new Generator<Suite>() {
@@ -49,12 +47,49 @@ public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 			@Override
 			public Suite generates() {
 				return new Suite(separatorGenerator.generates(),
-						itemGenerator.generates());
+						elementGenerator.generates());
 			}
 		}, loopMin, loopMax);
 
 		Suite suite = new Suite(head, loop);
 		overall = min == 0 ? new Option<Suite>(suite) : suite;
+
+		this.elementGenerator = elementGenerator;
+		this.separatorGenerator = separatorGenerator;
+		separatorDefault = separatorGenerator.generates();
+
+		overall.addContentListener(new ContentListener() {
+
+			@Override
+			public void contentSet(String newContent) {
+				fireContentUpdate(getContent());
+			}
+		});
+	}
+
+	public SeparatedLoop(Generator<Element> elementGenerator,
+			Generator<Separator> separatorGenerator, int count) {
+		this(elementGenerator, separatorGenerator, count, count);
+	}
+
+	public SeparatedLoop(Generator<Element> elementGenerator,
+			Generator<Separator> separatorGenerator) {
+		this(elementGenerator, separatorGenerator, 0, Integer.MAX_VALUE);
+	}
+
+	public SeparatedLoop(Element elementTemplate, Separator separatorTemplate,
+			int min, int max) {
+		this(Loop.createGeneratorFromTemplate(elementTemplate), Loop
+				.createGeneratorFromTemplate(separatorTemplate), min, max);
+	}
+
+	public SeparatedLoop(Element elementTemplate, Separator separatorTemplate,
+			int count) {
+		this(elementTemplate, separatorTemplate, count, count);
+	}
+
+	public SeparatedLoop(Element elementTemplate, Separator separatorTemplate) {
+		this(elementTemplate, separatorTemplate, 0, Integer.MAX_VALUE);
 	}
 
 	@Override
@@ -66,6 +101,11 @@ public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 	protected void setInternalContent(String content) {
 		try {
 			overall.setContent(content);
+			if (size() >= 2) {
+				separatorDefault.setContent(getSeparator(0).getContent());
+			} else {
+				// keep old value if any
+			}
 		} catch (ParsingException e) {
 			throw new ParsingException(this, overall, content, e.getStart(),
 					content.length(), e);
@@ -109,6 +149,10 @@ public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 		}
 	}
 
+	public boolean isEmpty() {
+		return size() == 0;
+	}
+
 	/**
 	 * 
 	 * @param index
@@ -121,10 +165,73 @@ public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 	public Element get(int index) throws IndexOutOfBoundsException {
 		if ((overall instanceof Suite || ((Option<Suite>) overall).isPresent())
 				&& loop.size() > index - 1 && index >= 0) {
-			return index == 0 ? head : (Element) loop.get(index - 1).get(1);
+			return index == 0 ? head.getLayer() : (Element) loop.get(index - 1)
+					.get(1);
 		} else {
 			throw new IndexOutOfBoundsException("The index (" + index
 					+ ") should be between 0 and " + size());
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	public Separator getSeparator(int index) {
+		if ((overall instanceof Suite || ((Option<Suite>) overall).isPresent())
+				&& loop.size() > index - 2 && index >= 0) {
+			return loop.get(index).get(0);
+		} else {
+			throw new IndexOutOfBoundsException("The index (" + index
+					+ ") should be between 0 and " + size());
+		}
+	}
+
+	public void setDefaultSeparator(String separator) {
+		separatorDefault.setContent(separator);
+	}
+
+	public String getDefaultSeparator() {
+		return separatorDefault.getContent();
+	}
+
+	public void add(int index, Element element) {
+		if (size() == 0) {
+			head.setLayer(element);
+		} else {
+			String sep = separatorDefault.getContent();
+			if (sep == null) {
+				throw new RuntimeException("No default separator setup.");
+			} else {
+				Separator separator = separatorGenerator.generates();
+				separator.setContent(separatorDefault.getContent());
+				if (index == 0) {
+					Suite added = new Suite(separator, head.getLayer());
+					head.setLayer(element);
+					loop.add(0, added);
+				} else {
+					Suite added = new Suite(separator, element);
+					loop.add(index - 1, added);
+				}
+			}
+		}
+	}
+
+	public Element add(int index, String content) {
+		Element element = elementGenerator.generates();
+		element.setContent(content);
+		add(index, element);
+		return element;
+	}
+
+	public Element remove(int index) {
+		if (index == 0) {
+			Element removed = head.getLayer();
+			if (size() == 1) {
+				overall.setContent("");
+			} else {
+				head.setLayer(loop.remove(0).<Element> get(1));
+			}
+			return removed;
+		} else {
+			return loop.remove(index - 1).get(1);
 		}
 	}
 
@@ -146,8 +253,8 @@ public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 
 			@Override
 			public void remove() {
-				throw new RuntimeException(
-						"You cannot remove an element from this iterator.");
+				SeparatedLoop.this.remove(currentIndex);
+				currentIndex--;
 			}
 		};
 	}

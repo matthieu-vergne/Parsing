@@ -58,6 +58,17 @@ public class Suite extends AbstractLayer {
 					"No layer provided to the suite: " + sequence);
 		} else {
 			this.sequence = Collections.unmodifiableList(sequence);
+			
+			ContentListener listener = new ContentListener() {
+				
+				@Override
+				public void contentSet(String newContent) {
+					fireContentUpdate(getContent());
+				}
+			};
+			for (Layer layer : sequence) {
+				layer.addContentListener(listener);
+			}
 		}
 	}
 
@@ -78,7 +89,12 @@ public class Suite extends AbstractLayer {
 	public String getContent() {
 		String content = "";
 		for (Layer layer : sequence) {
-			content += layer.getContent();
+			String value = layer.getContent();
+			if (value == null) {
+				return null;
+			} else {
+				content += value;
+			}
 		}
 		return content;
 	}

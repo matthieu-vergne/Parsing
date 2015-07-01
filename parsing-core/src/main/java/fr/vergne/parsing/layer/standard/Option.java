@@ -30,6 +30,17 @@ public class Option<CLayer extends Layer> extends AbstractLayer implements
 
 	public Option(CLayer layer) {
 		this.option = layer;
+		this.option.addContentListener(new ContentListener() {
+			
+			@Override
+			public void contentSet(String newContent) {
+				if (isPresent) {
+					fireContentUpdate(getContent());
+				} else {
+					// don't care
+				}
+			}
+		});
 	}
 
 	public void setMode(GreedyMode mode) {

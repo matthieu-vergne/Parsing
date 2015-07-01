@@ -4,40 +4,34 @@ import static org.junit.Assert.*;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.Test;
 
 import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.LayerTest;
+import fr.vergne.parsing.layer.Layer.ContentListener;
 import fr.vergne.parsing.layer.exception.ParsingException;
 
 public class SuiteTest extends LayerTest {
 
 	@Override
-	protected Layer instantiateFilledLayer() {
-		Formula letter1 = new Formula("[a-zA-Z]");
-		Atom letter2 = new Atom("e");
-		Atom letter3 = new Atom("s");
-		Formula letter4 = new Formula("[a-zA-Z]");
-		Suite suite = new Suite(letter1, letter2, letter3, letter4);
-		suite.setContent("test");
-		return suite;
-	}
-
-	@Override
-	protected Layer instantiateFilledLayerwithSpecialCharacters(
-			Collection<String> charactersToReuse) {
-		List<Atom> sequence = new LinkedList<Atom>();
+	protected Map<String, Layer> instantiateLayers(
+			Collection<String> specialCharacters) {
 		StringBuilder builder = new StringBuilder();
-		for (String character : charactersToReuse) {
-			sequence.add(new Atom(character));
+		List<Layer> sequence = new LinkedList<Layer>();
+		for (String character : specialCharacters) {
 			builder.append(character);
+			sequence.add(new Atom(character));
 		}
 		Suite suite = new Suite(sequence);
-		suite.setContent(builder.toString());
-		return suite;
+
+		Map<String, Layer> map = new HashMap<String, Layer>();
+		map.put(builder.toString(), suite);
+		return map;
 	}
 
 	@Test
@@ -468,6 +462,59 @@ public class SuiteTest extends LayerTest {
 		assertSame(space2, suite.get(3));
 		assertSame(word3, suite.get(4));
 		assertSame(dot, suite.get(5));
+	}
+	
+	@Test
+	public void testInnerContentUpdateOfFilledSuiteNotifiesListeners() {
+		Formula word1 = new Formula("[a-zA-Z]+");
+		Formula word2 = new Formula("[a-zA-Z]+");
+		Formula word3 = new Formula("[a-zA-Z]+");
+		Atom space1 = new Atom(" ");
+		Atom space2 = new Atom(" ");
+		Atom dot = new Atom(".");
+		Suite suite = new Suite(word1, space1, word2, space2, word3, dot);
+		suite.setContent("A testing case.");
+		
+		final String[] value = new String[] { null };
+		suite.addContentListener(new ContentListener() {
+
+			@Override
+			public void contentSet(String newContent) {
+				value[0] = newContent;
+			}
+		});
+
+		word1.setContent("Another");
+		assertEquals(suite.getContent(), value[0]);
+		word2.setContent("running");
+		assertEquals(suite.getContent(), value[0]);
+	}
+	
+	@Test
+	public void testInnerContentUpdateOfUnfilledSuiteDoesNotNotifyListeners() {
+		Formula word1 = new Formula("[a-zA-Z]+");
+		Formula word2 = new Formula("[a-zA-Z]+");
+		Formula word3 = new Formula("[a-zA-Z]+");
+		Atom space1 = new Atom(" ");
+		Atom space2 = new Atom(" ");
+		Atom dot = new Atom(".");
+		Suite suite = new Suite(word1, space1, word2, space2, word3, dot);
+		
+		final String[] value = new String[] { null };
+		suite.addContentListener(new ContentListener() {
+
+			@Override
+			public void contentSet(String newContent) {
+				value[0] = newContent;
+			}
+		});
+
+		word1.setContent("A");
+		assertEquals(null, value[0]);
+		word2.setContent("testing");
+		assertEquals(null, value[0]);
+		word2.setContent("case");
+		assertEquals(suite.getContent(), value[0]);
 	}
 
 }

@@ -3,6 +3,8 @@ package fr.vergne.parsing.layer.standard;
 import static org.junit.Assert.*;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.junit.Test;
 
@@ -13,23 +15,14 @@ import fr.vergne.parsing.layer.exception.ParsingException;
 public class FormulaTest extends LayerTest {
 
 	@Override
-	protected Layer instantiateFilledLayer() {
-		String content = "test";
-		Formula formula = new Formula("[a-z]{4}");
-		formula.setContent(content);
-		return formula;
-	}
-
-	@Override
-	protected Layer instantiateFilledLayerwithSpecialCharacters(
-			Collection<String> charactersToReuse) {
-		StringBuilder builder = new StringBuilder();
-		for (String character : charactersToReuse) {
-			builder.append(character);
-		}
+	protected Map<String, Layer> instantiateLayers(
+			Collection<String> specialCharacters) {
 		Formula formula = new Formula("(?s:.+)");
-		formula.setContent(builder.toString());
-		return formula;
+		Map<String, Layer> map = new HashMap<String, Layer>();
+		for (String content : specialCharacters) {
+			map.put(content, formula);
+		}
+		return map;
 	}
 
 	@Test
