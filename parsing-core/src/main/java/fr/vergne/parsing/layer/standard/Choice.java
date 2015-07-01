@@ -153,4 +153,26 @@ public class Choice extends AbstractLayer {
 		}
 		return "CHOICE" + choices;
 	}
+
+	@Override
+	public Object clone() {
+		Collection<Layer> clonedAlternatives = new LinkedList<Layer>();
+		try {
+			for (Layer alternative : alternatives) {
+				Layer clone = (Layer) alternative.getClass().getMethod("clone")
+						.invoke(alternative);
+				clonedAlternatives.add(clone);
+			}
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+		Choice choice = new Choice(clonedAlternatives);
+		String content = getContent();
+		if (content != null) {
+			choice.setContent(content);
+		} else {
+			// keep it not filled
+		}
+		return choice;
+	}
 }

@@ -92,4 +92,24 @@ public class Option<CLayer extends Layer> extends AbstractLayer implements
 	public String toString() {
 		return option.toString() + "(opt)";
 	}
+	
+	@SuppressWarnings("unchecked")
+	@Override
+	public Object clone() {
+		CLayer clone;
+		try {
+			clone = (CLayer) option.getClass().getMethod("clone")
+					.invoke(option);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+		Option<CLayer> option = new Option<CLayer>(clone, mode);
+		String content = getContent();
+		if (content != null) {
+			option.setContent(content);
+		} else {
+			// keep it not filled
+		}
+		return option;
+	}
 }

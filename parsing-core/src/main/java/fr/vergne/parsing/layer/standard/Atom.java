@@ -25,4 +25,9 @@ public class Atom extends Formula {
 	public String toString() {
 		return "ATOM[" + content + "]";
 	}
+	
+	@Override
+	public Object clone() {
+		return new Atom(content);
+	}
 }

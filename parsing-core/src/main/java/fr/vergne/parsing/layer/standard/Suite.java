@@ -175,4 +175,26 @@ public class Suite extends AbstractLayer {
 	public <CLayer extends Layer> CLayer get(int index) {
 		return (CLayer) sequence.get(index);
 	}
+
+	@Override
+	public Object clone() {
+		List<Layer> clonedSequence = new LinkedList<Layer>();
+		try {
+			for (Layer original : sequence) {
+				Layer clone = (Layer) original.getClass().getMethod("clone")
+						.invoke(original);
+				clonedSequence.add(clone);
+			}
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+		Suite suite = new Suite(clonedSequence);
+		String content = getContent();
+		if (content != null) {
+			suite.setContent(content);
+		} else {
+			// keep it not filled
+		}
+		return suite;
+	}
 }

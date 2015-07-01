@@ -63,4 +63,16 @@ public class Formula extends AbstractLayer {
 	public String toString() {
 		return getClass().getSimpleName() + "[" + regex + "]";
 	}
+
+	@Override
+	public Object clone() {
+		Formula formula = new Formula(getRegex());
+		String content = getContent();
+		if (content != null) {
+			formula.setContent(content);
+		} else {
+			// keep it not filled
+		}
+		return formula;
+	}
 }
