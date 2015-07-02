@@ -14,20 +14,18 @@ import fr.vergne.parsing.layer.Layer;
  */
 public class Atom extends Formula {
 
-	private final String content;
-
 	public Atom(String content) {
 		super(Pattern.quote(content));
-		this.content = content;
+		setContent(content);
 	}
 
 	@Override
 	public String toString() {
-		return "ATOM[" + content + "]";
+		return "ATOM[" + getContent() + "]";
 	}
 	
 	@Override
 	public Object clone() {
-		return new Atom(content);
+		return new Atom(getContent());
 	}
 }
