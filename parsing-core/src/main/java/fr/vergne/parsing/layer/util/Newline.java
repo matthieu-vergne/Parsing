@@ -6,6 +6,7 @@ public class Newline extends Formula {
 
 	public Newline() {
 		super("(?:(?:\r\n)|(?:\n\r)|(?:(?<!\n)\r(?!\n))|(?:(?<!\r)\n(?!\r)))");
+		setContent("\n");
 	}
 
 	@Override
