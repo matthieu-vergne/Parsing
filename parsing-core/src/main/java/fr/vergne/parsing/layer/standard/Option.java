@@ -92,6 +92,29 @@ public class Option<CLayer extends Layer> extends AbstractLayer implements
 	}
 
 	/**
+	 * This method is an indirect way to set the content of this {@link Option}
+	 * by switching between an empty content (<code>false</code>) and a
+	 * non-empty one (<code>true</code>). Notice that it is always possible to
+	 * switch to an empty content, but you can switch to a non-empty one
+	 * <u>only</u> if the {@link Layer} returned by {@link #getOption()} has a
+	 * content (not <code>null</code>). If it is not the case, calling this
+	 * method to activate the option will throw an exception.
+	 * 
+	 * @param isPresent
+	 *            <code>true</code> to activate the option returned by
+	 *            {@link #getOption()}, <code>false</code> to deactivate it
+	 */
+	public void setPresent(boolean isPresent) {
+		if (isPresent && getOption().getContent() == null) {
+			throw new RuntimeException(
+					"Impossible to activate the option: it has no content");
+		} else {
+			this.isPresent = isPresent;
+			fireContentUpdate(getContent());
+		}
+	}
+
+	/**
 	 * 
 	 * @return the option wrapped by this {@link Option}, whether it is used or
 	 *         not
