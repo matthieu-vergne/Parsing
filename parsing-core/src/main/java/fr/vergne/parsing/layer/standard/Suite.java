@@ -51,6 +51,7 @@ import fr.vergne.parsing.layer.exception.ParsingException;
 public class Suite extends AbstractLayer {
 
 	private final List<? extends Layer> sequence;
+	private boolean listenerActivated = true;
 
 	public Suite(List<? extends Layer> sequence) {
 		if (sequence == null || sequence.isEmpty()) {
@@ -63,7 +64,11 @@ public class Suite extends AbstractLayer {
 				
 				@Override
 				public void contentSet(String newContent) {
-					fireContentUpdate(getContent());
+					if (listenerActivated) {
+						fireContentUpdate(getContent());
+					} else {
+						// do not fire
+					}
 				}
 			};
 			for (Layer layer : sequence) {
@@ -132,6 +137,7 @@ public class Suite extends AbstractLayer {
 				"^" + buildCapturingRegex(sequence) + "$").matcher(content);
 		if (matcher.find()) {
 			int delta = 0;
+			listenerActivated = false;
 			for (int i = 1; i <= matcher.groupCount(); i++) {
 				String match = matcher.group(i);
 				int subStart = delta;
@@ -145,6 +151,8 @@ public class Suite extends AbstractLayer {
 				}
 				delta += match.length();
 			}
+			listenerActivated = true;
+			fireContentUpdate(content);
 		} else {
 			LinkedList<Layer> preOk = new LinkedList<Layer>(sequence);
 			LinkedList<Layer> innerKo = new LinkedList<Layer>();
