@@ -32,7 +32,7 @@ public class Option<CLayer extends Layer> extends AbstractLayer implements
 		this.option = layer;
 		setContent("");
 		this.option.addContentListener(new ContentListener() {
-			
+
 			@Override
 			public void contentSet(String newContent) {
 				if (isPresent) {
@@ -127,7 +127,7 @@ public class Option<CLayer extends Layer> extends AbstractLayer implements
 	public String toString() {
 		return option.toString() + "(opt)";
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	@Override
 	public Object clone() {
