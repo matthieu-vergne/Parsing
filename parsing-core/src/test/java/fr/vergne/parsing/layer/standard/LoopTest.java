@@ -297,23 +297,23 @@ public class LoopTest extends LayerTest {
 	@Test
 	public void testAddContentProperlyAddsElement() {
 		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z]"));
-		loop.setContent("Test");
+		loop.setContent("");
 
 		loop.add(loop.size(), "i");
-		assertEquals("Testi", loop.getContent());
+		assertEquals("i", loop.getContent());
 		loop.add(loop.size(), "n");
-		assertEquals("Testin", loop.getContent());
+		assertEquals("in", loop.getContent());
 		loop.add(loop.size(), "g");
-		assertEquals("Testing", loop.getContent());
+		assertEquals("ing", loop.getContent());
 
-		loop.add(0, "V");
-		assertEquals("VTesting", loop.getContent());
-		loop.add(1, "i");
-		assertEquals("ViTesting", loop.getContent());
-		loop.add(2, "v");
-		assertEquals("VivTesting", loop.getContent());
-		loop.add(3, "a");
-		assertEquals("VivaTesting", loop.getContent());
+		loop.add(0, "T");
+		assertEquals("Ting", loop.getContent());
+		loop.add(1, "e");
+		assertEquals("Teing", loop.getContent());
+		loop.add(2, "s");
+		assertEquals("Tesing", loop.getContent());
+		loop.add(3, "t");
+		assertEquals("Testing", loop.getContent());
 	}
 
 	@Test

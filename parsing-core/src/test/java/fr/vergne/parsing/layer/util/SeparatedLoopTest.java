@@ -430,20 +430,20 @@ public class SeparatedLoopTest extends LayerTest {
 	public void testAddContentProperlyAddsElement() {
 		SeparatedLoop<Formula, Formula> loop = new SeparatedLoop<Formula, Formula>(
 				new Formula("[a-zA-Z]"), new Formula("[,;]"));
-		loop.setContent("a,b,c,d");
 		loop.setDefaultSeparator(",");
+		loop.setContent("");
 
+		loop.add(loop.size(), "d");
+		assertEquals("d", loop.getContent());
 		loop.add(loop.size(), "e");
-		assertEquals("a,b,c,d,e", loop.getContent());
-		loop.add(loop.size(), "f");
-		assertEquals("a,b,c,d,e,f", loop.getContent());
+		assertEquals("d,e", loop.getContent());
 
-		loop.add(1, "z");
-		assertEquals("a,z,b,c,d,e,f", loop.getContent());
-		loop.add(0, "y");
-		assertEquals("y,a,z,b,c,d,e,f", loop.getContent());
-		loop.add(3, "x");
-		assertEquals("y,a,z,x,b,c,d,e,f", loop.getContent());
+		loop.add(0, "a");
+		assertEquals("a,d,e", loop.getContent());
+		loop.add(1, "b");
+		assertEquals("a,b,d,e", loop.getContent());
+		loop.add(2, "c");
+		assertEquals("a,b,c,d,e", loop.getContent());
 	}
 
 	@Test

@@ -197,6 +197,7 @@ public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 	public void add(int index, Element element) {
 		if (size() == 0) {
 			head.setLayer(element);
+			((Option<?>) overall).setPresent(true);
 		} else {
 			String sep = separatorDefault.getContent();
 			if (sep == null) {
