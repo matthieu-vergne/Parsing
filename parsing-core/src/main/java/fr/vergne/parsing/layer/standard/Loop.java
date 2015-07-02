@@ -207,7 +207,13 @@ public class Loop<Element extends Layer> extends AbstractLayer implements
 	protected void setInternalContent(String content) {
 		Matcher matcher = Pattern.compile(getRegex()).matcher(content);
 		if (matcher.matches()) {
-			occurrences.clear();
+			Iterator<Element> iterator = occurrences.iterator();
+			while (iterator.hasNext()) {
+				Element element = (Element) iterator.next();
+				element.removeContentListener(occurrenceListener);
+				iterator.remove();
+			}
+			
 			matcher = Pattern.compile(getTemplate().getRegex())
 					.matcher(content);
 			while (matcher.find()) {
