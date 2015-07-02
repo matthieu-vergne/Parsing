@@ -103,8 +103,10 @@ public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 			overall.setContent(content);
 			if (size() >= 2) {
 				separatorDefault.setContent(getSeparator(0).getContent());
+			} else if (separatorDefault.getContent() != null) {
+				// keep old value
 			} else {
-				// keep old value if any
+				System.err.println("Warning: no default separator set");
 			}
 		} catch (ParsingException e) {
 			throw new ParsingException(this, overall, content, e.getStart(),
