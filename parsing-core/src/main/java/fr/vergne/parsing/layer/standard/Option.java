@@ -30,6 +30,7 @@ public class Option<CLayer extends Layer> extends AbstractLayer implements
 
 	public Option(CLayer layer) {
 		this.option = layer;
+		setContent("");
 		this.option.addContentListener(new ContentListener() {
 			
 			@Override
