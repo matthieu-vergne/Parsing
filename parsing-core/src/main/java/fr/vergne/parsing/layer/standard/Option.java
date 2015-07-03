@@ -36,7 +36,7 @@ public class Option<CLayer extends Layer> extends AbstractLayer implements
 			@Override
 			public void contentSet(String newContent) {
 				if (isPresent) {
-					fireContentUpdate(getContent());
+					fireContentUpdate(newContent);
 				} else {
 					// don't care
 				}
@@ -73,8 +73,8 @@ public class Option<CLayer extends Layer> extends AbstractLayer implements
 			isPresent = false;
 		} else {
 			try {
-				option.setContent(content);
 				isPresent = true;
+				option.setContent(content);
 			} catch (ParsingException e) {
 				throw new ParsingException(this, option, content, 0,
 						content.length(), e);
@@ -108,9 +108,11 @@ public class Option<CLayer extends Layer> extends AbstractLayer implements
 		if (isPresent && getOption().getContent() == null) {
 			throw new RuntimeException(
 					"Impossible to activate the option: it has no content");
-		} else {
+		} else if (this.isPresent != isPresent) {
 			this.isPresent = isPresent;
-			fireContentUpdate(getContent());
+			fireContentUpdate();
+		} else {
+			// no difference, don't change anything
 		}
 	}
 

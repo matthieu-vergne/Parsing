@@ -12,8 +12,8 @@ import java.util.Map;
 import org.junit.Test;
 
 import fr.vergne.parsing.layer.Layer;
-import fr.vergne.parsing.layer.LayerTest;
 import fr.vergne.parsing.layer.Layer.ContentListener;
+import fr.vergne.parsing.layer.LayerTest;
 import fr.vergne.parsing.layer.exception.ParsingException;
 
 public class SuiteTest extends LayerTest {
@@ -463,7 +463,7 @@ public class SuiteTest extends LayerTest {
 		assertSame(word3, suite.get(4));
 		assertSame(dot, suite.get(5));
 	}
-	
+
 	@Test
 	public void testInnerContentUpdateOfFilledSuiteNotifiesListeners() {
 		Formula word1 = new Formula("[a-zA-Z]+");
@@ -474,7 +474,7 @@ public class SuiteTest extends LayerTest {
 		Atom dot = new Atom(".");
 		Suite suite = new Suite(word1, space1, word2, space2, word3, dot);
 		suite.setContent("A testing case.");
-		
+
 		final String[] value = new String[] { null };
 		suite.addContentListener(new ContentListener() {
 
@@ -489,7 +489,7 @@ public class SuiteTest extends LayerTest {
 		word2.setContent("running");
 		assertEquals(suite.getContent(), value[0]);
 	}
-	
+
 	@Test
 	public void testInnerContentUpdateOfUnfilledSuiteDoesNotNotifyListeners() {
 		Formula word1 = new Formula("[a-zA-Z]+");
@@ -499,7 +499,7 @@ public class SuiteTest extends LayerTest {
 		Atom space2 = new Atom(" ");
 		Atom dot = new Atom(".");
 		Suite suite = new Suite(word1, space1, word2, space2, word3, dot);
-		
+
 		final String[] value = new String[] { null };
 		suite.addContentListener(new ContentListener() {
 
@@ -517,4 +517,32 @@ public class SuiteTest extends LayerTest {
 		assertEquals(suite.getContent(), value[0]);
 	}
 
+	@Test
+	public void testListenersNotifiedOncePerAtomicUpdate() {
+		Formula word1 = new Formula("[a-zA-Z]+");
+		Formula word2 = new Formula("[a-zA-Z]+");
+		Formula word3 = new Formula("[a-zA-Z]+");
+		Atom space1 = new Atom(" ");
+		Atom space2 = new Atom(" ");
+		Atom dot = new Atom(".");
+		Suite suite = new Suite(word1, space1, word2, space2, word3, dot);
+		final LinkedList<String> values = new LinkedList<String>();
+		suite.addContentListener(new ContentListener() {
+
+			@Override
+			public void contentSet(String newContent) {
+				values.addFirst(newContent);
+			}
+		});
+
+		int operationCounter = 0;
+
+		suite.setContent("A running test.");
+		assertEquals(++operationCounter, values.size());
+		assertEquals(suite.getContent(), values.getFirst());
+
+		suite.setContent("Another testing case.");
+		assertEquals(++operationCounter, values.size());
+		assertEquals(suite.getContent(), values.getFirst());
+	}
 }

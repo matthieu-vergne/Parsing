@@ -2,10 +2,12 @@ package fr.vergne.parsing.layer.util;
 
 import static org.junit.Assert.*;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.Map;
 
 import org.junit.Test;
@@ -1325,5 +1327,173 @@ public class SeparatedLoopTest extends LayerTest {
 			fail("No exception thrown.");
 		} catch (ParsingException e) {
 		}
+	}
+
+	@Test
+	public void testClearRemovesAll() {
+		SeparatedLoop<Formula, Atom> loop = new SeparatedLoop<Formula, Atom>(
+				new Formula("[a-zA-Z]"), new Atom(","));
+		loop.setContent("a,b,c,d,e");
+
+		loop.clear();
+		assertEquals(0, loop.size());
+		assertEquals("", loop.getContent());
+	}
+
+	@Test
+	public void testClearNotifiesListeners() {
+		SeparatedLoop<Formula, Atom> loop = new SeparatedLoop<Formula, Atom>(
+				new Formula("[a-zA-Z]"), new Atom(","));
+		loop.setContent("a,b,c,d,e");
+		final String[] value = new String[] { null };
+		loop.addContentListener(new ContentListener() {
+
+			@Override
+			public void contentSet(String newContent) {
+				value[0] = newContent;
+			}
+		});
+
+		loop.clear();
+		assertEquals(loop.getContent(), value[0]);
+	}
+
+	@Test
+	public void testUpdateOnClearedDoesNotNotifyListeners() {
+		SeparatedLoop<Formula, Atom> loop = new SeparatedLoop<Formula, Atom>(
+				new Formula("[a-zA-Z]"), new Atom(","));
+		loop.setContent("a,b,c,d,e");
+		final String[] value = new String[] { null };
+		loop.addContentListener(new ContentListener() {
+
+			@Override
+			public void contentSet(String newContent) {
+				value[0] = newContent;
+			}
+		});
+
+		Collection<Layer> sublayers = new LinkedList<Layer>();
+		for (Layer sublayer : loop) {
+			sublayers.add(sublayer);
+		}
+
+		loop.clear();
+		value[0] = null;
+
+		for (Layer sublayer : sublayers) {
+			sublayer.setContent("z");
+			assertEquals(null, value[0]);
+		}
+	}
+
+	@Test
+	public void testClearThrowsExceptionIfMin() {
+		SeparatedLoop<Formula, Atom> loop = new SeparatedLoop<Formula, Atom>(
+				new Formula("[a-zA-Z]"), new Atom(","), 5, 10);
+		loop.setContent("a,b,c,d,e");
+
+		try {
+			loop.clear();
+			fail("No exception thrown");
+		} catch (BoundException e) {
+		}
+	}
+
+	@Test
+	public void testListenersNotifiedOncePerAtomicUpdate() {
+		SeparatedLoop<Formula, Atom> loop = new SeparatedLoop<Formula, Atom>(
+				new Formula("[a-zA-Z]"), new Atom(","));
+		final LinkedList<String> values = new LinkedList<String>();
+		loop.addContentListener(new ContentListener() {
+
+			@Override
+			public void contentSet(String newContent) {
+				values.addFirst(newContent);
+			}
+		});
+
+		int operationCounter = 0;
+
+		loop.setContent("a,b,c,d,e");
+		assertEquals(++operationCounter, values.size());
+		assertEquals(loop.getContent(), values.getFirst());
+
+		loop.add(0, "x");
+		assertEquals(++operationCounter, values.size());
+		assertEquals(loop.getContent(), values.getFirst());
+
+		loop.add(2, "x");
+		assertEquals(++operationCounter, values.size());
+		assertEquals(loop.getContent(), values.getFirst());
+
+		loop.add(loop.size(), "x");
+		assertEquals(++operationCounter, values.size());
+		assertEquals(loop.getContent(), values.getFirst());
+
+		loop.add(0, new Formula("[a-zA-Z]", "x"));
+		assertEquals(++operationCounter, values.size());
+		assertEquals(loop.getContent(), values.getFirst());
+
+		loop.add(2, new Formula("[a-zA-Z]", "x"));
+		assertEquals(++operationCounter, values.size());
+		assertEquals(loop.getContent(), values.getFirst());
+
+		loop.add(loop.size(), new Formula("[a-zA-Z]", "x"));
+		assertEquals(++operationCounter, values.size());
+		assertEquals(loop.getContent(), values.getFirst());
+
+		loop.addAllContents(0, Arrays.asList("a", "b", "c"));
+		assertEquals(++operationCounter, values.size());
+		assertEquals(loop.getContent(), values.getFirst());
+
+		loop.addAllContents(2, Arrays.asList("a", "b", "c"));
+		assertEquals(++operationCounter, values.size());
+		assertEquals(loop.getContent(), values.getFirst());
+
+		loop.addAllContents(loop.size(), Arrays.asList("a", "b", "c"));
+		assertEquals(++operationCounter, values.size());
+		assertEquals(loop.getContent(), values.getFirst());
+
+		loop.addAll(0, Arrays.asList(new Formula("[a-zA-Z]", "a"), new Formula(
+				"[a-zA-Z]", "b"), new Formula("[a-zA-Z]", "c")));
+		assertEquals(++operationCounter, values.size());
+		assertEquals(loop.getContent(), values.getFirst());
+
+		loop.addAll(2, Arrays.asList(new Formula("[a-zA-Z]", "a"), new Formula(
+				"[a-zA-Z]", "b"), new Formula("[a-zA-Z]", "c")));
+		assertEquals(++operationCounter, values.size());
+		assertEquals(loop.getContent(), values.getFirst());
+
+		loop.addAll(loop.size(), Arrays.asList(new Formula("[a-zA-Z]", "a"),
+				new Formula("[a-zA-Z]", "b"), new Formula("[a-zA-Z]", "c")));
+		assertEquals(++operationCounter, values.size());
+		assertEquals(loop.getContent(), values.getFirst());
+
+		loop.remove(0);
+		assertEquals(++operationCounter, values.size());
+		assertEquals(loop.getContent(), values.getFirst());
+
+		loop.remove(2);
+		assertEquals(++operationCounter, values.size());
+		assertEquals(loop.getContent(), values.getFirst());
+
+		loop.remove(loop.size() - 1);
+		assertEquals(++operationCounter, values.size());
+		assertEquals(loop.getContent(), values.getFirst());
+
+		Iterator<Formula> iterator = loop.iterator();
+		iterator.next();
+		iterator.next();
+		iterator.remove();
+		assertEquals(++operationCounter, values.size());
+		assertEquals(loop.getContent(), values.getFirst());
+
+		loop.clear();
+		assertEquals(++operationCounter, values.size());
+		assertEquals(loop.getContent(), values.getFirst());
+
+		loop.setContent("a,b,c");
+		assertEquals(++operationCounter, values.size());
+		assertEquals(loop.getContent(), values.getFirst());
 	}
 }

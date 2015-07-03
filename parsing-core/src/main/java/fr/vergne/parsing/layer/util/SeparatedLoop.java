@@ -2,7 +2,10 @@ package fr.vergne.parsing.layer.util;
 
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedList;
 
 import org.apache.commons.io.IOUtils;
 
@@ -11,6 +14,7 @@ import fr.vergne.parsing.layer.exception.ParsingException;
 import fr.vergne.parsing.layer.standard.AbstractLayer;
 import fr.vergne.parsing.layer.standard.GreedyMode;
 import fr.vergne.parsing.layer.standard.Loop;
+import fr.vergne.parsing.layer.standard.Loop.BoundException;
 import fr.vergne.parsing.layer.standard.Loop.Generator;
 import fr.vergne.parsing.layer.standard.Option;
 import fr.vergne.parsing.layer.standard.Suite;
@@ -36,6 +40,13 @@ public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 	private final Separator separatorDefault;
 	private final Generator<Element> elementGenerator;
 	private final Generator<Separator> separatorGenerator;
+	private final ContentListener deepListener = new ContentListener() {
+
+		@Override
+		public void contentSet(String newContent) {
+			fireContentUpdate();
+		}
+	};
 
 	public SeparatedLoop(final Generator<Element> elementGenerator,
 			final Generator<Separator> separatorGenerator, int min, int max) {
@@ -58,13 +69,7 @@ public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 		this.separatorGenerator = separatorGenerator;
 		separatorDefault = separatorGenerator.generates();
 
-		overall.addContentListener(new ContentListener() {
-
-			@Override
-			public void contentSet(String newContent) {
-				fireContentUpdate(getContent());
-			}
-		});
+		overall.addContentListener(deepListener);
 	}
 
 	public SeparatedLoop(Generator<Element> elementGenerator,
@@ -99,6 +104,7 @@ public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 
 	@Override
 	protected void setInternalContent(String content) {
+		overall.removeContentListener(deepListener);
 		try {
 			overall.setContent(content);
 			if (size() >= 2) {
@@ -111,6 +117,8 @@ public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 		} catch (ParsingException e) {
 			throw new ParsingException(this, overall, content, e.getStart(),
 					content.length(), e);
+		} finally {
+			overall.addContentListener(deepListener);
 		}
 	}
 
@@ -194,27 +202,9 @@ public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 		return separatorDefault.getContent();
 	}
 
+	@SuppressWarnings("unchecked")
 	public void add(int index, Element element) {
-		if (size() == 0) {
-			head.setLayer(element);
-			((Option<?>) overall).setPresent(true);
-		} else {
-			String sep = separatorDefault.getContent();
-			if (sep == null) {
-				throw new RuntimeException("No default separator setup.");
-			} else {
-				Separator separator = separatorGenerator.generates();
-				separator.setContent(separatorDefault.getContent());
-				if (index == 0) {
-					Suite added = new Suite(separator, head.getLayer());
-					head.setLayer(element);
-					loop.add(0, added);
-				} else {
-					Suite added = new Suite(separator, element);
-					loop.add(index - 1, added);
-				}
-			}
-		}
+		addAll(index, Arrays.asList(element));
 	}
 
 	public Element add(int index, String content) {
@@ -224,17 +214,89 @@ public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 		return element;
 	}
 
+	public Collection<Element> addAllContents(int index,
+			Collection<String> contents) {
+		Collection<Element> elements = new LinkedList<Element>();
+		for (String content : contents) {
+			Element element = elementGenerator.generates();
+			element.setContent(content);
+			elements.add(element);
+		}
+		addAll(index, elements);
+		return elements;
+	}
+
+	public void addAll(int index, Collection<Element> elements) {
+		overall.removeContentListener(deepListener);
+		try {
+			if (elements.isEmpty()) {
+				// nothing to add
+			} else {
+				LinkedList<Element> remaining = new LinkedList<Element>(
+						elements);
+				if (size() == 0) {
+					head.setLayer(remaining.removeFirst());
+					((Option<?>) overall).setPresent(true);
+					index++;
+				} else if (index == 0) {
+					Suite added = new Suite(createFilledSeparator(),
+							head.getLayer());
+					head.setLayer(remaining.removeFirst());
+					loop.add(0, added);
+					index++;
+				} else {
+					// add all the the loop
+				}
+
+				index--;
+				Collection<Suite> added = new LinkedList<Suite>();
+				for (Element element : remaining) {
+					added.add(new Suite(createFilledSeparator(), element));
+				}
+				loop.addAll(index, added);
+			}
+		} finally {
+			overall.addContentListener(deepListener);
+		}
+		fireContentUpdate();
+	}
+
+	private Separator createFilledSeparator() {
+		if (separatorDefault.getContent() == null) {
+			throw new RuntimeException("No default separator setup.");
+		} else {
+			Separator separator = separatorGenerator.generates();
+			separator.setContent(separatorDefault.getContent());
+			return separator;
+		}
+	}
+
 	public Element remove(int index) {
 		if (index == 0) {
+			overall.removeContentListener(deepListener);
 			Element removed = head.getLayer();
-			if (size() == 1) {
-				overall.setContent("");
-			} else {
-				head.setLayer(loop.remove(0).<Element> get(1));
+			try {
+				if (size() == 1) {
+					overall.setContent("");
+				} else {
+					head.setLayer(loop.remove(0).<Element> get(1));
+				}
+			} finally {
+				overall.addContentListener(deepListener);
 			}
+			fireContentUpdate();
 			return removed;
 		} else {
 			return loop.remove(index - 1).get(1);
+		}
+	}
+
+	public void clear() {
+		if (overall instanceof Option) {
+			((Option<?>) overall).setPresent(false);
+		} else {
+			throw new BoundException("This loop cannot have less than "
+					+ (loop.getMin() + 1) + " elements.");
 		}
 	}
 

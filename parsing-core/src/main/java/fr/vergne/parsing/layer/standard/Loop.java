@@ -3,6 +3,8 @@ package fr.vergne.parsing.layer.standard;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -38,11 +40,11 @@ public class Loop<Element extends Layer> extends AbstractLayer implements
 	private final int min;
 	private final int max;
 	private final Generator<Element> generator;
-	private final ContentListener occurrenceListener = new ContentListener() {
+	private final ContentListener deepListener = new ContentListener() {
 
 		@Override
 		public void contentSet(String newContent) {
-			fireContentUpdate(getContent());
+			fireContentUpdate();
 		}
 	};
 	private final List<Element> occurrences = new LinkedList<Element>();
@@ -80,6 +82,14 @@ public class Loop<Element extends Layer> extends AbstractLayer implements
 			this.min = min;
 			this.max = max;
 		}
+	}
+
+	public int getMin() {
+		return min;
+	}
+
+	public int getMax() {
+		return max;
 	}
 
 	private Element template;
@@ -210,16 +220,16 @@ public class Loop<Element extends Layer> extends AbstractLayer implements
 			Iterator<Element> iterator = occurrences.iterator();
 			while (iterator.hasNext()) {
 				Element element = (Element) iterator.next();
-				element.removeContentListener(occurrenceListener);
+				element.removeContentListener(deepListener);
 				iterator.remove();
 			}
-			
+
 			matcher = Pattern.compile(getTemplate().getRegex())
 					.matcher(content);
 			while (matcher.find()) {
 				Element occurrence = generator.generates();
 				occurrence.setContent(matcher.group(0));
-				occurrence.addContentListener(occurrenceListener);
+				occurrence.addContentListener(deepListener);
 				occurrences.add(occurrence);
 			}
 		} else {
@@ -323,23 +333,9 @@ public class Loop<Element extends Layer> extends AbstractLayer implements
 	 * @param element
 	 *            the new {@link Element}
 	 */
+	@SuppressWarnings("unchecked")
 	public void add(int index, Element element) {
-		if (size() >= max) {
-			throw new BoundException("This loop cannot have more than " + max
-					+ " elements.");
-		} else if (!element.getRegex().equals(getTemplate().getRegex())) {
-			throw new IllegalArgumentException("The regex of the element ("
-					+ element.getRegex()
-					+ ") is not the same than the elements of this loop: "
-					+ getTemplate().getRegex());
-		} else if (element.getContent() == null) {
-			throw new IllegalArgumentException(
-					"You cannot add an element which has no content: set it before to add it to this loop.");
-		} else {
-			element.addContentListener(occurrenceListener);
-			occurrences.add(index, element);
-			fireContentUpdate(getContent());
-		}
+		addAll(index, Arrays.asList(element));
 	}
 
 	/**
@@ -366,6 +362,77 @@ public class Loop<Element extends Layer> extends AbstractLayer implements
 	}
 
 	/**
+	 * This method adds new {@link Element}s to this {@link Loop}. The
+	 * {@link Element}s should all have the same regex than the usual
+	 * {@link Element}s of this {@link Loop}.<br/>
+	 * <br/>
+	 * For providing a collection of {@link String}s, use
+	 * {@link #addAllContents(int, Collection)}, which has a different name to
+	 * avoid type erasure issues.
+	 * 
+	 * @param index
+	 *            the index form which to start the addition
+	 * @param elements
+	 *            the new {@link Element}s
+	 */
+	public void addAll(int index, Collection<Element> elements) {
+		if (size() + elements.size() > max) {
+			throw new BoundException("This loop cannot have more than " + max
+					+ " elements.");
+		} else {
+			Collection<Element> validElements = new LinkedList<Element>();
+			for (Element element : elements) {
+				if (!element.getRegex().equals(getTemplate().getRegex())) {
+					throw new IllegalArgumentException(
+							"The regex of the element ("
+									+ element.getRegex()
+									+ ") is not the same than the elements of this loop: "
+									+ getTemplate().getRegex());
+				} else if (element.getContent() == null) {
+					throw new IllegalArgumentException(
+							"You cannot add an element which has no content: set it before to add it to this loop.");
+				} else {
+					validElements.add(element);
+				}
+			}
+
+			for (Element element : validElements) {
+				element.addContentListener(deepListener);
+			}
+			occurrences.addAll(index, validElements);
+			fireContentUpdate();
+		}
+	}
+
+	/**
+	 * This method adds new {@link Element}s to this {@link Loop}. Each content
+	 * should be compatible with the regex of the {@link Element}s of this
+	 * {@link Loop}.
+	 * 
+	 * @param index
+	 *            the index from which to start the addition
+	 * @param contents
+	 *            the contents of the new occurrences
+	 * @return the new {@link Element}s
+	 */
+	public Collection<Element> addAllContents(int index,
+			Collection<String> contents) {
+		if (size() >= max) {
+			throw new BoundException("This loop cannot have more than " + max
+					+ " elements.");
+		} else {
+			Collection<Element> elements = new LinkedList<Element>();
+			for (String content : contents) {
+				Element element = generator.generates();
+				element.setContent(content);
+				elements.add(element);
+			}
+			addAll(index, elements);
+			return elements;
+		}
+	}
+
+	/**
 	 * 
 	 * @param index
 	 *            the index of an {@link Element} to remove from this
@@ -378,9 +445,24 @@ public class Loop<Element extends Layer> extends AbstractLayer implements
 					+ " elements.");
 		} else {
 			Element removed = occurrences.remove(index);
-			removed.removeContentListener(occurrenceListener);
-			fireContentUpdate(getContent());
+			removed.removeContentListener(deepListener);
+			fireContentUpdate();
 			return removed;
+		}
+	}
+
+	public void clear() {
+		if (size() <= min) {
+			throw new BoundException("This loop cannot have less than " + min
+					+ " elements.");
+		} else {
+			Iterator<Element> iterator = occurrences.iterator();
+			while (iterator.hasNext()) {
+				Element removed = iterator.next();
+				removed.removeContentListener(deepListener);
+				iterator.remove();
+			}
+			fireContentUpdate("");
 		}
 	}
 
@@ -409,8 +491,8 @@ public class Loop<Element extends Layer> extends AbstractLayer implements
 							+ min + " elements.");
 				} else {
 					occurenceIterator.remove();
-					lastReturned.removeContentListener(occurrenceListener);
-					fireContentUpdate(getContent());
+					lastReturned.removeContentListener(deepListener);
+					fireContentUpdate();
 				}
 			}
 		};

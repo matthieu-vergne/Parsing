@@ -49,7 +49,9 @@ public abstract class AbstractLayer implements Layer {
 	 * This method allows to notify the {@link ContentListener}s registered
 	 * through
 	 * {@link #addContentListener(fr.vergne.parsing.layer.Layer.ContentListener)}
-	 * that the content of the {@link Layer} has changed.
+	 * that the content of the {@link Layer} has changed. If you plan to call
+	 * {@link #getContent()} in order to generate the argument of this method,
+	 * prefer to call {@link #fireContentUpdate()} to call it only if necessary.
 	 * 
 	 * @param newContent
 	 *            the new content of this {@link Layer}
@@ -57,6 +59,28 @@ public abstract class AbstractLayer implements Layer {
 	protected void fireContentUpdate(String newContent) {
 		for (ContentListener listener : listeners) {
 			listener.contentSet(newContent);
+		}
+	}
+
+	/**
+	 * This method is equivalent to {@link #fireContentUpdate(String)}, excepted
+	 * that:
+	 * <ul>
+	 * <li>the content is retrieved from {@link #getContent()}</li>
+	 * <li>nothing is done if no listener is registered</li>
+	 * </ul>
+	 * Consequently, this method is more suited to cases where the content is
+	 * not build yet: if no listeners is registered, then no content will be
+	 * generated.
+	 */
+	protected void fireContentUpdate() {
+		if (listeners.isEmpty()) {
+			// do not do anything
+		} else {
+			String newContent = getContent();
+			for (ContentListener listener : listeners) {
+				listener.contentSet(newContent);
+			}
 		}
 	}
 
