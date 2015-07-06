@@ -31,6 +31,7 @@ import fr.vergne.parsing.layer.standard.Suite;
  * @param <Element>
  * @param <Separator>
  */
+// FIXME ensure that it is the same separator everywhere
 public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 		extends AbstractLayer implements Iterable<Element> {
 
