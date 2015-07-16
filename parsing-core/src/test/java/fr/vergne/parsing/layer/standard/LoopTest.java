@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.Random;
 
 import org.junit.Test;
 
@@ -165,6 +166,12 @@ public class LoopTest extends LayerTest {
 					"Unable to parse Formula[[a-zA-Z\\n]] for " + loop
 							+ " from (1,4): \"123abc\"", e.getMessage());
 		}
+	}
+
+	@Test
+	public void testNoContentReturnsNull() {
+		Loop<Formula> loop = new Loop<Formula>(new Formula("[a-zA-Z\n]"));
+		assertEquals(null, loop.getContent());
 	}
 
 	@Test
@@ -871,8 +878,8 @@ public class LoopTest extends LayerTest {
 		assertEquals(++operationCounter, values.size());
 		assertEquals(loop.getContent(), values.getFirst());
 
-		loop.addAll(loop.size(), Arrays.asList(new Formula("[a-zA-Z]", "a"), new Formula(
-				"[a-zA-Z]", "b"), new Formula("[a-zA-Z]", "c")));
+		loop.addAll(loop.size(), Arrays.asList(new Formula("[a-zA-Z]", "a"),
+				new Formula("[a-zA-Z]", "b"), new Formula("[a-zA-Z]", "c")));
 		assertEquals(++operationCounter, values.size());
 		assertEquals(loop.getContent(), values.getFirst());
 
@@ -936,4 +943,65 @@ public class LoopTest extends LayerTest {
 		}
 	}
 
+	private class CustomLayer extends Formula {
+		public CustomLayer() {
+			super("[a-z]*");
+		}
+	}
+
+	@Test
+	public void testTemplateOfCustomLayerGeneratesExceptionIfNoOwnedCloneMethod() {
+		try {
+			new Loop<CustomLayer>(new CustomLayer());
+			fail("No exception thrown");
+		} catch (IllegalArgumentException e) {
+		}
+	}
+
+	@Test
+	public void testNoProblemWithLazyComponents() {
+		{
+			String content = "abc";
+			Loop<Formula> loop = new Loop<Formula>(new Formula(".+?"));
+
+			loop.setContent(content);
+			assertEquals(content, loop.getContent());
+			assertEquals("a", loop.get(0).getContent());
+			assertEquals("b", loop.get(1).getContent());
+			assertEquals("c", loop.get(2).getContent());
+		}
+		{
+			String content = "?abc?def";
+			Loop<Formula> loop = new Loop<Formula>(new Formula("\\?.+?"));
+
+			loop.setContent(content);
+			assertEquals(content, loop.getContent());
+			assertEquals("?abc", loop.get(0).getContent());
+			assertEquals("?def", loop.get(1).getContent());
+		}
+		{
+			String content = "abc?def?";
+			Loop<Formula> loop = new Loop<Formula>(new Formula(".+?\\?"));
+
+			loop.setContent(content);
+			assertEquals(content, loop.getContent());
+			assertEquals("abc?", loop.get(0).getContent());
+			assertEquals("def?", loop.get(1).getContent());
+		}
+	}
+
+	@Test
+	public void testBigLoop() {
+		Loop<Formula> loop = new Loop<Formula>(Quantifier.POSSESSIVE,
+				new Formula(">[0-9]++"));
+		Random rand = new Random();
+		StringBuilder builder = new StringBuilder();
+		for (long i = 0; i < 1e6; i++) {
+			builder.append(">" + rand.nextInt(100000));
+		}
+		String content = builder.toString();
+
+		loop.setContent(content);
+		assertEquals(content, loop.getContent());
+	}
 }

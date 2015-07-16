@@ -2,6 +2,7 @@ package fr.vergne.parsing.layer.standard;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collection;
@@ -47,18 +48,21 @@ public class Loop<Element extends Layer> extends AbstractLayer implements
 			fireContentUpdate();
 		}
 	};
-	private final List<Element> occurrences = new LinkedList<Element>();
-	private GreedyMode mode = GreedyMode.GREEDY;
+	private List<Element> occurrences;
+	private final Quantifier quantifier;
 	public static final Logger log = LoggerConfiguration.getSimpleLogger();
 
 	/**
-	 * Instantiate a {@link Loop} which uses a {@link Generator} to instantiate
-	 * the occurrences it will find. Notice that requesting two times the same
-	 * occurrence, for instance calling {@link #get(int)} with the same index,
-	 * should provide the same instance as long as the corresponding content has
-	 * not been modified. If the {@link Generator} returns always the same
-	 * instance(s), it will not work properly.
+	 * Instantiate an optimized {@link Loop} (through the {@link Quantifier})
+	 * which uses a {@link Generator} to instantiate the occurrences it will
+	 * find. Notice that requesting two times the same occurrence, for instance
+	 * calling {@link #get(int)} with the same index, should provide the same
+	 * instance as long as the corresponding content has not been modified. If
+	 * the {@link Generator} returns always the same instance(s), it will not
+	 * work properly.
 	 * 
+	 * @param quantifier
+	 *            type of {@link Quantifier} to use to optimize the regex
 	 * @param generator
 	 *            the occurrences {@link Generator}
 	 * @param min
@@ -67,8 +71,11 @@ public class Loop<Element extends Layer> extends AbstractLayer implements
 	 *            the maximum size of this {@link Loop}, at most
 	 *            {@link Integer#MAX_VALUE}
 	 */
-	public Loop(Generator<Element> generator, int min, int max) {
-		if (generator == null) {
+	public Loop(Quantifier quantifier, Generator<Element> generator, int min,
+			int max) {
+		if (quantifier == null) {
+			throw new NullPointerException("No quantifier provided");
+		} else if (generator == null) {
 			throw new NullPointerException("No generator provided");
 		} else if (min < 0) {
 			throw new IllegalArgumentException(
@@ -81,7 +88,113 @@ public class Loop<Element extends Layer> extends AbstractLayer implements
 			this.generator = generator;
 			this.min = min;
 			this.max = max;
+			this.quantifier = quantifier;
 		}
+	}
+
+	/**
+	 * Instantiate an optimised {@link Loop} (through the {@link Quantifier}) in
+	 * the same way than {@link #Loop(Quantifier, Generator, int, int)}, but by
+	 * providing the {@link Layer} to use as template for the occurrences. If
+	 * this template is clonable (a {@link #clone()} method is available), a
+	 * {@link Generator} is automatically instantiated to use clones of this
+	 * template for future occurrences. Otherwise, an exception is thrown.<br/>
+	 * <br/>
+	 * While standard components (e.g. {@link Formula}, {@link Suite},
+	 * {@link Loop}) are well suited for this purpose, pay attention when you
+	 * use custom implementations: if they extend standard components but do not
+	 * override {@link #clone()}, their clones will be standard components, not
+	 * custom ones. This can lead to {@link ClassCastException} issues.
+	 * 
+	 * @param template
+	 *            the {@link Element} to use as a template
+	 * @param min
+	 *            the minimum size of this {@link Loop}, at least 0
+	 * @param max
+	 *            the maximum size of this {@link Loop}, at most
+	 *            {@link Integer#MAX_VALUE}
+	 * @throws IllegalArgumentException
+	 *             if the template is not clonable
+	 */
+	public Loop(Quantifier quantifier, Element template, int min, int max) {
+		this(quantifier, createGeneratorFromTemplate(template), min, max);
+	}
+
+	/**
+	 * Same as {@link #Loop(Quantifier, Generator, int, int)} with no particular
+	 * optimization ({@link Quantifier#GREEDY}).
+	 */
+	public Loop(Generator<Element> generator, int min, int max) {
+		this(Quantifier.GREEDY, generator, min, max);
+	}
+
+	/**
+	 * Same as {@link #Loop(Quantifier, Layer, int, int)} with no particular
+	 * optimization ({@link Quantifier#GREEDY}).
+	 */
+	public Loop(Element template, int min, int max) {
+		this(Quantifier.GREEDY, template, min, max);
+	}
+
+	/**
+	 * Same as {@link #Loop(Quantifier, Generator, int, int)} with the same
+	 * min/max.
+	 */
+	public Loop(Quantifier quantifier, Generator<Element> generator, int count) {
+		this(quantifier, generator, count, count);
+	}
+
+	/**
+	 * Same as {@link #Loop(Generator, int, int)} with the same min/max.
+	 */
+	public Loop(Generator<Element> generator, int count) {
+		this(generator, count, count);
+	}
+
+	/**
+	 * Same as {@link #Loop(Quantifier, Layer, int, int)} with the same min/max.
+	 */
+	public Loop(Quantifier quantifier, Element template, int count) {
+		this(quantifier, template, count, count);
+	}
+
+	/**
+	 * Same as {@link #Loop(Layer, int, int)} with the same min/max.
+	 */
+	public Loop(Element template, int count) {
+		this(template, count, count);
+	}
+
+	/**
+	 * Same as {@link #Loop(Quantifier, Generator, int, int)} where the minimum
+	 * is 0 and the maximum is {@link Integer#MAX_VALUE}.
+	 */
+	public Loop(Quantifier quantifier, Generator<Element> generator) {
+		this(quantifier, generator, 0, Integer.MAX_VALUE);
+	}
+
+	/**
+	 * Same as {@link #Loop(Generator, int, int)} where the minimum is 0 and the
+	 * maximum is {@link Integer#MAX_VALUE}.
+	 */
+	public Loop(Generator<Element> generator) {
+		this(generator, 0, Integer.MAX_VALUE);
+	}
+
+	/**
+	 * Same as {@link #Loop(Quantifier, Layer, int, int)} where the minimum is 0
+	 * and the maximum is {@link Integer#MAX_VALUE}.
+	 */
+	public Loop(Quantifier quantifier, Element template) {
+		this(quantifier, template, 0, Integer.MAX_VALUE);
+	}
+
+	/**
+	 * Same as {@link #Loop(Layer, int, int)} where the minimum is 0 and the
+	 * maximum is {@link Integer#MAX_VALUE}.
+	 */
+	public Loop(Element template) {
+		this(template, 0, Integer.MAX_VALUE);
 	}
 
 	public int getMin() {
@@ -96,33 +209,12 @@ public class Loop<Element extends Layer> extends AbstractLayer implements
 
 	private Element getTemplate() {
 		if (template == null) {
+			// build it only if requested to avoid infinite loop in constructor
 			template = generator.generates();
 		} else {
 			// reuse the existing one
 		}
 		return template;
-	}
-
-	/**
-	 * Instantiate a {@link Loop} in the same way the
-	 * {@link #Loop(Generator, int, int)} but by providing the {@link Layer} to
-	 * use as template for the occurrences. If this template is clonable (the
-	 * {@link #clone()} method is public), a {@link Generator} is automatically
-	 * instantiated to use clones of this template for future occurrences.
-	 * Otherwise, an exception is thrown.
-	 * 
-	 * @param template
-	 *            the {@link Element} to use as a template
-	 * @param min
-	 *            the minimum size of this {@link Loop}, at least 0
-	 * @param max
-	 *            the maximum size of this {@link Loop}, at most
-	 *            {@link Integer#MAX_VALUE}
-	 * @throws IllegalArgumentException
-	 *             if the template is not clonable
-	 */
-	public Loop(final Element template, int min, int max) {
-		this(createGeneratorFromTemplate(template), min, max);
 	}
 
 	/**
@@ -140,72 +232,65 @@ public class Loop<Element extends Layer> extends AbstractLayer implements
 		if (template == null) {
 			throw new NullPointerException("No template has been provided");
 		} else {
-			boolean isCloneable;
+			Method method;
 			try {
-				Method method = template.getClass().getMethod("clone");
+				method = template.getClass().getMethod("clone");
 				method.setAccessible(true);
-				Object clone = method.invoke(template);
-				isCloneable = clone != null && clone != template;
-			} catch (Exception e) {
-				e.printStackTrace();
-				isCloneable = false;
+			} catch (SecurityException e) {
+				throw new IllegalArgumentException(
+						"The provided template cannot be used: " + template, e);
+			} catch (NoSuchMethodException e) {
+				throw new IllegalArgumentException(
+						"The provided template has no clone method: "
+								+ template, e);
 			}
 
-			if (isCloneable) {
-				try {
-					final Method cloneMethod = template.getClass().getMethod(
-							"clone");
-					cloneMethod.setAccessible(true);
-					return new Generator<Element>() {
-
-						@SuppressWarnings("unchecked")
-						@Override
-						public Element generates() {
-							try {
-								return (Element) cloneMethod.invoke(template);
-							} catch (Exception e) {
-								throw new RuntimeException(e);
-							}
-						}
-					};
-				} catch (Exception e) {
-					throw new RuntimeException(e);
-				}
-			} else {
+			if (!method.getDeclaringClass().equals(template.getClass())) {
 				throw new IllegalArgumentException(
-						"The provided template is not clonable: " + template);
+						"The provided template does not implement its own clone() method: "
+								+ template);
+			} else {
+				Object clone;
+				try {
+					clone = method.invoke(template);
+				} catch (InvocationTargetException e) {
+					throw new IllegalArgumentException("The clone() method of "
+							+ template + " is not reliable", e.getCause());
+				} catch (IllegalArgumentException e) {
+					throw new RuntimeException("This case should not happen", e);
+				} catch (IllegalAccessException e) {
+					throw new RuntimeException("This case should not happen", e);
+				}
+				if (clone == null) {
+					throw new IllegalArgumentException(
+							"The clone() method of the provided template returns null: "
+									+ template);
+				} else if (clone == template) {
+					throw new IllegalArgumentException(
+							"The clone() method of the provided template returns the template itself: "
+									+ template);
+				} else {
+					try {
+						final Method cloneMethod = method;
+						return new Generator<Element>() {
+
+							@SuppressWarnings("unchecked")
+							@Override
+							public Element generates() {
+								try {
+									return (Element) cloneMethod
+											.invoke(template);
+								} catch (Exception e) {
+									throw new RuntimeException(e);
+								}
+							}
+						};
+					} catch (Exception e) {
+						throw new RuntimeException(e);
+					}
+				}
 			}
 		}
-	}
-
-	/**
-	 * Same as {@link #Loop(Generator, int, int)} with the same min/max.
-	 */
-	public Loop(Generator<Element> generator, int count) {
-		this(generator, count, count);
-	}
-
-	/**
-	 * Same as {@link #Loop(Layer, int, int)} with the same min/max.
-	 */
-	public Loop(Element template, int count) {
-		this(template, count, count);
-	}
-
-	/**
-	 * Same as {@link #Loop(Generator, int, int)} where the minimum is 0 and the
-	 * maximum is {@link Integer#MAX_VALUE}.
-	 */
-	public Loop(Generator<Element> generator) {
-		this(generator, 0, Integer.MAX_VALUE);
-	}
-
-	/**
-	 * Same as {@link #Loop(Layer, int, int)} where the minimum is 0 and the
-	 * maximum is {@link Integer#MAX_VALUE}.
-	 */
-	public Loop(Element template) {
-		this(template, 0, Integer.MAX_VALUE);
 	}
 
 	@Override
@@ -215,6 +300,7 @@ public class Loop<Element extends Layer> extends AbstractLayer implements
 
 	@Override
 	protected void setInternalContent(String content) {
+		occurrences = new LinkedList<Element>();
 		Matcher matcher = Pattern.compile(getRegex()).matcher(content);
 		if (matcher.matches()) {
 			Iterator<Element> iterator = occurrences.iterator();
@@ -224,11 +310,14 @@ public class Loop<Element extends Layer> extends AbstractLayer implements
 				iterator.remove();
 			}
 
-			matcher = Pattern.compile(getTemplate().getRegex())
-					.matcher(content);
+			String regex = getTemplate().getRegex();
+			matcher = Pattern.compile(
+					"(" + regex + ")(?:(?=" + regex + ")|(?=$))").matcher(
+					content);
 			while (matcher.find()) {
+				String match = matcher.group(1);
 				Element occurrence = generator.generates();
-				occurrence.setContent(matcher.group(0));
+				occurrence.setContent(match);
 				occurrence.addContentListener(deepListener);
 				occurrences.add(occurrence);
 			}
@@ -262,11 +351,15 @@ public class Loop<Element extends Layer> extends AbstractLayer implements
 
 	@Override
 	public String getContent() {
-		String content = "";
-		for (Element occurrence : occurrences) {
-			content += occurrence.getContent();
+		if (occurrences == null) {
+			return null;
+		} else {
+			StringBuilder builder = new StringBuilder();
+			for (Element occurrence : occurrences) {
+				builder.append(occurrence.getContent());
+			}
+			return builder.toString();
 		}
-		return content;
 	}
 
 	@Override
@@ -505,12 +598,8 @@ public class Loop<Element extends Layer> extends AbstractLayer implements
 				+ buildRegexCardinality() + "]";
 	}
 
-	public GreedyMode getMode() {
-		return mode;
-	}
-
-	public void setMode(GreedyMode mode) {
-		this.mode = mode;
+	public Quantifier getQuantifier() {
+		return quantifier;
 	}
 
 	private String buildRegexCardinality() {
@@ -535,7 +624,7 @@ public class Loop<Element extends Layer> extends AbstractLayer implements
 		} else {
 			decorator = "{" + min + "," + max + "}";
 		}
-		return decorator + mode.getDecorator();
+		return decorator + quantifier.getDecorator();
 	}
 
 	/**
@@ -567,8 +656,7 @@ public class Loop<Element extends Layer> extends AbstractLayer implements
 
 	@Override
 	public Object clone() {
-		Loop<Element> loop = new Loop<Element>(generator, min, max);
-		loop.setMode(mode);
+		Loop<Element> loop = new Loop<Element>(quantifier, generator, min, max);
 		String content = getContent();
 		if (content != null) {
 			loop.setContent(content);

@@ -13,4 +13,16 @@ public class Newline extends Formula {
 	public String toString() {
 		return getClass().getSimpleName();
 	}
+
+	@Override
+	public Object clone() {
+		Newline clone = new Newline();
+		String content = getContent();
+		if (content != null) {
+			clone.setContent(content);
+		} else {
+			// no content to set
+		}
+		return clone;
+	}
 }

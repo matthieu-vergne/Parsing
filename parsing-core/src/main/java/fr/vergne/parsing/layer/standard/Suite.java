@@ -12,6 +12,7 @@ import java.util.regex.Pattern;
 
 import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.exception.ParsingException;
+import fr.vergne.parsing.layer.standard.Loop.Generator;
 
 /**
  * A {@link Suite} is a {@link Layer} representing an ordered sequence of
@@ -138,7 +139,7 @@ public class Suite extends AbstractLayer {
 				Layer item = sequence.get(i - 1);
 				item.removeContentListener(deepListener);
 				try {
-					item.setContent(content.substring(subStart, subEnd));
+					item.setContent(match);
 				} catch (ParsingException e) {
 					throw new ParsingException(this, item, content, subStart
 							+ e.getStart(), subEnd, e);
@@ -202,14 +203,10 @@ public class Suite extends AbstractLayer {
 	@Override
 	public Object clone() {
 		List<Layer> clonedSequence = new LinkedList<Layer>();
-		try {
-			for (Layer original : sequence) {
-				Layer clone = (Layer) original.getClass().getMethod("clone")
-						.invoke(original);
-				clonedSequence.add(clone);
-			}
-		} catch (Exception e) {
-			throw new RuntimeException(e);
+		for (Layer original : sequence) {
+			Generator<Layer> generator = Loop
+					.createGeneratorFromTemplate(original);
+			clonedSequence.add(generator.generates());
 		}
 		Suite suite = new Suite(clonedSequence);
 		String content = getContent();

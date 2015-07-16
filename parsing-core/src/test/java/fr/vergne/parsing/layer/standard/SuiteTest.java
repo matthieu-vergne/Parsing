@@ -545,4 +545,17 @@ public class SuiteTest extends LayerTest {
 		assertEquals(++operationCounter, values.size());
 		assertEquals(suite.getContent(), values.getFirst());
 	}
+
+	@Test
+	public void testNoProblemWithLazyComponents() {
+		String content = "abc?def";
+		Suite suite = new Suite(new Formula(".+?"), new Atom("?"), new Formula(
+				".+?"));
+
+		suite.setContent(content);
+		assertEquals(content, suite.getContent());
+		assertEquals("abc", suite.get(0).getContent());
+		assertEquals("?", suite.get(1).getContent());
+		assertEquals("def", suite.get(2).getContent());
+	}
 }

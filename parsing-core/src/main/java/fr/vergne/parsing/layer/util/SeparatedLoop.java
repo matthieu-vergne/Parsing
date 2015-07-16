@@ -12,11 +12,11 @@ import org.apache.commons.io.IOUtils;
 import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.exception.ParsingException;
 import fr.vergne.parsing.layer.standard.AbstractLayer;
-import fr.vergne.parsing.layer.standard.GreedyMode;
 import fr.vergne.parsing.layer.standard.Loop;
 import fr.vergne.parsing.layer.standard.Loop.BoundException;
 import fr.vergne.parsing.layer.standard.Loop.Generator;
 import fr.vergne.parsing.layer.standard.Option;
+import fr.vergne.parsing.layer.standard.Quantifier;
 import fr.vergne.parsing.layer.standard.Suite;
 
 /**
@@ -35,6 +35,8 @@ import fr.vergne.parsing.layer.standard.Suite;
 public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 		extends AbstractLayer implements Iterable<Element> {
 
+	private final int min;
+	private final int max;
 	private final Layer overall;
 	private final LayerProxy<Element> head;
 	private final Loop<Suite> loop;
@@ -49,12 +51,15 @@ public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 		}
 	};
 
-	public SeparatedLoop(final Generator<Element> elementGenerator,
+	public SeparatedLoop(Quantifier quantifier,
+			final Generator<Element> elementGenerator,
 			final Generator<Separator> separatorGenerator, int min, int max) {
-		head = new LayerProxy<Element>(elementGenerator.generates());
+		this.min = min;
+		this.max = max;
+		this.head = new LayerProxy<Element>(elementGenerator.generates());
 		int loopMin = Math.max(0, min - 1);
 		int loopMax = max == Integer.MAX_VALUE ? max : Math.max(0, max - 1);
-		loop = new Loop<Suite>(new Generator<Suite>() {
+		this.loop = new Loop<Suite>(quantifier, new Generator<Suite>() {
 
 			@Override
 			public Suite generates() {
@@ -64,13 +69,24 @@ public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 		}, loopMin, loopMax);
 
 		Suite suite = new Suite(head, loop);
-		overall = min == 0 ? new Option<Suite>(suite) : suite;
+		this.overall = min == 0 ? new Option<Suite>(suite) : suite;
 
 		this.elementGenerator = elementGenerator;
 		this.separatorGenerator = separatorGenerator;
-		separatorDefault = separatorGenerator.generates();
+		this.separatorDefault = separatorGenerator.generates();
 
-		overall.addContentListener(deepListener);
+		this.overall.addContentListener(deepListener);
+	}
+
+	public SeparatedLoop(final Generator<Element> elementGenerator,
+			final Generator<Separator> separatorGenerator, int min, int max) {
+		this(Quantifier.GREEDY, elementGenerator, separatorGenerator, min, max);
+	}
+
+	public SeparatedLoop(Quantifier quantifier,
+			Generator<Element> elementGenerator,
+			Generator<Separator> separatorGenerator, int count) {
+		this(quantifier, elementGenerator, separatorGenerator, count, count);
 	}
 
 	public SeparatedLoop(Generator<Element> elementGenerator,
@@ -78,20 +94,43 @@ public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 		this(elementGenerator, separatorGenerator, count, count);
 	}
 
+	public SeparatedLoop(Quantifier quantifier,
+			Generator<Element> elementGenerator,
+			Generator<Separator> separatorGenerator) {
+		this(quantifier, elementGenerator, separatorGenerator, 0,
+				Integer.MAX_VALUE);
+	}
+
 	public SeparatedLoop(Generator<Element> elementGenerator,
 			Generator<Separator> separatorGenerator) {
 		this(elementGenerator, separatorGenerator, 0, Integer.MAX_VALUE);
 	}
 
+	public SeparatedLoop(Quantifier quantifier, Element elementTemplate,
+			Separator separatorTemplate, int min, int max) {
+		this(quantifier, Loop.createGeneratorFromTemplate(elementTemplate),
+				Loop.createGeneratorFromTemplate(separatorTemplate), min, max);
+	}
+
 	public SeparatedLoop(Element elementTemplate, Separator separatorTemplate,
 			int min, int max) {
-		this(Loop.createGeneratorFromTemplate(elementTemplate), Loop
-				.createGeneratorFromTemplate(separatorTemplate), min, max);
+		this(Quantifier.GREEDY, elementTemplate, separatorTemplate, min, max);
+	}
+
+	public SeparatedLoop(Quantifier quantifier, Element elementTemplate,
+			Separator separatorTemplate, int count) {
+		this(quantifier, elementTemplate, separatorTemplate, count, count);
 	}
 
 	public SeparatedLoop(Element elementTemplate, Separator separatorTemplate,
 			int count) {
 		this(elementTemplate, separatorTemplate, count, count);
+	}
+
+	public SeparatedLoop(Quantifier quantifier, Element elementTemplate,
+			Separator separatorTemplate) {
+		this(quantifier, elementTemplate, separatorTemplate, 0,
+				Integer.MAX_VALUE);
 	}
 
 	public SeparatedLoop(Element elementTemplate, Separator separatorTemplate) {
@@ -133,18 +172,8 @@ public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 		return IOUtils.toInputStream(getContent(), Charset.forName("UTF-8"));
 	}
 
-	public GreedyMode getMode() {
-		return loop.getMode();
-	}
-
-	@SuppressWarnings("unchecked")
-	public void setMode(GreedyMode mode) {
-		if (overall instanceof Option) {
-			((Option<Suite>) overall).setMode(mode);
-		} else {
-			// no mode for suites
-		}
-		loop.setMode(mode);
+	public Quantifier getQuantifier() {
+		return loop.getQuantifier();
 	}
 
 	/**
@@ -237,6 +266,7 @@ public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 						elements);
 				if (size() == 0) {
 					head.setLayer(remaining.removeFirst());
+					loop.setContent("");
 					((Option<?>) overall).setPresent(true);
 					index++;
 				} else if (index == 0) {
@@ -323,5 +353,26 @@ public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 				currentIndex--;
 			}
 		};
+	}
+
+	public int getMin() {
+		return min;
+	}
+
+	public int getMax() {
+		return max;
+	}
+
+	@Override
+	public Object clone() {
+		SeparatedLoop<Element, Separator> loop = new SeparatedLoop<Element, Separator>(
+				getQuantifier(), elementGenerator, separatorGenerator, min, max);
+		String content = getContent();
+		if (content != null) {
+			loop.setContent(content);
+		} else {
+			// keep it not filled
+		}
+		return loop;
 	}
 }

@@ -7,6 +7,7 @@ import org.apache.commons.io.IOUtils;
 
 import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.exception.ParsingException;
+import fr.vergne.parsing.layer.standard.Loop.Generator;
 
 /**
  * An {@link Option} make a {@link Layer} optional. Thus, a compatible content
@@ -21,14 +22,9 @@ public class Option<CLayer extends Layer> extends AbstractLayer implements
 
 	private final CLayer option;
 	private boolean isPresent = false;
-	private GreedyMode mode = GreedyMode.GREEDY;
+	private final Quantifier quantifier;
 
-	public Option(CLayer layer, GreedyMode mode) {
-		this(layer);
-		setMode(mode);
-	}
-
-	public Option(CLayer layer) {
+	public Option(CLayer layer, Quantifier quantifier) {
 		this.option = layer;
 		setContent("");
 		this.option.addContentListener(new ContentListener() {
@@ -42,19 +38,20 @@ public class Option<CLayer extends Layer> extends AbstractLayer implements
 				}
 			}
 		});
+		this.quantifier = quantifier;
 	}
 
-	public void setMode(GreedyMode mode) {
-		this.mode = mode;
+	public Option(CLayer layer) {
+		this(layer, Quantifier.GREEDY);
 	}
 
-	public GreedyMode getMode() {
-		return mode;
+	public Quantifier getQuantifier() {
+		return quantifier;
 	}
 
 	@Override
 	protected String buildRegex() {
-		return "(?:" + option.getRegex() + ")?" + mode.getDecorator();
+		return "(?:" + option.getRegex() + ")?" + quantifier.getDecorator();
 	}
 
 	@Override
@@ -130,17 +127,11 @@ public class Option<CLayer extends Layer> extends AbstractLayer implements
 		return option.toString() + "(opt)";
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public Object clone() {
-		CLayer clone;
-		try {
-			clone = (CLayer) option.getClass().getMethod("clone")
-					.invoke(option);
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-		Option<CLayer> option = new Option<CLayer>(clone, mode);
+		Generator<CLayer> generator = Loop.createGeneratorFromTemplate(option);
+		CLayer clone = generator.generates();
+		Option<CLayer> option = new Option<CLayer>(clone, quantifier);
 		String content = getContent();
 		if (content != null) {
 			option.setContent(content);

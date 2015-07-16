@@ -4,16 +4,16 @@ import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.Test;
 
 import fr.vergne.parsing.layer.util.Csv.Record;
-import fr.vergne.parsing.layer.util.Csv.TranformerAssigner;
-import fr.vergne.parsing.layer.util.Csv.Transformer;
 
 public class CsvTest {
 
@@ -104,52 +104,30 @@ public class CsvTest {
 	}
 
 	@Test
-	public void testTransformers() {
-		Csv csv = new Csv(new TranformerAssigner() {
+	public void testColumnValuesContainerRetrieveProperValues() {
+		Csv csv = new Csv();
+		Set<String> container0 = new HashSet<String>();
+		Set<String> container1 = new HashSet<String>();
+		Set<String> container2 = new HashSet<String>();
+		csv.setColumnValuesContainer(0, container0);
+		csv.setColumnValuesContainer(1, container1);
+		csv.setColumnValuesContainer(2, container2);
+		csv.setContent("H1,H2,H3\nA1,A2,A3\nB1,B2,B3\nC1,C2,C3");
 
-			@Override
-			public Transformer<?> assign(int valueIndex) {
-				return new Transformer<Integer>() {
+		assertEquals(container0.toString(), 3, container0.size());
+		assertTrue(container0.toString(), container0.contains("A1"));
+		assertTrue(container0.toString(), container0.contains("B1"));
+		assertTrue(container0.toString(), container0.contains("C1"));
 
-					@Override
-					public Integer transform(String value) {
-						return Integer.parseInt(value);
-					}
-				};
-			}
-		});
-		csv.setContent("H1,H2,H3\n1,2,3\n6,5,4");
+		assertEquals(container1.toString(), 3, container1.size());
+		assertTrue(container1.toString(), container1.contains("A2"));
+		assertTrue(container1.toString(), container1.contains("B2"));
+		assertTrue(container1.toString(), container1.contains("C2"));
 
-		Record record = csv.getRecord(0);
-		assertEquals(1, record.getObjectValue(0));
-		assertEquals(2, record.getObjectValue(1));
-		assertEquals(3, record.getObjectValue(2));
-
-		record = csv.getRecord(1);
-		assertEquals(6, record.getObjectValue(0));
-		assertEquals(5, record.getObjectValue(1));
-		assertEquals(4, record.getObjectValue(2));
-	}
-
-	@Test
-	public void testTransformersSetWithGet() {
-		Csv csv = new Csv(new TranformerAssigner() {
-
-			@Override
-			public Transformer<?> assign(int valueIndex) {
-				return new Transformer<Integer>() {
-
-					@Override
-					public Integer transform(String value) {
-						return Integer.parseInt(value);
-					}
-				};
-			}
-		});
-		csv.setContent("H1,H2,H3\n1,2,3\n6,5,4");
-
-		Record record = csv.getRecord(0);
-		assertTrue(record.getObjectValue(0) instanceof Integer);
+		assertEquals(container2.toString(), 3, container2.size());
+		assertTrue(container2.toString(), container2.contains("A3"));
+		assertTrue(container2.toString(), container2.contains("B3"));
+		assertTrue(container2.toString(), container2.contains("C3"));
 	}
 
 	@Test
