@@ -513,7 +513,7 @@ public class SuiteTest extends LayerTest {
 		assertEquals(null, value[0]);
 		word2.setContent("testing");
 		assertEquals(null, value[0]);
-		word2.setContent("case");
+		word3.setContent("case");
 		assertEquals(suite.getContent(), value[0]);
 	}
 
