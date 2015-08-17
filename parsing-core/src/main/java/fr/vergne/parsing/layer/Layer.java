@@ -53,7 +53,8 @@ public interface Layer {
 	 * This method should provide the content as it was provided to the
 	 * {@link #setContent(String)} method.
 	 * 
-	 * @return the current content of this {@link Layer}
+	 * @return the current content of this {@link Layer}, <code>null</code> if
+	 *         there is not content yet
 	 */
 	public String getContent();
 
