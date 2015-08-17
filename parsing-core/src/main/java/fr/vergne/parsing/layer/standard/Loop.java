@@ -386,6 +386,12 @@ public class Loop<Element extends Layer> extends AbstractLayer implements
 				}
 				return character;
 			}
+			
+			@Override
+			public void close() throws IOException {
+				reader.close();
+				super.close();
+			}
 		};
 	}
 

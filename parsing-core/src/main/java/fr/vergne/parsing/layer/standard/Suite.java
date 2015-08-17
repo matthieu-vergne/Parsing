@@ -123,6 +123,12 @@ public class Suite extends AbstractLayer {
 				}
 				return character;
 			}
+
+			@Override
+			public void close() throws IOException {
+				reader.close();
+				super.close();
+			}
 		};
 	}
 
