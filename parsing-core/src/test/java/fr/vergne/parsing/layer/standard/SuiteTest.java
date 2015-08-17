@@ -35,35 +35,37 @@ public class SuiteTest extends LayerTest {
 	}
 
 	@Test
-	public void testSetGetContent() {
-		{
-			String content = "test";
-			Formula letter1 = new Formula("[a-zA-Z]");
-			Atom letter2 = new Atom("e");
-			Atom letter3 = new Atom("s");
-			Formula letter4 = new Formula("[a-zA-Z]");
-			Suite suite = new Suite(letter1, letter2, letter3, letter4);
-			suite.setContent(content);
-			assertEquals(content, suite.getContent());
-		}
-		{
-			String content = "test\ntest";
-			Formula word1 = new Formula("[a-z]{4}");
-			Formula space = new Formula("\\s+");
-			Formula word2 = new Formula("[a-z]{4}");
-			Suite suite = new Suite(word1, space, word2);
-			suite.setContent(content);
-			assertEquals(content, suite.getContent());
-		}
-		{
-			String content = "test";
-			Formula word1 = new Formula("");
-			Atom word2 = new Atom("test");
-			Formula word3 = new Formula("");
-			Suite suite = new Suite(word1, word2, word3);
-			suite.setContent(content);
-			assertEquals(content, suite.getContent());
-		}
+	public void testGetContentEqualsSetContent1() {
+		String content = "test";
+		Formula letter1 = new Formula("[a-zA-Z]");
+		Atom letter2 = new Atom("e");
+		Atom letter3 = new Atom("s");
+		Formula letter4 = new Formula("[a-zA-Z]");
+		Suite suite = new Suite(letter1, letter2, letter3, letter4);
+		suite.setContent(content);
+		assertEquals(content, suite.getContent());
+	}
+
+	@Test
+	public void testGetContentEqualsSetContent2() {
+		String content = "test\ntest";
+		Formula word1 = new Formula("[a-z]{4}");
+		Formula space = new Formula("\\s+");
+		Formula word2 = new Formula("[a-z]{4}");
+		Suite suite = new Suite(word1, space, word2);
+		suite.setContent(content);
+		assertEquals(content, suite.getContent());
+	}
+
+	@Test
+	public void testGetContentEqualsSetContentWithEmptySublayers() {
+		String content = "test";
+		Formula word1 = new Formula("");
+		Atom word2 = new Atom("test");
+		Formula word3 = new Formula("");
+		Suite suite = new Suite(word1, word2, word3);
+		suite.setContent(content);
+		assertEquals(content, suite.getContent());
 	}
 
 	@Test
