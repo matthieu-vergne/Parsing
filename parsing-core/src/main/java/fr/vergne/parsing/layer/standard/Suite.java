@@ -56,7 +56,11 @@ public class Suite extends AbstractLayer {
 
 		@Override
 		public void contentSet(String newContent) {
-			fireContentUpdate();
+			try {
+				fireContentUpdate();
+			} catch (NoContentException e) {
+				// sequence not complete, nothing to notify
+			}
 		}
 	};
 
@@ -73,7 +77,7 @@ public class Suite extends AbstractLayer {
 	}
 
 	public Suite(Layer... sequence) {
-		this(Arrays.asList(sequence));
+		this(new LinkedList<Layer>(Arrays.asList(sequence)));
 	}
 
 	@Override
@@ -101,6 +105,15 @@ public class Suite extends AbstractLayer {
 
 	@Override
 	public InputStream getInputStream() {
+		/*
+		 * We first store the InputStreams to ensure that all of them are
+		 * available. This allows to throw NoContentException immediately if the
+		 * sequence is not complete.
+		 */
+		final List<InputStream> streams = new LinkedList<InputStream>();
+		for (Layer sublayer : sequence) {
+			streams.add(sublayer.getInputStream());
+		}
 		return new InputStream() {
 			private InputStream reader = new InputStream() {
 
@@ -109,17 +122,15 @@ public class Suite extends AbstractLayer {
 					return -1;
 				}
 			};
-			private final Iterator<? extends Layer> iterator = sequence
-					.iterator();
+			private final Iterator<InputStream> iterator = streams.iterator();
 
 			@Override
 			public int read() throws IOException {
 				int character = reader.read();
-				if (character == -1 && iterator.hasNext()) {
-					reader = iterator.next().getInputStream();
+				while (character == -1 && iterator.hasNext()) {
+					reader.close();
+					reader = iterator.next();
 					character = reader.read();
-				} else {
-					// current reader not finished yet
 				}
 				return character;
 			}

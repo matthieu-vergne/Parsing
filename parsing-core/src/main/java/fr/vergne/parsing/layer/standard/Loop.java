@@ -364,6 +364,15 @@ public class Loop<Element extends Layer> extends AbstractLayer implements
 
 	@Override
 	public InputStream getInputStream() {
+		/*
+		 * We first store the InputStreams to ensure that all of them are
+		 * available. This allows to throw NoContentException immediately if the
+		 * sequence is not complete.
+		 */
+		final List<InputStream> streams = new LinkedList<InputStream>();
+		for (Layer sublayer : this) {
+			streams.add(sublayer.getInputStream());
+		}
 		return new InputStream() {
 			private InputStream reader = new InputStream() {
 
@@ -372,17 +381,15 @@ public class Loop<Element extends Layer> extends AbstractLayer implements
 					return -1;
 				}
 			};
-			private int index = 0;
+			private Iterator<InputStream> iterator = streams.iterator();
 
 			@Override
 			public int read() throws IOException {
 				int character = reader.read();
-				if (character == -1 && index < size()) {
-					reader = occurrences.get(index).getInputStream();
-					index++;
+				while (character == -1 && iterator.hasNext()) {
+					reader.close();
+					reader = iterator.next();
 					character = reader.read();
-				} else {
-					// keep the current reader
 				}
 				return character;
 			}
@@ -567,34 +574,39 @@ public class Loop<Element extends Layer> extends AbstractLayer implements
 
 	@Override
 	public Iterator<Element> iterator() {
-		final Iterator<Element> occurenceIterator = occurrences.iterator();
-		return new Iterator<Element>() {
+		if (occurrences == null) {
+			throw new NoContentException();
+		} else {
+			final Iterator<Element> occurenceIterator = occurrences.iterator();
+			return new Iterator<Element>() {
 
-			private Element lastReturned = null;
+				private Element lastReturned = null;
 
-			@Override
-			public boolean hasNext() {
-				return occurenceIterator.hasNext();
-			}
-
-			@Override
-			public Element next() {
-				lastReturned = occurenceIterator.next();
-				return lastReturned;
-			}
-
-			@Override
-			public void remove() {
-				if (size() <= min) {
-					throw new BoundException("This loop cannot have less than "
-							+ min + " elements.");
-				} else {
-					occurenceIterator.remove();
-					lastReturned.removeContentListener(deepListener);
-					fireContentUpdate();
+				@Override
+				public boolean hasNext() {
+					return occurenceIterator.hasNext();
 				}
-			}
-		};
+
+				@Override
+				public Element next() {
+					lastReturned = occurenceIterator.next();
+					return lastReturned;
+				}
+
+				@Override
+				public void remove() {
+					if (size() <= min) {
+						throw new BoundException(
+								"This loop cannot have less than " + min
+										+ " elements.");
+					} else {
+						occurenceIterator.remove();
+						lastReturned.removeContentListener(deepListener);
+						fireContentUpdate();
+					}
+				}
+			};
+		}
 	}
 
 	@Override

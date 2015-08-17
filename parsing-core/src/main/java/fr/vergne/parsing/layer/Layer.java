@@ -65,8 +65,11 @@ public interface Layer {
 	 * memory the full content.
 	 * 
 	 * @return an {@link InputStream} on this {@link Layer}
+	 * @throws NoContentException
+	 *             when no content is available, so requesting an
+	 *             {@link InputStream} makes no sense
 	 */
-	public InputStream getInputStream();
+	public InputStream getInputStream() throws NoContentException;
 
 	/**
 	 * 
@@ -101,5 +104,20 @@ public interface Layer {
 		 *            the new, current content of the {@link Layer}
 		 */
 		public void contentSet(String newContent);
+	}
+
+	@SuppressWarnings("serial")
+	public static class NoContentException extends RuntimeException {
+		public NoContentException() {
+			super();
+		}
+
+		public NoContentException(String message) {
+			super(message);
+		}
+
+		public NoContentException(String message, Throwable cause) {
+			super(message, cause);
+		}
 	}
 }

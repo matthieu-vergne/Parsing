@@ -1,13 +1,11 @@
 package fr.vergne.parsing.layer.standard;
 
 import java.io.InputStream;
-import java.nio.charset.Charset;
-
-import org.apache.commons.io.IOUtils;
 
 import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.exception.ParsingException;
 import fr.vergne.parsing.layer.standard.Loop.Generator;
+import fr.vergne.parsing.layer.util.ContentInputStream;
 
 /**
  * An {@link Option} make a {@link Layer} optional. Thus, a compatible content
@@ -61,7 +59,11 @@ public class Option<CLayer extends Layer> extends AbstractLayer implements
 
 	@Override
 	public InputStream getInputStream() {
-		return IOUtils.toInputStream(getContent(), Charset.forName("UTF-8"));
+		if (isPresent()) {
+			return option.getInputStream();
+		} else {
+			return new ContentInputStream("");
+		}
 	}
 
 	@Override

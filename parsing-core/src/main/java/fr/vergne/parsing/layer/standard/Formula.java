@@ -1,13 +1,11 @@
 package fr.vergne.parsing.layer.standard;
 
 import java.io.InputStream;
-import java.nio.charset.Charset;
 import java.util.regex.Pattern;
-
-import org.apache.commons.io.IOUtils;
 
 import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.exception.ParsingException;
+import fr.vergne.parsing.layer.util.ContentInputStream;
 
 /**
  * A {@link Formula} is a {@link Layer} which represents a piece of text which
@@ -67,7 +65,11 @@ public class Formula extends AbstractLayer {
 
 	@Override
 	public InputStream getInputStream() {
-		return IOUtils.toInputStream(content, Charset.forName("UTF-8"));
+		if (content == null) {
+			throw new NoContentException();
+		} else {
+			return new ContentInputStream(content);
+		}
 	}
 
 	@Override

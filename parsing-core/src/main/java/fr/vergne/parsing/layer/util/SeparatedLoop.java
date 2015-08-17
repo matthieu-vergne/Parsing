@@ -1,13 +1,10 @@
 package fr.vergne.parsing.layer.util;
 
 import java.io.InputStream;
-import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
-
-import org.apache.commons.io.IOUtils;
 
 import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.exception.ParsingException;
@@ -169,7 +166,7 @@ public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 
 	@Override
 	public InputStream getInputStream() {
-		return IOUtils.toInputStream(getContent(), Charset.forName("UTF-8"));
+		return overall.getInputStream();
 	}
 
 	public Quantifier getQuantifier() {
