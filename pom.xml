@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>fr.matthieu-vergne</groupId>
 	<artifactId>parsing</artifactId>
-	<version>3.1-SNAPSHOT</version>
+	<version>3.1</version>
 	<packaging>pom</packaging>
 	<name>Parsing Support</name>
 	<description>Generic purpose parser able to deal with custom grammars and providing read/write features.</description>
@@ -18,7 +18,8 @@
 		<connection>scm:git:https://matthieu-vergne@github.com/matthieu-vergne/Parsing.git</connection>
 		<developerConnection>scm:git:https://matthieu-vergne@github.com/matthieu-vergne/Parsing.git</developerConnection>
 		<url>scm:git:git://github.com/matthieu-vergne/Parsing.git</url>
-	</scm>
+	  <tag>parsing-3.1</tag>
+  </scm>
 	
 	<issueManagement>
 		<system>GitHub</system>
