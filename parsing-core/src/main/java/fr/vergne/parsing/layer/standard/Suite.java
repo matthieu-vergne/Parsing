@@ -90,20 +90,6 @@ public class Suite extends AbstractLayer {
 	}
 
 	@Override
-	public String getContent() {
-		String content = "";
-		for (Layer layer : sequence) {
-			String value = layer.getContent();
-			if (value == null) {
-				return null;
-			} else {
-				content += value;
-			}
-		}
-		return content;
-	}
-
-	@Override
 	public InputStream getInputStream() {
 		/*
 		 * We first store the InputStreams to ensure that all of them are

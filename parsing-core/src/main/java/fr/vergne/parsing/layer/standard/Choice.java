@@ -47,11 +47,6 @@ public class Choice extends AbstractLayer {
 	}
 
 	@Override
-	public String getContent() {
-		return getCurrent().getContent();
-	}
-
-	@Override
 	public InputStream getInputStream() {
 		return getCurrent().getInputStream();
 	}

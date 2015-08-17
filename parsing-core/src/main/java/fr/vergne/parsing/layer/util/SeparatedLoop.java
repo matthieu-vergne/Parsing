@@ -160,11 +160,6 @@ public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 	}
 
 	@Override
-	public String getContent() {
-		return overall.getContent();
-	}
-
-	@Override
 	public InputStream getInputStream() {
 		return overall.getInputStream();
 	}

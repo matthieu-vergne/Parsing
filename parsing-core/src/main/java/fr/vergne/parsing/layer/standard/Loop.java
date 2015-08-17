@@ -350,19 +350,6 @@ public class Loop<Element extends Layer> extends AbstractLayer implements
 	}
 
 	@Override
-	public String getContent() {
-		if (occurrences == null) {
-			return null;
-		} else {
-			StringBuilder builder = new StringBuilder();
-			for (Element occurrence : occurrences) {
-				builder.append(occurrence.getContent());
-			}
-			return builder.toString();
-		}
-	}
-
-	@Override
 	public InputStream getInputStream() {
 		/*
 		 * We first store the InputStreams to ensure that all of them are

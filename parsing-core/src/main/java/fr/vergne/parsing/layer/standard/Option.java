@@ -53,11 +53,6 @@ public class Option<CLayer extends Layer> extends AbstractLayer implements
 	}
 
 	@Override
-	public String getContent() {
-		return isPresent() ? option.getContent() : "";
-	}
-
-	@Override
 	public InputStream getInputStream() {
 		if (isPresent()) {
 			return option.getInputStream();

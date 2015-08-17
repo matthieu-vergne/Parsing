@@ -1,9 +1,14 @@
 package fr.vergne.parsing.layer.standard;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+
+import org.apache.commons.io.IOUtils;
 
 import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.util.Any;
@@ -22,6 +27,7 @@ public abstract class AbstractLayer implements Layer {
 	 * browsed.
 	 */
 	public static int recursivityDepth = 10;
+	private static final Charset ENCODING = Charset.forName("UTF-8");
 	private static final Map<Class<?>, Integer> calls = new HashMap<Class<?>, Integer>();
 	private final Collection<ContentListener> listeners = new HashSet<ContentListener>();
 
@@ -117,4 +123,21 @@ public abstract class AbstractLayer implements Layer {
 	 */
 	protected abstract String buildRegex();
 
+	@Override
+	public String getContent() {
+		InputStream stream;
+		try {
+			stream = getInputStream();
+		} catch (NoContentException e) {
+			return null;
+		}
+		String content;
+		try {
+			content = IOUtils.toString(stream, ENCODING);
+			stream.close();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		return content;
+	}
 }
