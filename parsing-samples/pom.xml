@@ -3,7 +3,7 @@
 	<parent>
 		<groupId>fr.matthieu-vergne</groupId>
 		<artifactId>parsing</artifactId>
-		<version>3.2</version>
+		<version>3.3-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>parsing-samples</artifactId>
@@ -29,7 +29,7 @@
 		<dependency>
 			<groupId>fr.matthieu-vergne</groupId>
 			<artifactId>parsing-core</artifactId>
-			<version>3.2</version>
+			<version>3.3-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>fr.matthieu-vergne</groupId>
