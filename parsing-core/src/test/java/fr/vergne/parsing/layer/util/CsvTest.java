@@ -9,10 +9,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
 import org.junit.Test;
 
+import fr.vergne.ioutils.FileUtils;
+import fr.vergne.ioutils.StringUtils;
 import fr.vergne.parsing.layer.util.Csv.Record;
 
 public class CsvTest {
@@ -154,7 +154,7 @@ public class CsvTest {
 
 		Csv csv = new Csv(sep);
 		csv.setContent(original);
-		String copy = IOUtils.toString(csv.getInputStream());
+		String copy = StringUtils.readFromInputStream(csv.getInputStream());
 		assertEquals(original, copy);
 	}
 

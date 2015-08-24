@@ -10,9 +10,9 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import org.apache.commons.io.IOUtils;
 import org.junit.Test;
 
+import fr.vergne.ioutils.StringUtils;
 import fr.vergne.parsing.layer.Layer.ContentListener;
 
 public abstract class LayerTest {
@@ -136,7 +136,8 @@ public abstract class LayerTest {
 				// irrelevant test
 			} else {
 				layer.setContent(content);
-				String retrieved = IOUtils.toString(layer.getInputStream());
+				String retrieved = StringUtils.readFromInputStream(layer
+						.getInputStream());
 				assertEquals(layer.toString(), content, retrieved);
 			}
 		}

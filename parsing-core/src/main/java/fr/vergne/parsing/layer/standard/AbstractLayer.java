@@ -8,8 +8,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
-import org.apache.commons.io.IOUtils;
-
+import fr.vergne.ioutils.StringUtils;
 import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.util.Any;
 
@@ -133,7 +132,7 @@ public abstract class AbstractLayer implements Layer {
 		}
 		String content;
 		try {
-			content = IOUtils.toString(stream, ENCODING);
+			content = StringUtils.readFromInputStream(stream, ENCODING);
 			stream.close();
 		} catch (IOException e) {
 			throw new RuntimeException(e);
