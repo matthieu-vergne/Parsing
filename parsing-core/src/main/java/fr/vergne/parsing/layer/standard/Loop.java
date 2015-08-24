@@ -426,7 +426,6 @@ public class Loop<Element extends Layer> extends AbstractLayer implements
 	 * @param element
 	 *            the new {@link Element}
 	 */
-	@SuppressWarnings("unchecked")
 	public void add(int index, Element element) {
 		addAll(index, Arrays.asList(element));
 	}

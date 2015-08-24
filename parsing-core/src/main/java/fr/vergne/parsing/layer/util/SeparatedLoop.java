@@ -224,7 +224,6 @@ public class SeparatedLoop<Element extends Layer, Separator extends Layer>
 		return separatorDefault.getContent();
 	}
 
-	@SuppressWarnings("unchecked")
 	public void add(int index, Element element) {
 		addAll(index, Arrays.asList(element));
 	}
