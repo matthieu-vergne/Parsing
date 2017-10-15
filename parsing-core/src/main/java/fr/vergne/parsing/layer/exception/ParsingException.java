@@ -1,5 +1,6 @@
 package fr.vergne.parsing.layer.exception;
 
+import fr.vergne.parsing.definition.Definition;
 import fr.vergne.parsing.layer.Layer;
 
 @SuppressWarnings("serial")
@@ -26,15 +27,15 @@ public class ParsingException extends IllegalArgumentException {
 		this.end = content.length();
 	}
 
-	public ParsingException(Layer parent, Layer blocker, String content,
+	public ParsingException(Layer parent, Definition<?> blocker, String content,
 			int start, int end) {
 		this(parent, blocker, content, start, end, null);
 	}
 
-	public ParsingException(Layer parent, Layer blocker, String content,
+	public ParsingException(Layer parent, Definition<?> blocker, String content,
 			int start, int end, Throwable cause) {
 		super((blocker == null ? "Nothing expected" : "Unable to parse "
-				+ format(blocker.toString()))
+				+ format(blocker.create().toString()))
 				+ " for "
 				+ format(parent.toString())
 				+ " from "

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <tree>
-    <node id="root">
+	<node id="root">
 		<node id="solo"/>
 		<node id="parent 1">
 			<node id="child 1.1"/>
