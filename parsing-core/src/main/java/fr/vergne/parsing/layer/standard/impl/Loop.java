@@ -13,10 +13,10 @@ import java.util.regex.Pattern;
 
 import fr.vergne.logging.LoggerConfiguration;
 import fr.vergne.parsing.definition.Definition;
+import fr.vergne.parsing.definition.impl.StandardDefinitionFactory;
 import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.exception.ParsingException;
 import fr.vergne.parsing.layer.impl.AbstractLayer;
-import fr.vergne.parsing.layer.impl.RecursivityLimiter;
 import fr.vergne.parsing.layer.standard.Quantifier;
 import fr.vergne.parsing.util.Named;
 
@@ -115,19 +115,12 @@ public class Loop<Element extends Layer> extends AbstractLayer implements Iterab
 		return itemDefinition;
 	}
 
-	private static final RecursivityLimiter<Loop<?>, String> regexComputer = new RecursivityLimiter<>(
-			(loop) -> "(?:" + loop.itemDefinition.getRegex() + ")" + loop.buildRegexCardinality(),
-			(loop) -> "[\\s\\S]*");
-
-	// TODO Deprecate & remove
-	public String getRegex() {
-		return regexComputer.callOn(this);
-	}
-
 	@Override
 	protected void setInternalContent(String content) {
 		occurrences = new LinkedList<Element>();
-		Matcher matcher = Pattern.compile(getRegex()).matcher(content);
+		Matcher matcher = Pattern
+				.compile(new StandardDefinitionFactory().defineLoop(itemDefinition, min, max, quantifier).getRegex())
+				.matcher(content);
 		if (matcher.matches()) {
 			Iterator<Element> iterator = occurrences.iterator();
 			while (iterator.hasNext()) {
@@ -411,31 +404,8 @@ public class Loop<Element extends Layer> extends AbstractLayer implements Iterab
 
 	@Override
 	public String toString() {
-		return getName() + "[" + Named.name(itemDefinition.create()) + buildRegexCardinality() + "]";
-	}
-
-	private String buildRegexCardinality() {
-		return buildRegexCardinality(0);
-	}
-
-	private String buildRegexCardinality(int consumed) {
-		int min = Math.max(this.min - consumed, 0);
-		int max = this.max == Integer.MAX_VALUE ? Integer.MAX_VALUE : Math.max(this.max - consumed, 0);
-		String decorator;
-		if (min == 0 && max == Integer.MAX_VALUE) {
-			decorator = "*";
-		} else if (min == 0 && max == 1) {
-			decorator = "?";
-		} else if (min == 1 && max == Integer.MAX_VALUE) {
-			decorator = "+";
-		} else if (min == max) {
-			decorator = "{" + min + "}";
-		} else if (max == Integer.MAX_VALUE) {
-			decorator = "{" + min + ",}";
-		} else {
-			decorator = "{" + min + "," + max + "}";
-		}
-		return decorator + quantifier.getDecorator();
+		String cardinality = StandardDefinitionFactory.buildRegexCardinality(quantifier, min, max);
+		return getName() + "[" + Named.name(itemDefinition.create()) + cardinality + "]";
 	}
 
 	@SuppressWarnings("serial")

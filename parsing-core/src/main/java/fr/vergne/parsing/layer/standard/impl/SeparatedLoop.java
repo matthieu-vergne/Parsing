@@ -85,7 +85,6 @@ public class SeparatedLoop<Item extends Layer, Separator extends Layer> extends 
 		this(itemDefinition, separatorDefinition, 0, Integer.MAX_VALUE);
 	}
 
-	// TODO Deprecate & remove
 	public String getRegex() {
 		return overallDefinition.getRegex();
 	}

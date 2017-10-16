@@ -6,7 +6,6 @@ import fr.vergne.parsing.definition.Definition;
 import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.exception.ParsingException;
 import fr.vergne.parsing.layer.impl.AbstractLayer;
-import fr.vergne.parsing.layer.impl.RecursivityLimiter;
 import fr.vergne.parsing.layer.standard.Quantifier;
 import fr.vergne.parsing.util.ContentInputStream;
 import fr.vergne.parsing.util.Named;
@@ -44,15 +43,6 @@ public class Option<CLayer extends Layer> extends AbstractLayer implements Named
 
 	public Quantifier getQuantifier() {
 		return quantifier;
-	}
-
-	private static final RecursivityLimiter<Option<?>, String> regexProcessor = new RecursivityLimiter<>(
-			(option) -> "(?:" + option.optionDefinition.getRegex() + ")?" + option.quantifier.getDecorator(),
-			(option) -> "[\\s\\S]*");
-
-	// TODO Deprecate & remove
-	public String getRegex() {
-		return regexProcessor.callOn(this);
 	}
 
 	@Override

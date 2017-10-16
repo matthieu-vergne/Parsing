@@ -3,10 +3,10 @@ package fr.vergne.parsing.definition.impl;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Supplier;
 
 import fr.vergne.parsing.definition.Definition;
 import fr.vergne.parsing.layer.Layer;
-import fr.vergne.parsing.layer.impl.RecursivityLimiter;
 import fr.vergne.parsing.layer.standard.Quantifier;
 import fr.vergne.parsing.layer.standard.impl.Choice;
 import fr.vergne.parsing.layer.standard.impl.Constant;
@@ -65,9 +65,12 @@ public class StandardDefinitionFactory {
 	public <T extends Layer> Definition<Option<T>> defineOptional(Definition<T> definition, Quantifier quantifier) {
 		return new Definition<Option<T>>() {
 
+			private final RegexRecursivityLimiter regexComputer = new RegexRecursivityLimiter(
+					() -> "(?:" + definition.getRegex() + ")?" + quantifier.getDecorator());
+
 			@Override
 			public String getRegex() {
-				return create().getRegex();
+				return regexComputer.generate();
 			}
 
 			@Override
@@ -76,8 +79,8 @@ public class StandardDefinitionFactory {
 			}
 
 			@Override
-			public boolean isCompatibleWith(Option<T> layer) {
-				return layer.getRegex().equals(create().getRegex());
+			public boolean isCompatibleWith(Option<T> option) {
+				return option.getOptionalDefinition().equals(definition) && option.getQuantifier().equals(quantifier);
 			}
 		};
 	}
@@ -90,17 +93,17 @@ public class StandardDefinitionFactory {
 	public Definition<Sequence> defineSequence(List<Definition<? extends Layer>> items) {
 		return new Definition<Sequence>() {
 
-			RecursivityLimiter<Definition<Sequence>, String> regexComputer = new RecursivityLimiter<>((def) -> {
-				String regex = "";
+			private final RegexRecursivityLimiter regexComputer = new RegexRecursivityLimiter(() -> {
+				StringBuilder regex = new StringBuilder();
 				for (Definition<?> item : items) {
-					regex += "(?:" + item.getRegex() + ")";
+					regex.append("(?:" + item.getRegex() + ")");
 				}
-				return regex;
-			}, (def) -> "[\\s\\S]*");
+				return regex.toString();
+			});
 
 			@Override
 			public String getRegex() {
-				return regexComputer.callOn(this);
+				return regexComputer.generate();
 			}
 
 			@Override
@@ -124,9 +127,12 @@ public class StandardDefinitionFactory {
 			Quantifier quantifier) {
 		return new Definition<Loop<Item>>() {
 
+			private final RegexRecursivityLimiter regexComputer = new RegexRecursivityLimiter(
+					() -> "(?:" + itemDefinition.getRegex() + ")" + buildRegexCardinality(quantifier, min, max));
+
 			@Override
 			public String getRegex() {
-				return create().getRegex();
+				return regexComputer.generate();
 			}
 
 			@Override
@@ -161,9 +167,12 @@ public class StandardDefinitionFactory {
 			Definition<Item> item, Definition<Separator> separator, int min, int max, Quantifier quantifier) {
 		return new Definition<SeparatedLoop<Item, Separator>>() {
 
+			private final RegexRecursivityLimiter regexComputer = new RegexRecursivityLimiter(
+					() -> create().getRegex());
+
 			@Override
 			public String getRegex() {
-				return create().getRegex();
+				return regexComputer.generate();
 			}
 
 			@Override
@@ -220,17 +229,17 @@ public class StandardDefinitionFactory {
 	public Definition<Choice> defineChoice(Collection<Definition<? extends Layer>> definitions) {
 		return new Definition<Choice>() {
 
-			RecursivityLimiter<Definition<Choice>, String> regexComputer = new RecursivityLimiter<>((def) -> {
-				String regex = "";
+			private final RegexRecursivityLimiter regexComputer = new RegexRecursivityLimiter(() -> {
+				StringBuilder regex = new StringBuilder();
 				for (Definition<? extends Layer> definition : definitions) {
-					regex += "|(?:" + definition.getRegex() + ")";
+					regex.append("|(?:" + definition.getRegex() + ")");
 				}
 				return "(?:" + regex.substring(1) + ")";
-			}, (def) -> "[\\s\\S]*");
+			});
 
 			@Override
 			public String getRegex() {
-				return regexComputer.callOn(this);
+				return regexComputer.generate();
 			}
 
 			@Override
@@ -339,6 +348,54 @@ public class StandardDefinitionFactory {
 
 		public Definition<T> getDefinition() {
 			return resultDefinition;
+		}
+	}
+
+	public static String buildRegexCardinality(Quantifier quantifier, int min, int max) {
+		return buildRegexCardinality(quantifier, min, max, 0);
+	}
+
+	private static String buildRegexCardinality(Quantifier quantifier, int min, int max, int consumed) {
+		int actualMin = Math.max(min - consumed, 0);
+		int actualMax = max == Integer.MAX_VALUE ? Integer.MAX_VALUE : Math.max(max - consumed, 0);
+		String decorator;
+		if (actualMin == 0 && actualMax == Integer.MAX_VALUE) {
+			decorator = "*";
+		} else if (actualMin == 0 && actualMax == 1) {
+			decorator = "?";
+		} else if (actualMin == 1 && actualMax == Integer.MAX_VALUE) {
+			decorator = "+";
+		} else if (actualMin == actualMax) {
+			decorator = "{" + actualMin + "}";
+		} else if (actualMax == Integer.MAX_VALUE) {
+			decorator = "{" + actualMin + ",}";
+		} else {
+			decorator = "{" + actualMin + "," + actualMax + "}";
+		}
+		return decorator + quantifier.getDecorator();
+	}
+
+	private static class RegexRecursivityLimiter {
+
+		public static int DEFAULT_RECURSIVITY_DEPTH = 10;
+		private final int depthLimit;
+		private final Supplier<String> normalRegex;
+		private int depth = 0;
+
+		public RegexRecursivityLimiter(Supplier<String> normalRegex, int depthLimit) {
+			this.normalRegex = normalRegex;
+			this.depthLimit = depthLimit;
+		}
+
+		public RegexRecursivityLimiter(Supplier<String> normalProcessing) {
+			this(normalProcessing, DEFAULT_RECURSIVITY_DEPTH);
+		}
+
+		public String generate() {
+			depth++;
+			String regex = depth >= depthLimit ? "[\\s\\S]*" : normalRegex.get();
+			depth--;
+			return regex;
 		}
 	}
 }
