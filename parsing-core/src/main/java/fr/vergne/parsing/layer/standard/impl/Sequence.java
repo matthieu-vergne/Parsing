@@ -187,12 +187,11 @@ public class Sequence extends AbstractLayer implements Named {
 	}
 
 	private String buildCapturingRegex(List<Definition<?>> sequence) {
-		// TODO Use StringBuilder
-		String regex = "";
+		StringBuilder regex = new StringBuilder();
 		for (Definition<?> definition : sequence) {
-			regex += "(" + definition.getRegex() + ")";
+			regex.append("(" + definition.getRegex() + ")");
 		}
-		return regex;
+		return regex.toString();
 	}
 
 	@Override
