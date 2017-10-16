@@ -276,26 +276,35 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	public void testSizeCorrespondsToNumberOfItemsInLoop() {
 		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
 				factory.defineConstant(","));
-		loop.setContent("a,b,c,d");
 
-		assertEquals(4, loop.size());
+		loop.setContent("");
+		assertEquals(0, loop.size());
 
-		assertNotNull(loop.get(0));
-		assertNotNull(loop.get(1));
-		assertNotNull(loop.get(2));
-		assertNotNull(loop.get(3));
-		try {
-			loop.get(4);
-		} catch (IndexOutOfBoundsException e) {
-		}
+		loop.setContent("a");
+		assertEquals(1, loop.size());
 
-		assertNotNull(loop.getSeparator(0));
-		assertNotNull(loop.getSeparator(1));
-		assertNotNull(loop.getSeparator(2));
-		try {
-			loop.getSeparator(3);
-		} catch (IndexOutOfBoundsException e) {
-		}
+		loop.setContent("a,b");
+		assertEquals(2, loop.size());
+
+		loop.setContent("a,b,c");
+		assertEquals(3, loop.size());
+	}
+
+	@Test
+	public void testSizeCorrespondsToNumberOfAddedElements() {
+		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
+				factory.defineConstant(","));
+
+		assertEquals(0, loop.size());
+
+		loop.add(0, "a");
+		assertEquals(1, loop.size());
+
+		loop.add(0, "b");
+		assertEquals(2, loop.size());
+
+		loop.add(0, "c");
+		assertEquals(3, loop.size());
 	}
 
 	@Test
@@ -940,24 +949,6 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	/**************************************************************/
-
-	@Test
-	public void testSize() {
-		SeparatedLoop<Regex, Constant> separatedLoop = new SeparatedLoop<>(factory.defineRegex("\\d+"),
-				factory.defineConstant("-"));
-
-		separatedLoop.setContent("");
-		assertEquals(0, separatedLoop.size());
-
-		separatedLoop.setContent("1");
-		assertEquals(1, separatedLoop.size());
-
-		separatedLoop.setContent("1-2");
-		assertEquals(2, separatedLoop.size());
-
-		separatedLoop.setContent("9-8-7");
-		assertEquals(3, separatedLoop.size());
-	}
 
 	@Test
 	public void testGetIndex() {
