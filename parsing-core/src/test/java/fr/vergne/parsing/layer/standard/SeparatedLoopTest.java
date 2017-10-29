@@ -1,4 +1,4 @@
-package fr.vergne.parsing.layer.standard.impl;
+package fr.vergne.parsing.layer.standard;
 
 import static org.junit.Assert.*;
 
@@ -14,46 +14,60 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import fr.vergne.parsing.definition.Definition;
-import fr.vergne.parsing.definition.impl.StandardDefinitionFactory;
-import fr.vergne.parsing.definition.impl.StandardDefinitionFactory.DefinitionProxy;
 import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.Layer.ContentListener;
 import fr.vergne.parsing.layer.ModifiableComposedLayerTest;
 import fr.vergne.parsing.layer.exception.ParsingException;
-import fr.vergne.parsing.layer.standard.impl.Loop.BoundException;
+import fr.vergne.parsing.layer.standard.Loop.BoundException;
+import fr.vergne.parsing.layer.standard.impl.JavaPatternRegex;
+import fr.vergne.parsing.layer.standard.impl.StandardDefinitionFactory;
+import fr.vergne.parsing.layer.standard.impl.UnsafeRecursiveLayer;
+import fr.vergne.parsing.layer.standard.impl.StandardDefinitionFactory.DefinitionProxy;
 
+// TODO Test quantifiers?
 @RunWith(JUnitPlatform.class)
-public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedLoop<Regex, Constant>> {
+public interface SeparatedLoopTest extends ModifiableComposedLayerTest<SeparatedLoop<Regex, Constant>> {
 
-	final StandardDefinitionFactory factory = new StandardDefinitionFactory();
+	<Item extends Layer, Separator extends Layer> SeparatedLoop<Item, Separator> instantiateSeparatedLoop(
+			Definition<Item> item, Definition<Separator> separator);
+
+	<Item extends Layer, Separator extends Layer> SeparatedLoop<Item, Separator> instantiateSeparatedLoop(
+			Definition<Item> item, Definition<Separator> separator, int min, int max);
 
 	@Override
-	public Map<String, SeparatedLoop<Regex, Constant>> instantiateLayers(Collection<String> specialCharacters) {
-		String sep = ",";
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<>(factory.defineRegex("[^,]+"),
-				factory.defineConstant(sep));
-
-		StringBuilder builder = new StringBuilder();
-		for (String character : specialCharacters) {
-			builder.append(sep);
-			builder.append(character);
-		}
-		String content = builder.toString().substring(sep.length());
-
+	default Map<String, SeparatedLoop<Regex, Constant>> instantiateLayers(Collection<String> specialCharacters) {
 		Map<String, SeparatedLoop<Regex, Constant>> map = new HashMap<>();
-		map.put(content, loop);
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		String sep = ",";
 
-		SeparatedLoop<Regex, Constant> loop2 = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
-				factory.defineConstant(","));
-		map.put("a,b,c,d", loop2);
-		map.put("a", loop2);
-		map.put("", loop2);
+		{
+			SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[^,]+"),
+					factory.defineConstant(sep));
+			loop.setDefaultSeparator(sep);
+
+			StringBuilder builder = new StringBuilder();
+			for (String character : specialCharacters) {
+				builder.append(sep);
+				builder.append(character);
+			}
+			String content = builder.toString().substring(sep.length());
+			map.put(content, loop);
+		}
+
+		{
+			SeparatedLoop<Regex, Constant> loop2 = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
+					factory.defineConstant(sep));
+			loop2.setDefaultSeparator(sep);
+			map.put("a,b,c,d", loop2);
+			map.put("a", loop2);
+			map.put("", loop2);
+		}
 
 		return map;
 	}
 
 	@Override
-	public Collection<Layer> getUsedSubLayers(SeparatedLoop<Regex, Constant> loop) {
+	default Collection<Layer> getUsedSubLayers(SeparatedLoop<Regex, Constant> loop) {
 		Collection<Layer> sublayers = new LinkedList<>();
 		for (int i = 0; i < loop.size(); i++) {
 			sublayers.add(loop.get(i));
@@ -63,14 +77,20 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 		}
 		return sublayers;
 	}
+	
+	@Override
+	default Collection<SublayerUpdate> getSublayersUpdates(SeparatedLoop<Regex, Constant> parent) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 
 	@Override
-	public Collection<Update> getSublayersUpdatesFunctions(SeparatedLoop<Regex, Constant> loop) {
-		Collection<Update> updates = new LinkedList<>();
+	default Collection<SublayerReplacement> getSublayersReplacements(SeparatedLoop<Regex, Constant> loop) {
+		Collection<SublayerReplacement> updates = new LinkedList<>();
 
 		if (loop.size() > 0) {
 			// Item addition+removal at the start
-			updates.add(new Update() {
+			updates.add(new SublayerReplacement() {
 
 				Regex initial = loop.get(0);
 				Regex replacement = loop.getItemDefinition().create();
@@ -101,7 +121,7 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 			});
 
 			// Item addition+removal at the end
-			updates.add(new Update() {
+			updates.add(new SublayerReplacement() {
 
 				int index = loop.size() - 1;
 				Regex current = loop.get(index);
@@ -137,7 +157,7 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 
 		if (loop.size() > 1) {
 			// Separator addition+removal
-			updates.add(new Update() {
+			updates.add(new SublayerReplacement() {
 
 				Constant replacement;
 
@@ -168,7 +188,7 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 			});
 
 			// Item addition+removal at the end
-			updates.add(new Update() {
+			updates.add(new SublayerReplacement() {
 
 				int index = loop.size() - 1;
 				Regex current = loop.get(index);
@@ -206,21 +226,24 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Override
-	public Layer instantiateRecursiveLayer() {
+	default Layer instantiateRecursiveLayer() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
 		DefinitionProxy<SeparatedLoop<UnsafeRecursiveLayer, Constant>> loopProxy = factory.prepareDefinition();
 		Definition<SeparatedLoop<UnsafeRecursiveLayer, Constant>> loop = loopProxy.getDefinition();
-		loopProxy.defineAs(factory.defineSeparatedLoop(UnsafeRecursiveLayer.defineOn(loop), factory.defineConstant(",")));
+		loopProxy.defineAs(
+				factory.defineSeparatedLoop(UnsafeRecursiveLayer.defineOn(loop), factory.defineConstant(",")));
 		return loop.create();
 	}
 
 	@Override
-	public String getValidRecursiveContent(Layer layer) {
+	default String getValidRecursiveContent(Layer layer) {
 		return "-,-,-";
 	}
 
 	@Test
-	public void testInvalidContentForRegexThrowsParsingException() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
+	default void testInvalidContentForRegexThrowsParsingException() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineConstant(","));
 
 		try {
@@ -243,8 +266,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testInvalidContentForMinThrowsParsingException() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[0-9]"),
+	default void testInvalidContentForMinThrowsParsingException() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[0-9]"),
 				factory.defineConstant(","), 5, 10);
 
 		try {
@@ -261,8 +285,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testInvalidContentForMaxThrowsParsingException() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[0-9]"),
+	default void testInvalidContentForMaxThrowsParsingException() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[0-9]"),
 				factory.defineConstant(","), 0, 5);
 
 		try {
@@ -273,8 +298,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testSizeCorrespondsToNumberOfItemsInLoop() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
+	default void testSizeCorrespondsToNumberOfItemsInLoop() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineConstant(","));
 
 		loop.setContent("");
@@ -291,9 +317,11 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testSizeCorrespondsToNumberOfAddedElements() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
+	default void testSizeCorrespondsToNumberOfAddedElements() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineConstant(","));
+		loop.setDefaultSeparator(",");
 
 		assertEquals(0, loop.size());
 
@@ -308,8 +336,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testIsEmptyOnlyWhenActuallyEmpty() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
+	default void testIsEmptyOnlyWhenActuallyEmpty() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineConstant(","));
 
 		loop.setContent("a,b,c");
@@ -323,8 +352,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testOccurrenceContentCorrespondsToLoopContent() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
+	default void testOccurrenceContentCorrespondsToLoopContent() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineConstant(","));
 		loop.setContent("a,b,c");
 
@@ -335,8 +365,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testSeparatorContentCorrespondsToLoopContent() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
+	default void testSeparatorContentCorrespondsToLoopContent() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineConstant(","));
 		loop.setContent("a,b,c");
 
@@ -346,8 +377,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testUpdateOnOccurrenceContentProperlyUpdateLoopContent() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
+	default void testUpdateOnOccurrenceContentProperlyUpdateLoopContent() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineConstant(","));
 		loop.setContent("a,b,c,d");
 
@@ -362,8 +394,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testUpdateOnSeparatorContentProperlyUpdateLoopContent() {
-		SeparatedLoop<Regex, Regex> loop = new SeparatedLoop<Regex, Regex>(factory.defineRegex("[a-zA-Z]"),
+	default void testUpdateOnSeparatorContentProperlyUpdateLoopContent() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Regex> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineRegex("[,;]"));
 		loop.setContent("a,b,c,d");
 
@@ -376,8 +409,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testUpdateOnOccurrenceNotifiesLoopListeners() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
+	default void testUpdateOnOccurrenceNotifiesLoopListeners() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineConstant(","));
 		loop.setContent("a,b,c,d");
 		final String[] value = new String[] { null };
@@ -400,8 +434,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testUpdateOnSeparatorNotifiesLoopListeners() {
-		SeparatedLoop<Regex, Regex> loop = new SeparatedLoop<Regex, Regex>(factory.defineRegex("[a-zA-Z]"),
+	default void testUpdateOnSeparatorNotifiesLoopListeners() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Regex> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineRegex("[,;]"));
 		loop.setContent("a,b,c,d");
 		final String[] value = new String[] { null };
@@ -422,32 +457,39 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testSetAddSeparatorThrowsExecptionOnInvalidRegex() {
-		SeparatedLoop<Regex, Regex> loop = new SeparatedLoop<Regex, Regex>(factory.defineRegex("[a-zA-Z]"),
+	default void testSetAddSeparatorThrowsExceptionOnInvalidRegex() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Regex> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineRegex("[,;]"));
 
 		try {
 			loop.setDefaultSeparator("+");
 			fail("No exception thrown");
-		} catch (ParsingException e) {
+		} catch (IllegalArgumentException cause) {
 		}
 	}
 
 	@Test
-	public void testDefaultSeparatorGuessedFromContent() {
-		SeparatedLoop<Regex, Regex> loop = new SeparatedLoop<Regex, Regex>(factory.defineRegex("[a-zA-Z]"),
+	default void testSeparatorGuessedFromContent() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Regex> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineRegex("[,;]"));
 
 		loop.setContent("a,b,c,d");
-		assertEquals(",", loop.getDefaultSeparator());
+		loop.add(0, "z");
+		assertNull(loop.getDefaultSeparator());
+		assertEquals("z,a,b,c,d", loop.getContent());
 
 		loop.setContent("a;b;c;d");
-		assertEquals(";", loop.getDefaultSeparator());
+		loop.add(0, "z");
+		assertNull(loop.getDefaultSeparator());
+		assertEquals("z;a;b;c;d", loop.getContent());
 	}
 
 	@Test
-	public void testGetAddSeparatorReturnsSetAddSeparator() {
-		SeparatedLoop<Regex, Regex> loop = new SeparatedLoop<Regex, Regex>(factory.defineRegex("[a-zA-Z]"),
+	default void testGetAddSeparatorReturnsSetAddSeparator() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Regex> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineRegex("[,;]"));
 
 		loop.setDefaultSeparator(",");
@@ -458,8 +500,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testAddContentProperlyAddsItem() {
-		SeparatedLoop<Regex, Regex> loop = new SeparatedLoop<Regex, Regex>(factory.defineRegex("[a-zA-Z]"),
+	default void testAddContentProperlyAddsItem() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Regex> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineRegex("[,;]"));
 		loop.setDefaultSeparator(",");
 		loop.setContent("");
@@ -478,8 +521,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testAddContentUsesDefaultSeparator() {
-		SeparatedLoop<Regex, Regex> loop = new SeparatedLoop<Regex, Regex>(factory.defineRegex("[a-zA-Z]"),
+	default void testAddContentUsesDefaultSeparator() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Regex> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineRegex("[,;]"));
 		loop.setContent("a,b,c,d");
 
@@ -499,8 +543,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testAddContentReturnsCorrectOccurrence() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
+	default void testAddContentReturnsCorrectOccurrence() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineConstant(","));
 		loop.setContent("a,b,c,d");
 
@@ -510,8 +555,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testAddContentProperlyNotifiesListeners() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
+	default void testAddContentProperlyNotifiesListeners() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineConstant(","));
 		loop.setContent("a,b,c,d");
 		final String[] value = new String[] { null };
@@ -532,8 +578,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testUpdateOnAddedContentProperlyNotifiesListeners() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
+	default void testUpdateOnAddedContentProperlyNotifiesListeners() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineConstant(","));
 		loop.setContent("a,b,c,d");
 		Regex added = loop.add(2, "x");
@@ -552,8 +599,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testAddContentThrowsExceptionOnInvalidContent() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
+	default void testAddContentThrowsExceptionOnInvalidContent() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineConstant(","));
 		loop.setContent("a,b,c,d");
 
@@ -573,8 +621,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testAddContentThrowsExceptionOnInvalidIndex() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
+	default void testAddContentThrowsExceptionOnInvalidIndex() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineConstant(","));
 		loop.setContent("a,b,c,d");
 
@@ -592,8 +641,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testAddContentThrowsExceptionIfMaxNotRespected() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
+	default void testAddContentThrowsExceptionIfMaxNotRespected() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineConstant(","), 0, 5);
 		loop.setContent("a,b,c,d,e");
 
@@ -605,49 +655,52 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testAddItemProperlyAddsItem() {
-		SeparatedLoop<Regex, Regex> loop = new SeparatedLoop<Regex, Regex>(factory.defineRegex("[a-zA-Z]"),
+	default void testAddItemProperlyAddsItem() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Regex> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineRegex("[,;]"));
 		loop.setContent("a,b,c,d");
 		loop.setDefaultSeparator(",");
 
-		loop.add(loop.size(), new Regex("[a-zA-Z]", "e"));
+		loop.add(loop.size(), new JavaPatternRegex("[a-zA-Z]", "e"));
 		assertEquals("a,b,c,d,e", loop.getContent());
-		loop.add(loop.size(), new Regex("[a-zA-Z]", "f"));
+		loop.add(loop.size(), new JavaPatternRegex("[a-zA-Z]", "f"));
 		assertEquals("a,b,c,d,e,f", loop.getContent());
 
-		loop.add(1, new Regex("[a-zA-Z]", "z"));
+		loop.add(1, new JavaPatternRegex("[a-zA-Z]", "z"));
 		assertEquals("a,z,b,c,d,e,f", loop.getContent());
-		loop.add(0, new Regex("[a-zA-Z]", "y"));
+		loop.add(0, new JavaPatternRegex("[a-zA-Z]", "y"));
 		assertEquals("y,a,z,b,c,d,e,f", loop.getContent());
-		loop.add(3, new Regex("[a-zA-Z]", "x"));
+		loop.add(3, new JavaPatternRegex("[a-zA-Z]", "x"));
 		assertEquals("y,a,z,x,b,c,d,e,f", loop.getContent());
 	}
 
 	@Test
-	public void testAddItemUsesCorrectSeparator() {
-		SeparatedLoop<Regex, Regex> loop = new SeparatedLoop<Regex, Regex>(factory.defineRegex("[a-zA-Z]"),
+	default void testAddItemUsesCorrectSeparator() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Regex> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineRegex("[,;]"));
 		loop.setContent("a,b,c,d");
 
 		loop.setDefaultSeparator(",");
-		loop.add(loop.size(), new Regex("[a-zA-Z]", "e"));
+		loop.add(loop.size(), new JavaPatternRegex("[a-zA-Z]", "e"));
 		assertEquals("a,b,c,d,e", loop.getContent());
-		loop.add(loop.size(), new Regex("[a-zA-Z]", "f"));
+		loop.add(loop.size(), new JavaPatternRegex("[a-zA-Z]", "f"));
 		assertEquals("a,b,c,d,e,f", loop.getContent());
 
 		loop.setDefaultSeparator(";");
-		loop.add(1, new Regex("[a-zA-Z]", "z"));
+		loop.add(1, new JavaPatternRegex("[a-zA-Z]", "z"));
 		assertEquals("a;z,b,c,d,e,f", loop.getContent());
-		loop.add(0, new Regex("[a-zA-Z]", "y"));
+		loop.add(0, new JavaPatternRegex("[a-zA-Z]", "y"));
 		assertEquals("y;a;z,b,c,d,e,f", loop.getContent());
-		loop.add(3, new Regex("[a-zA-Z]", "x"));
+		loop.add(3, new JavaPatternRegex("[a-zA-Z]", "x"));
 		assertEquals("y;a;z;x,b,c,d,e,f", loop.getContent());
 	}
 
 	@Test
-	public void testAddItemProperlyNotifiesListeners() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
+	default void testAddItemProperlyNotifiesListeners() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineConstant(","));
 		loop.setContent("a,b,c,d");
 		final String[] value = new String[] { null };
@@ -659,22 +712,23 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 			}
 		});
 
-		loop.add(0, new Regex("[a-zA-Z]", "i"));
+		loop.add(0, new JavaPatternRegex("[a-zA-Z]", "i"));
 		assertEquals(loop.getContent(), value[0]);
-		loop.add(2, new Regex("[a-zA-Z]", "j"));
+		loop.add(2, new JavaPatternRegex("[a-zA-Z]", "j"));
 		assertEquals(loop.getContent(), value[0]);
-		loop.add(loop.size(), new Regex("[a-zA-Z]", "k"));
+		loop.add(loop.size(), new JavaPatternRegex("[a-zA-Z]", "k"));
 		assertEquals(loop.getContent(), value[0]);
 	}
 
 	@Test
-	public void testUpdateOnAddedItemProperlyNotifiesListeners() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
+	default void testUpdateOnAddedItemProperlyNotifiesListeners() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineConstant(","));
 		loop.setDefaultSeparator(",");
-		Regex added0 = new Regex("[a-zA-Z]", "a");
-		Regex added1 = new Regex("[a-zA-Z]", "b");
-		Regex added2 = new Regex("[a-zA-Z]", "c");
+		Regex added0 = new JavaPatternRegex("[a-zA-Z]", "a");
+		Regex added1 = new JavaPatternRegex("[a-zA-Z]", "b");
+		Regex added2 = new JavaPatternRegex("[a-zA-Z]", "c");
 		loop.add(0, added0);
 		loop.add(1, added1);
 		loop.add(2, added2);
@@ -697,65 +751,69 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testAddItemThrowsExceptionOnInvalidRegex() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
+	default void testAddItemThrowsExceptionOnInvalidRegex() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineConstant(","));
 		loop.setContent("a,b,c,d");
 
 		try {
-			loop.add(0, new Regex("[a-zA-Z!]", "a"));
+			loop.add(0, new JavaPatternRegex("[a-zA-Z!]", "a"));
 			fail("Exception not thrown with " + loop);
 		} catch (IllegalArgumentException e) {
 		}
 
 		try {
-			loop.add(2, new Regex("[a-zA-Z!]", "a"));
+			loop.add(2, new JavaPatternRegex("[a-zA-Z!]", "a"));
 			fail("Exception not thrown with " + loop);
 		} catch (IllegalArgumentException e) {
 		}
 
 		try {
-			loop.add(4, new Regex("[a-zA-Z!]", "a"));
+			loop.add(4, new JavaPatternRegex("[a-zA-Z!]", "a"));
 			fail("Exception not thrown with " + loop);
 		} catch (IllegalArgumentException e) {
 		}
 	}
 
 	@Test
-	public void testAddItemThrowsExceptionOnInvalidIndex() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
+	default void testAddItemThrowsExceptionOnInvalidIndex() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineConstant(","));
 		loop.setContent("a,b,c,d");
 
 		try {
-			loop.add(20, new Regex("[a-zA-Z]", "a"));
+			loop.add(20, new JavaPatternRegex("[a-zA-Z]", "a"));
 			fail("Exception not thrown with " + loop);
 		} catch (IndexOutOfBoundsException e) {
 		}
 
 		try {
-			loop.add(-5, new Regex("[a-zA-Z]", "a"));
+			loop.add(-5, new JavaPatternRegex("[a-zA-Z]", "a"));
 			fail("Exception not thrown with " + loop);
 		} catch (IndexOutOfBoundsException e) {
 		}
 	}
 
 	@Test
-	public void testAddItemThrowsExceptionIfMaxNotRespected() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
+	default void testAddItemThrowsExceptionIfMaxNotRespected() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineConstant(","), 0, 5);
 		loop.setContent("a,b,c,d,e");
 
 		try {
-			loop.add(2, new Regex("[a-zA-Z]", "a"));
+			loop.add(2, new JavaPatternRegex("[a-zA-Z]", "a"));
 			fail("Exception not thrown with " + loop);
 		} catch (BoundException e) {
 		}
 	}
 
 	@Test
-	public void testRemoveProperlyRemovesItems() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
+	default void testRemoveProperlyRemovesItems() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineConstant(","));
 		loop.setContent("a,b,c,d");
 
@@ -770,8 +828,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testRemoveProperlyNotifiesListeners() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
+	default void testRemoveProperlyNotifiesListeners() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineConstant(","));
 		loop.setContent("a,b,c,d");
 		final String[] value = new String[] { null };
@@ -794,8 +853,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testUpdateOnRemovedOccurrenceDoesNotNotifyListeners() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
+	default void testUpdateOnRemovedOccurrenceDoesNotNotifyListeners() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineConstant(","));
 		loop.setContent("a,b,c,d");
 		Regex removed = loop.remove(2);
@@ -814,8 +874,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testRemoveThrowsExceptionOnInvalidIndex() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
+	default void testRemoveThrowsExceptionOnInvalidIndex() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineConstant(","));
 		loop.setContent("a,b,c,d");
 
@@ -833,8 +894,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testIndexRemoveThrowsExceptionIfMinNotRespected() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
+	default void testIndexRemoveThrowsExceptionIfMinNotRespected() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineConstant(","), 5, 10);
 		loop.setContent("a,b,c,d,e");
 
@@ -848,8 +910,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testIteratorGivesCorrectSequence() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
+	default void testIteratorGivesCorrectSequence() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineConstant(","));
 		loop.setContent("a,b,c,d");
 
@@ -862,8 +925,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testIteratorRemoveProperlyRemoves() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
+	default void testIteratorRemoveProperlyRemoves() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineConstant(","));
 		loop.setContent("a,b,c,d");
 
@@ -879,8 +943,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testIteratorRemoveProperlyNotifiesListener() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
+	default void testIteratorRemoveProperlyNotifiesListener() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineConstant(","));
 		loop.setContent("a,b,c,d");
 		final String[] value = new String[] { null };
@@ -904,8 +969,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testUpdateOnIteratorRemovedOccurrenceDoesNotNotifyListeners() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
+	default void testUpdateOnIteratorRemovedOccurrenceDoesNotNotifyListeners() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineConstant(","));
 		loop.setContent("a,b,c,d");
 
@@ -930,8 +996,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testIteratorRemoveThrowsExceptionIfMinNotRespected() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
+	default void testIteratorRemoveThrowsExceptionIfMinNotRespected() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineConstant(","), 5, 10);
 		loop.setContent("a,b,c,d,e");
 		Iterator<Regex> iterator = loop.iterator();
@@ -951,8 +1018,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	/**************************************************************/
 
 	@Test
-	public void testGetIndex() {
-		SeparatedLoop<Regex, Constant> separatedLoop = new SeparatedLoop<>(factory.defineRegex("\\d+"),
+	default void testGetIndex() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> separatedLoop = instantiateSeparatedLoop(factory.defineRegex("\\d+"),
 				factory.defineConstant("-"));
 
 		separatedLoop.setContent("1");
@@ -969,8 +1037,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testGetWrongIndex() {
-		SeparatedLoop<Regex, Constant> separatedLoop = new SeparatedLoop<>(factory.defineRegex("\\d+"),
+	default void testGetWrongIndex() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> separatedLoop = instantiateSeparatedLoop(factory.defineRegex("\\d+"),
 				factory.defineConstant("-"));
 
 		separatedLoop.setContent("");
@@ -1015,8 +1084,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testIndexRemoveActuallyRemove() {
-		SeparatedLoop<Regex, Constant> separatedLoop = new SeparatedLoop<>(factory.defineRegex("\\d+"),
+	default void testIndexRemoveActuallyRemove() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> separatedLoop = instantiateSeparatedLoop(factory.defineRegex("\\d+"),
 				factory.defineConstant("-"));
 		separatedLoop.setContent("1-2-3-4-5");
 
@@ -1033,8 +1103,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testIndexRemoveReturnsCorrectOccurrence() {
-		SeparatedLoop<Regex, Constant> separatedLoop = new SeparatedLoop<>(factory.defineRegex("\\d+"),
+	default void testIndexRemoveReturnsCorrectOccurrence() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> separatedLoop = instantiateSeparatedLoop(factory.defineRegex("\\d+"),
 				factory.defineConstant(","));
 		separatedLoop.setContent("1,2,3,4,5");
 
@@ -1046,8 +1117,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testIndexRemoveNotifies() {
-		SeparatedLoop<Regex, Constant> separatedLoop = new SeparatedLoop<>(factory.defineRegex("\\d+"),
+	default void testIndexRemoveNotifies() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> separatedLoop = instantiateSeparatedLoop(factory.defineRegex("\\d+"),
 				factory.defineConstant("-"));
 		separatedLoop.setContent("1-2-3-4-5");
 		final String[] value = new String[] { null };
@@ -1072,8 +1144,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testParsingException() {
-		SeparatedLoop<Regex, Constant> separatedLoop = new SeparatedLoop<>(factory.defineRegex("\\d+"),
+	default void testParsingException() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> separatedLoop = instantiateSeparatedLoop(factory.defineRegex("\\d+"),
 				factory.defineConstant("-"));
 
 		try {
@@ -1108,8 +1181,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testIteratorProvidesCorrectSequence() {
-		SeparatedLoop<Regex, Constant> separatedLoop = new SeparatedLoop<>(factory.defineRegex("\\d+"),
+	default void testIteratorProvidesCorrectSequence() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> separatedLoop = instantiateSeparatedLoop(factory.defineRegex("\\d+"),
 				factory.defineConstant("-"));
 
 		separatedLoop.setContent("1-2-3-4-5");
@@ -1128,8 +1202,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testIteratorRemoveActuallyRemoves() {
-		SeparatedLoop<Regex, Constant> separatedLoop = new SeparatedLoop<>(factory.defineRegex("\\d+"),
+	default void testIteratorRemoveActuallyRemoves() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> separatedLoop = instantiateSeparatedLoop(factory.defineRegex("\\d+"),
 				factory.defineConstant("-"));
 
 		separatedLoop.setContent("1-2-3-4-5");
@@ -1153,8 +1228,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testIteratorRemoveNotifies() {
-		SeparatedLoop<Regex, Constant> separatedLoop = new SeparatedLoop<>(factory.defineRegex("\\d+"),
+	default void testIteratorRemoveNotifies() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> separatedLoop = instantiateSeparatedLoop(factory.defineRegex("\\d+"),
 				factory.defineConstant("-"));
 		final String[] value = new String[] { null };
 		separatedLoop.addContentListener(new ContentListener() {
@@ -1178,8 +1254,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testMinMax() {
-		SeparatedLoop<Regex, Constant> separatedLoop = new SeparatedLoop<>(factory.defineRegex("\\d+"),
+	default void testMinMax() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> separatedLoop = instantiateSeparatedLoop(factory.defineRegex("\\d+"),
 				factory.defineConstant("-"), 2, 5);
 
 		try {
@@ -1213,8 +1290,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testClearRemovesAll() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
+	default void testClearRemovesAll() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineConstant(","));
 		loop.setContent("a,b,c,d,e");
 
@@ -1224,8 +1302,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testClearNotifiesListeners() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
+	default void testClearNotifiesListeners() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineConstant(","));
 		loop.setContent("a,b,c,d,e");
 		final String[] value = new String[] { null };
@@ -1242,8 +1321,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testUpdateOnClearedDoesNotNotifyListeners() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
+	default void testUpdateOnClearedDoesNotNotifyListeners() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineConstant(","));
 		loop.setContent("a,b,c,d,e");
 		final String[] value = new String[] { null };
@@ -1270,8 +1350,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testClearThrowsExceptionIfMin() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
+	default void testClearThrowsExceptionIfMin() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineConstant(","), 5, 10);
 		loop.setContent("a,b,c,d,e");
 
@@ -1283,8 +1364,9 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Test
-	public void testListenersNotifiedOncePerAtomicUpdate() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<Regex, Constant>(factory.defineRegex("[a-zA-Z]"),
+	default void testListenersNotifiedOncePerAtomicUpdate() {
+		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+		SeparatedLoop<Regex, Constant> loop = instantiateSeparatedLoop(factory.defineRegex("[a-zA-Z]"),
 				factory.defineConstant(","));
 		final LinkedList<String> values = new LinkedList<String>();
 		loop.addContentListener(new ContentListener() {
@@ -1313,15 +1395,15 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 		assertEquals(++operationCounter, values.size());
 		assertEquals(loop.getContent(), values.getFirst());
 
-		loop.add(0, new Regex("[a-zA-Z]", "x"));
+		loop.add(0, new JavaPatternRegex("[a-zA-Z]", "x"));
 		assertEquals(++operationCounter, values.size());
 		assertEquals(loop.getContent(), values.getFirst());
 
-		loop.add(2, new Regex("[a-zA-Z]", "x"));
+		loop.add(2, new JavaPatternRegex("[a-zA-Z]", "x"));
 		assertEquals(++operationCounter, values.size());
 		assertEquals(loop.getContent(), values.getFirst());
 
-		loop.add(loop.size(), new Regex("[a-zA-Z]", "x"));
+		loop.add(loop.size(), new JavaPatternRegex("[a-zA-Z]", "x"));
 		assertEquals(++operationCounter, values.size());
 		assertEquals(loop.getContent(), values.getFirst());
 
@@ -1337,18 +1419,18 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 		assertEquals(++operationCounter, values.size());
 		assertEquals(loop.getContent(), values.getFirst());
 
-		loop.addAll(0,
-				Arrays.asList(new Regex("[a-zA-Z]", "a"), new Regex("[a-zA-Z]", "b"), new Regex("[a-zA-Z]", "c")));
+		loop.addAll(0, Arrays.asList(new JavaPatternRegex("[a-zA-Z]", "a"), new JavaPatternRegex("[a-zA-Z]", "b"),
+				new JavaPatternRegex("[a-zA-Z]", "c")));
 		assertEquals(++operationCounter, values.size());
 		assertEquals(loop.getContent(), values.getFirst());
 
-		loop.addAll(2,
-				Arrays.asList(new Regex("[a-zA-Z]", "a"), new Regex("[a-zA-Z]", "b"), new Regex("[a-zA-Z]", "c")));
+		loop.addAll(2, Arrays.asList(new JavaPatternRegex("[a-zA-Z]", "a"), new JavaPatternRegex("[a-zA-Z]", "b"),
+				new JavaPatternRegex("[a-zA-Z]", "c")));
 		assertEquals(++operationCounter, values.size());
 		assertEquals(loop.getContent(), values.getFirst());
 
-		loop.addAll(loop.size(),
-				Arrays.asList(new Regex("[a-zA-Z]", "a"), new Regex("[a-zA-Z]", "b"), new Regex("[a-zA-Z]", "c")));
+		loop.addAll(loop.size(), Arrays.asList(new JavaPatternRegex("[a-zA-Z]", "a"),
+				new JavaPatternRegex("[a-zA-Z]", "b"), new JavaPatternRegex("[a-zA-Z]", "c")));
 		assertEquals(++operationCounter, values.size());
 		assertEquals(loop.getContent(), values.getFirst());
 

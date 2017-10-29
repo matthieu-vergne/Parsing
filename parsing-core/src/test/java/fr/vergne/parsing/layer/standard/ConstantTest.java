@@ -1,4 +1,4 @@
-package fr.vergne.parsing.layer.standard.impl;
+package fr.vergne.parsing.layer.standard;
 
 import static org.junit.Assert.*;
 
@@ -12,46 +12,49 @@ import org.junit.runner.RunWith;
 
 import fr.vergne.parsing.layer.LayerTest;
 import fr.vergne.parsing.layer.exception.ParsingException;
+import fr.vergne.parsing.layer.standard.Constant;
 
 @RunWith(JUnitPlatform.class)
-public class ConstantTest implements LayerTest<Constant> {
+public interface ConstantTest extends LayerTest<Constant> {
+	
+	Constant instantiateConstant(String content);
 
 	@Override
-	public Map<String, Constant> instantiateLayers(Collection<String> specialCharacters) {
+	default Map<String, Constant> instantiateLayers(Collection<String> specialCharacters) {
 		Map<String, Constant> map = new HashMap<>();
 		for (String content : specialCharacters) {
-			map.put(content, new Constant(content));
+			map.put(content, instantiateConstant(content));
 		}
 		return map;
 	}
 
 	@Test
-	public void testSetGetContent() {
+	default void testSetGetContent() {
 		{
 			String content = "test";
-			Constant atom = new Constant(content);
+			Constant atom = instantiateConstant(content);
 			atom.setContent(content);
 			assertEquals(content, atom.getContent());
 		}
 		{
 			String content = "test\ntest";
-			Constant atom = new Constant(content);
+			Constant atom = instantiateConstant(content);
 			atom.setContent(content);
 			assertEquals(content, atom.getContent());
 		}
 		{
 			String content = "";
-			Constant atom = new Constant(content);
+			Constant atom = instantiateConstant(content);
 			atom.setContent(content);
 			assertEquals(content, atom.getContent());
 		}
 	}
 
 	@Test
-	public void testDifferent() {
+	default void testDifferent() {
 		{
 			String content = "test";
-			Constant atom = new Constant(content);
+			Constant atom = instantiateConstant(content);
 			try {
 				atom.setContent("abc");
 				fail("Exception not thrown.");
@@ -61,7 +64,7 @@ public class ConstantTest implements LayerTest<Constant> {
 		}
 		{
 			String content = "test\ntest";
-			Constant atom = new Constant(content);
+			Constant atom = instantiateConstant(content);
 			try {
 				atom.setContent("abc");
 				fail("Exception not thrown.");
@@ -71,7 +74,7 @@ public class ConstantTest implements LayerTest<Constant> {
 		}
 		{
 			String content = "";
-			Constant atom = new Constant(content);
+			Constant atom = instantiateConstant(content);
 			try {
 				atom.setContent("abc");
 				fail("Exception not thrown.");
@@ -82,10 +85,10 @@ public class ConstantTest implements LayerTest<Constant> {
 	}
 
 	@Test
-	public void testTooLongOnRight() {
+	default void testTooLongOnRight() {
 		{
 			String content = "test";
-			Constant atom = new Constant(content);
+			Constant atom = instantiateConstant(content);
 			try {
 				atom.setContent(content + "abc");
 				fail("Exception not thrown.");
@@ -95,7 +98,7 @@ public class ConstantTest implements LayerTest<Constant> {
 		}
 		{
 			String content = "test\ntest";
-			Constant atom = new Constant(content);
+			Constant atom = instantiateConstant(content);
 			try {
 				atom.setContent(content + "abc");
 				fail("Exception not thrown.");
@@ -105,7 +108,7 @@ public class ConstantTest implements LayerTest<Constant> {
 		}
 		{
 			String content = "";
-			Constant atom = new Constant(content);
+			Constant atom = instantiateConstant(content);
 			try {
 				atom.setContent(content + "abc");
 				fail("Exception not thrown.");
@@ -116,10 +119,10 @@ public class ConstantTest implements LayerTest<Constant> {
 	}
 
 	@Test
-	public void testTooLongOnLeft() {
+	default void testTooLongOnLeft() {
 		{
 			String content = "test";
-			Constant atom = new Constant(content);
+			Constant atom = instantiateConstant(content);
 			try {
 				atom.setContent("abc" + content);
 				fail("Exception not thrown.");
@@ -129,7 +132,7 @@ public class ConstantTest implements LayerTest<Constant> {
 		}
 		{
 			String content = "test\ntest";
-			Constant atom = new Constant(content);
+			Constant atom = instantiateConstant(content);
 			try {
 				atom.setContent("abc" + content);
 				fail("Exception not thrown.");
@@ -139,7 +142,7 @@ public class ConstantTest implements LayerTest<Constant> {
 		}
 		{
 			String content = "";
-			Constant atom = new Constant(content);
+			Constant atom = instantiateConstant(content);
 			try {
 				atom.setContent("abc" + content);
 				fail("Exception not thrown.");
@@ -150,10 +153,10 @@ public class ConstantTest implements LayerTest<Constant> {
 	}
 
 	@Test
-	public void testTooLongOnMiddle() {
+	default void testTooLongOnMiddle() {
 		{
 			String content = "test";
-			Constant atom = new Constant(content);
+			Constant atom = instantiateConstant(content);
 			try {
 				atom.setContent(content.substring(0, 2) + "abc" + content.substring(2));
 				fail("Exception not thrown.");
@@ -163,7 +166,7 @@ public class ConstantTest implements LayerTest<Constant> {
 		}
 		{
 			String content = "test\ntest";
-			Constant atom = new Constant(content);
+			Constant atom = instantiateConstant(content);
 			try {
 				atom.setContent(content.substring(0, 2) + "abc" + content.substring(2));
 				fail("Exception not thrown.");
@@ -180,10 +183,10 @@ public class ConstantTest implements LayerTest<Constant> {
 	}
 
 	@Test
-	public void testTooShortOnRight() {
+	default void testTooShortOnRight() {
 		{
 			String content = "test";
-			Constant atom = new Constant(content);
+			Constant atom = instantiateConstant(content);
 			try {
 				atom.setContent(content.substring(0, 2));
 				fail("Exception not thrown.");
@@ -193,7 +196,7 @@ public class ConstantTest implements LayerTest<Constant> {
 		}
 		{
 			String content = "test\ntest";
-			Constant atom = new Constant(content);
+			Constant atom = instantiateConstant(content);
 			try {
 				atom.setContent(content.substring(0, 2));
 				fail("Exception not thrown.");
@@ -210,10 +213,10 @@ public class ConstantTest implements LayerTest<Constant> {
 	}
 
 	@Test
-	public void testTooShortOnLeft() {
+	default void testTooShortOnLeft() {
 		{
 			String content = "test";
-			Constant atom = new Constant(content);
+			Constant atom = instantiateConstant(content);
 			try {
 				atom.setContent(content.substring(2));
 				fail("Exception not thrown.");
@@ -223,7 +226,7 @@ public class ConstantTest implements LayerTest<Constant> {
 		}
 		{
 			String content = "test\ntest";
-			Constant atom = new Constant(content);
+			Constant atom = instantiateConstant(content);
 			try {
 				atom.setContent(content.substring(2));
 				fail("Exception not thrown.");
@@ -240,10 +243,10 @@ public class ConstantTest implements LayerTest<Constant> {
 	}
 
 	@Test
-	public void testTooShortOnMiddle() {
+	default void testTooShortOnMiddle() {
 		{
 			String content = "test";
-			Constant atom = new Constant(content);
+			Constant atom = instantiateConstant(content);
 			try {
 				atom.setContent(content.substring(0, 1) + content.substring(2));
 				fail("Exception not thrown.");
@@ -253,7 +256,7 @@ public class ConstantTest implements LayerTest<Constant> {
 		}
 		{
 			String content = "test\ntest";
-			Constant atom = new Constant(content);
+			Constant atom = instantiateConstant(content);
 			try {
 				atom.setContent(content.substring(0, 2) + content.substring(3));
 				fail("Exception not thrown.");

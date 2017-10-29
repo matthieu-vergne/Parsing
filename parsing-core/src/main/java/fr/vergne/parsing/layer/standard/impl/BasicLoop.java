@@ -13,31 +13,16 @@ import java.util.regex.Pattern;
 
 import fr.vergne.logging.LoggerConfiguration;
 import fr.vergne.parsing.definition.Definition;
-import fr.vergne.parsing.definition.impl.StandardDefinitionFactory;
 import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.exception.ParsingException;
 import fr.vergne.parsing.layer.impl.AbstractLayer;
+import fr.vergne.parsing.layer.standard.Loop;
 import fr.vergne.parsing.layer.standard.Quantifier;
 import fr.vergne.parsing.util.Named;
 
-/**
- * A {@link Loop} is a {@link Layer} representing a variable number of
- * occurrences following a given pattern. It is well suited for repeated
- * sequences of similar elements, like an ordered list of variable length. At
- * the opposite of a {@link Sequence}, which considers a static sequence of
- * (possibly) different elements, a {@link Loop} considers a variable
- * repetitions of a single pattern, possibly constrained in size.<br/>
- * <br/>
- * It is common to deal with sequences having separators, like an ordered list
- * of numbers separated by comas or spaces. In such a case, prefer to use a
- * {@link SeparatedLoop} which comes in hand to manage these separators and get
- * rid of them to get only the listed elements.
- * 
- * @author Matthieu Vergne <matthieu.vergne@gmail.com>
- * 
- * @param <Element>
- */
-public class Loop<Element extends Layer> extends AbstractLayer implements Iterable<Element>, Named {
+// TODO Replace Basic by more explicit term
+// TODO Doc
+public class BasicLoop<Element extends Layer> extends AbstractLayer implements Loop<Element> {
 
 	public static final Logger log = LoggerConfiguration.getSimpleLogger();
 
@@ -55,9 +40,9 @@ public class Loop<Element extends Layer> extends AbstractLayer implements Iterab
 	};
 
 	/**
-	 * Instantiate an optimized {@link Loop} (through the {@link Quantifier}) which
-	 * uses a {@link Definition} to instantiate the occurrences it will find. Notice
-	 * that requesting two times the same occurrence, for instance calling
+	 * Instantiate an optimized {@link BasicLoop} (through the {@link Quantifier})
+	 * which uses a {@link Definition} to instantiate the occurrences it will find.
+	 * Notice that requesting two times the same occurrence, for instance calling
 	 * {@link #get(int)} with the same index, should provide the same instance as
 	 * long as the corresponding content has not been modified. If the
 	 * {@link Definition} returns always the same instance(s), it will not work
@@ -66,14 +51,14 @@ public class Loop<Element extends Layer> extends AbstractLayer implements Iterab
 	 * @param definition
 	 *            the occurrences {@link Definition}
 	 * @param min
-	 *            the minimum size of this {@link Loop}, at least 0
+	 *            the minimum size of this {@link BasicLoop}, at least 0
 	 * @param max
-	 *            the maximum size of this {@link Loop}, at most
+	 *            the maximum size of this {@link BasicLoop}, at most
 	 *            {@link Integer#MAX_VALUE}
 	 * @param quantifier
 	 *            type of {@link Quantifier} to use to optimize the regex
 	 */
-	public Loop(Definition<Element> definition, int min, int max, Quantifier quantifier) {
+	public BasicLoop(Definition<Element> definition, int min, int max, Quantifier quantifier) {
 		if (quantifier == null) {
 			throw new NullPointerException("No quantifier provided");
 		} else if (definition == null) {
@@ -91,28 +76,32 @@ public class Loop<Element extends Layer> extends AbstractLayer implements Iterab
 		}
 	}
 
-	public Loop(Definition<Element> definition, int min, int max) {
+	public BasicLoop(Definition<Element> definition, int min, int max) {
 		this(definition, min, max, Quantifier.GREEDY);
 	}
 
-	public Loop(Definition<Element> definition) {
+	public BasicLoop(Definition<Element> definition) {
 		this(definition, 0, Integer.MAX_VALUE);
 	}
 
+	@Override
+	public Definition<Element> getItemDefinition() {
+		return itemDefinition;
+	}
+
+	@Override
 	public int getMin() {
 		return min;
 	}
 
+	@Override
 	public int getMax() {
 		return max;
 	}
 
+	@Override
 	public Quantifier getQuantifier() {
 		return quantifier;
-	}
-
-	public Definition<Element> getItemDefinition() {
-		return itemDefinition;
 	}
 
 	@Override
@@ -203,58 +192,27 @@ public class Loop<Element extends Layer> extends AbstractLayer implements Iterab
 		};
 	}
 
-	/**
-	 * 
-	 * @return the number of {@link Element}s in this {@link Loop}
-	 */
+	@Override
 	public int size() {
 		return occurrences.size();
 	}
 
-	/**
-	 * 
-	 * @return <code>true</code> if this {@link Loop} has no {@link Element} (empty
-	 *         content), <code>false</code> otherwise
-	 */
+	@Override
 	public boolean isEmpty() {
 		return occurrences.isEmpty();
 	}
 
-	/**
-	 * 
-	 * @param index
-	 *            the index of an {@link Element} in this {@link Loop}
-	 * @return the {@link Element} at this index
-	 */
+	@Override
 	public Element get(int index) {
 		return occurrences.get(index);
 	}
 
-	/**
-	 * This method adds a new {@link Element} to this {@link Loop}. The
-	 * {@link Element} should have the same regex than the usual {@link Element} s
-	 * of this {@link Loop}.
-	 * 
-	 * @param index
-	 *            the index of the new {@link Element}
-	 * @param element
-	 *            the new {@link Element}
-	 */
+	@Override
 	public void add(int index, Element element) {
 		addAll(index, Arrays.asList(element));
 	}
 
-	/**
-	 * This method adds a new {@link Element} to this {@link Loop}. The content
-	 * should be compatible with the regex of the {@link Element}s of this
-	 * {@link Loop}.
-	 * 
-	 * @param index
-	 *            the index of the new occurrence
-	 * @param content
-	 *            the content of this new occurrence
-	 * @return the new {@link Element}
-	 */
+	@Override
 	public Element add(int index, String content) {
 		if (size() >= max) {
 			throw new BoundException("This loop cannot have more than " + max + " elements.");
@@ -266,20 +224,7 @@ public class Loop<Element extends Layer> extends AbstractLayer implements Iterab
 		}
 	}
 
-	/**
-	 * This method adds new {@link Element}s to this {@link Loop}. The
-	 * {@link Element}s should all have the same regex than the usual
-	 * {@link Element}s of this {@link Loop}.<br/>
-	 * <br/>
-	 * For providing a collection of {@link String}s, use
-	 * {@link #addAllContents(int, Collection)}, which has a different name to avoid
-	 * type erasure issues.
-	 * 
-	 * @param index
-	 *            the index form which to start the addition
-	 * @param elements
-	 *            the new {@link Element}s
-	 */
+	@Override
 	public void addAll(int index, Collection<Element> elements) {
 		if (size() + elements.size() > max) {
 			throw new BoundException("This loop cannot have more than " + max + " elements.");
@@ -305,17 +250,7 @@ public class Loop<Element extends Layer> extends AbstractLayer implements Iterab
 		}
 	}
 
-	/**
-	 * This method adds new {@link Element}s to this {@link Loop}. Each content
-	 * should be compatible with the regex of the {@link Element}s of this
-	 * {@link Loop}.
-	 * 
-	 * @param index
-	 *            the index from which to start the addition
-	 * @param contents
-	 *            the contents of the new occurrences
-	 * @return the new {@link Element}s
-	 */
+	@Override
 	public Collection<Element> addAllContents(int index, Collection<String> contents) {
 		if (size() >= max) {
 			throw new BoundException("This loop cannot have more than " + max + " elements.");
@@ -331,12 +266,7 @@ public class Loop<Element extends Layer> extends AbstractLayer implements Iterab
 		}
 	}
 
-	/**
-	 * 
-	 * @param index
-	 *            the index of an {@link Element} to remove from this {@link Loop}
-	 * @return {@link Element} removed
-	 */
+	@Override
 	public Element remove(int index) {
 		if (size() <= min) {
 			throw new BoundException("This loop cannot have less than " + min + " elements.");
@@ -398,24 +328,9 @@ public class Loop<Element extends Layer> extends AbstractLayer implements Iterab
 	}
 
 	@Override
-	public String getName() {
-		return "LOOP";
-	}
-
-	@Override
 	public String toString() {
 		String cardinality = StandardDefinitionFactory.buildRegexCardinality(quantifier, min, max);
 		return getName() + "[" + Named.name(itemDefinition.create()) + cardinality + "]";
 	}
 
-	@SuppressWarnings("serial")
-	public static class BoundException extends RuntimeException {
-		public BoundException(String message, Throwable cause) {
-			super(message, cause);
-		}
-
-		public BoundException(String message) {
-			super(message);
-		}
-	}
 }

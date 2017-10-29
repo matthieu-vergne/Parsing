@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 
 public interface ModifiableComposedLayerTest<T extends Layer> extends ComposedLayerTest<T> {
 
-	static interface Update {
+	static interface SublayerReplacement {
 		Layer getInitial();
 
 		Layer getReplacement();
@@ -21,10 +21,10 @@ public interface ModifiableComposedLayerTest<T extends Layer> extends ComposedLa
 		void revert();
 	}
 
-	public Collection<Update> getSublayersUpdatesFunctions(T parent);
+	public Collection<SublayerReplacement> getSublayersReplacements(T parent);
 
 	@Test
-	public default void testUpdatedSublayersUpdateNotifiesParentListener() {
+	public default void testSublayerReplacementNotifiesParentListener() {
 		Map<String, T> map = instantiateLayers(getSpecialCharactersToManage());
 		int[] testCounter = { 0 };
 		for (Entry<String, T> entry : map.entrySet()) {
@@ -35,14 +35,16 @@ public interface ModifiableComposedLayerTest<T extends Layer> extends ComposedLa
 				// irrelevant test
 			} else {
 				layer.setContent(content);
-				Collection<Update> updates = getSublayersUpdatesFunctions(layer);
+				Collection<SublayerReplacement> replacements = getSublayersReplacements(layer);
 				String[] value = { null };
 				layer.addContentListener((newContent) -> value[0] = newContent);
 
-				for (Update update : updates) {
+				for (SublayerReplacement replacement : replacements) {
 					BiConsumer<Layer, Boolean> test = (sub, mustNotify) -> {
 						if (sub != null) {
 							value[0] = null;
+							// TODO Use different content
+							// TODO should fail if same content
 							sub.setContent(sub.getContent());
 							if (mustNotify) {
 								assertEquals(layer.getContent(), value[0]);
@@ -55,21 +57,22 @@ public interface ModifiableComposedLayerTest<T extends Layer> extends ComposedLa
 						}
 					};
 
-					test.accept(update.getInitial(), true);
-					test.accept(update.getReplacement(), false);
+					test.accept(replacement.getInitial(), true);
+					test.accept(replacement.getReplacement(), false);
 
-					update.execute();
+					replacement.execute();
 
-					test.accept(update.getInitial(), false);
-					test.accept(update.getReplacement(), true);
+					test.accept(replacement.getInitial(), false);
+					test.accept(replacement.getReplacement(), true);
 
-					update.revert();
+					replacement.revert();
 
-					test.accept(update.getInitial(), true);
-					test.accept(update.getReplacement(), false);
+					test.accept(replacement.getInitial(), true);
+					test.accept(replacement.getReplacement(), false);
 				}
 			}
 		}
-		assertTrue("No update has been tested.", testCounter[0] > 0);
+		assertTrue("No replacement has been tested.", testCounter[0] > 0);
 	}
+
 }

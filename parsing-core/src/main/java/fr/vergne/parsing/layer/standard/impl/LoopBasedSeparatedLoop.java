@@ -5,18 +5,22 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.regex.Pattern;
 
 import fr.vergne.parsing.definition.Definition;
-import fr.vergne.parsing.definition.impl.StandardDefinitionFactory;
 import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.exception.ParsingException;
 import fr.vergne.parsing.layer.impl.AbstractLayer;
+import fr.vergne.parsing.layer.standard.Loop;
+import fr.vergne.parsing.layer.standard.Loop.BoundException;
+import fr.vergne.parsing.layer.standard.Option;
 import fr.vergne.parsing.layer.standard.Quantifier;
-import fr.vergne.parsing.layer.standard.impl.Loop.BoundException;
+import fr.vergne.parsing.layer.standard.SeparatedLoop;
+import fr.vergne.parsing.layer.standard.Sequence;
 import fr.vergne.parsing.util.Named;
 
 /**
- * A {@link SeparatedLoop} provides, rather than a sequence of adjacent
+ * A {@link LoopBasedSeparatedLoop} provides, rather than a sequence of adjacent
  * {@link Item}s (e.g. AAAAA) like a classical {@link Loop}, a sequence of
  * {@link Item}s is separated by {@link Separator}s (e.g. AXAXAXAXA).
  * Consequently, the number of {@link Separator}s is always equal to the number
@@ -28,16 +32,17 @@ import fr.vergne.parsing.util.Named;
  * @param <Separator>
  */
 // TODO Transform standards into interfaces
-public class SeparatedLoop<Item extends Layer, Separator extends Layer> extends AbstractLayer
-		implements Iterable<Item>, Named {
+// TODO Doc
+public class LoopBasedSeparatedLoop<Item extends Layer, Separator extends Layer> extends AbstractLayer
+		implements SeparatedLoop<Item, Separator> {
 
 	private final int min;
 	private final int max;
 	private Layer overall;
 	private final Definition<? extends Layer> overallDefinition;
-	private final Separator separatorDefault;
 	private final Definition<Item> itemDefinition;
 	private final Definition<Separator> separatorDefinition;
+	private String separatorDefault = null;
 	private final Definition<Sequence> couple;
 	private final Definition<Loop<Sequence>> loop;
 	private final Definition<Item> head;
@@ -50,14 +55,13 @@ public class SeparatedLoop<Item extends Layer, Separator extends Layer> extends 
 		}
 	};
 
-	public SeparatedLoop(Definition<Item> itemDefinition, Definition<Separator> separatorDefinition, int min, int max,
-			Quantifier quantifier) {
+	public LoopBasedSeparatedLoop(Definition<Item> itemDefinition, Definition<Separator> separatorDefinition, int min,
+			int max, Quantifier quantifier) {
 		this.min = min;
 		this.max = max;
 
 		this.itemDefinition = itemDefinition;
 		this.separatorDefinition = separatorDefinition;
-		this.separatorDefault = separatorDefinition.create();
 
 		StandardDefinitionFactory factory = new StandardDefinitionFactory();
 		this.head = factory.defineAs(itemDefinition);
@@ -77,11 +81,12 @@ public class SeparatedLoop<Item extends Layer, Separator extends Layer> extends 
 		this.overall.addContentListener(deepListener);
 	}
 
-	public SeparatedLoop(Definition<Item> itemDefinition, Definition<Separator> separatorDefinition, int min, int max) {
+	public LoopBasedSeparatedLoop(Definition<Item> itemDefinition, Definition<Separator> separatorDefinition, int min,
+			int max) {
 		this(itemDefinition, separatorDefinition, min, max, Quantifier.GREEDY);
 	}
 
-	public SeparatedLoop(Definition<Item> itemDefinition, Definition<Separator> separatorDefinition) {
+	public LoopBasedSeparatedLoop(Definition<Item> itemDefinition, Definition<Separator> separatorDefinition) {
 		this(itemDefinition, separatorDefinition, 0, Integer.MAX_VALUE);
 	}
 
@@ -94,13 +99,6 @@ public class SeparatedLoop<Item extends Layer, Separator extends Layer> extends 
 		overall.removeContentListener(deepListener);
 		try {
 			overall.setContent(content);
-			if (size() >= 2) {
-				separatorDefault.setContent(getSeparator(0).getContent());
-			} else if (separatorDefault.getContent() != null) {
-				// keep old value
-			} else {
-				System.err.println("Warning: no default separator set");
-			}
 		} catch (ParsingException e) {
 			throw new ParsingException(this, overallDefinition, content, e.getStart(), content.length(), e);
 		} finally {
@@ -119,7 +117,7 @@ public class SeparatedLoop<Item extends Layer, Separator extends Layer> extends 
 
 	/**
 	 * 
-	 * @return the number of {@link Item}s of this {@link SeparatedLoop}
+	 * @return the number of {@link Item}s of this {@link LoopBasedSeparatedLoop}
 	 */
 	@SuppressWarnings("unchecked")
 	public int size() {
@@ -174,11 +172,32 @@ public class SeparatedLoop<Item extends Layer, Separator extends Layer> extends 
 	}
 
 	public void setDefaultSeparator(String separator) {
-		separatorDefault.setContent(separator);
+		if (Pattern.matches(separatorDefinition.getRegex(), separator)) {
+			separatorDefault = separator;
+		} else {
+			throw new IllegalArgumentException("Invalid separator: " + separator);
+		}
 	}
 
 	public String getDefaultSeparator() {
-		return separatorDefault.getContent();
+		return separatorDefault;
+	}
+
+	private String getSeparatorIfExists() {
+		String sep = getDefaultSeparator();
+		if (sep != null) {
+			return sep;
+		} else {
+			try {
+				Loop<Sequence> loop2 = getOverallSequence().get(loop);
+				Sequence sequence2 = loop2.get(0);
+				Separator separator = sequence2.get(separatorDefinition);
+				return separator.getContent();
+			} catch (Exception cause) {
+				System.err.println("Warning: no default separator set");
+				return null;
+			}
+		}
 	}
 
 	public void add(int index, Item item) {
@@ -226,7 +245,7 @@ public class SeparatedLoop<Item extends Layer, Separator extends Layer> extends 
 					index++;
 				} else if (index == 0) {
 					Sequence added = couple.create();
-					added.setContent(separatorDefault.getContent() + getHead().getContent());
+					added.setContent(getExistingSeparatorContent() + getHead().getContent());
 					added.set(separatorDefinition, createFilledSeparator());
 					added.set(itemDefinition, getHead());
 					setHead(remaining.removeFirst());
@@ -239,7 +258,7 @@ public class SeparatedLoop<Item extends Layer, Separator extends Layer> extends 
 				index--;
 				for (Item item : remaining) {
 					Sequence sequence = couple.create();
-					sequence.setContent(separatorDefault.getContent() + item.getContent());
+					sequence.setContent(getExistingSeparatorContent() + item.getContent());
 					sequence.set(separatorDefinition, createFilledSeparator());
 					sequence.set(itemDefinition, item);
 					getOverallSequence().get(loop).add(index, sequence);
@@ -252,14 +271,19 @@ public class SeparatedLoop<Item extends Layer, Separator extends Layer> extends 
 		}
 	}
 
-	private Separator createFilledSeparator() {
-		if (separatorDefault.getContent() == null) {
+	private String getExistingSeparatorContent() {
+		String content = getSeparatorIfExists();
+		if (content == null) {
 			throw new RuntimeException("No default separator setup.");
 		} else {
-			Separator separator = separatorDefinition.create();
-			separator.setContent(separatorDefault.getContent());
-			return separator;
+			return content;
 		}
+	}
+
+	private Separator createFilledSeparator() {
+		Separator separator = separatorDefinition.create();
+		separator.setContent(getExistingSeparatorContent());
+		return separator;
 	}
 
 	public Item remove(int index) {
@@ -310,7 +334,7 @@ public class SeparatedLoop<Item extends Layer, Separator extends Layer> extends 
 
 			@Override
 			public void remove() {
-				SeparatedLoop.this.remove(currentIndex);
+				LoopBasedSeparatedLoop.this.remove(currentIndex);
 				currentIndex--;
 			}
 		};

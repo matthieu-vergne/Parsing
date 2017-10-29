@@ -12,48 +12,16 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import fr.vergne.parsing.definition.Definition;
-import fr.vergne.parsing.definition.impl.StandardDefinitionFactory;
 import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.exception.ParsingException;
 import fr.vergne.parsing.layer.impl.AbstractLayer;
+import fr.vergne.parsing.layer.standard.Regex;
+import fr.vergne.parsing.layer.standard.Sequence;
 import fr.vergne.parsing.util.Named;
 
-/**
- * A {@link Sequence} is a {@link Layer} representing an ordered sequence of
- * elements. This is particularly suited for structure templates like in
- * C/C++/Java/...:
- * <ol>
- * <li>"if ("</li>
- * <li>condition</li>
- * <li>") {"</li>
- * <li>block</li>
- * <li>"}"</li>
- * </ol>
- * or in HTML:
- * <ol>
- * <li>"&lt;a href='"</li>
- * <li>url</li>
- * <li>"'>"</li>
- * <li>content</li>
- * <li>"&lt;/a>"</li>
- * </ol>
- * At a higher level, it also fits global structures like the architecture of a
- * scientific paper for instance:
- * <ol>
- * <li>title</li>
- * <li>authors</li>
- * <li>abstract</li>
- * <li>introduction</li>
- * <li>problem</li>
- * <li>solution</li>
- * <li>discussion</li>
- * <li>conclusion</li>
- * </ol>
- * 
- * @author Matthieu Vergne <matthieu.vergne@gmail.com>
- * 
- */
-public class Sequence extends AbstractLayer implements Named {
+// TODO Replace Basic by more explicit term
+// TODO Doc
+public class BasicSequence extends AbstractLayer implements Sequence {
 
 	private final List<Definition<? extends Layer>> definitions;
 	private final List<Layer> layers;
@@ -69,7 +37,7 @@ public class Sequence extends AbstractLayer implements Named {
 		}
 	};
 
-	public Sequence(List<Definition<? extends Layer>> definitions) {
+	public BasicSequence(List<Definition<? extends Layer>> definitions) {
 		if (definitions == null || definitions.isEmpty()) {
 			throw new IllegalArgumentException("No definition provided: " + definitions);
 		} else {
@@ -79,7 +47,7 @@ public class Sequence extends AbstractLayer implements Named {
 	}
 
 	@SafeVarargs
-	public Sequence(Definition<? extends Layer>... definitions) {
+	public BasicSequence(Definition<? extends Layer>... definitions) {
 		this(Arrays.asList(definitions));
 	}
 
@@ -168,7 +136,7 @@ public class Sequence extends AbstractLayer implements Named {
 
 			Definition<Regex> remaining = new StandardDefinitionFactory().defineRegex("[\\s\\S]*");
 			preOk.add(remaining);
-			Sequence sequence = new Sequence(preOk);
+			BasicSequence sequence = new BasicSequence(preOk);
 			sequence.setContent(content);
 			String incompatible = sequence.get(remaining).getContent();
 			try {
@@ -202,8 +170,8 @@ public class Sequence extends AbstractLayer implements Named {
 	@Override
 	public String toString() {
 		List<String> suite = new LinkedList<String>();
-		for (Layer layer : layers) {
-			suite.add(Named.name(layer));
+		for (Definition<? extends Layer> definition : definitions) {
+			suite.add(Named.name(definition.create()));
 		}
 		return getName() + suite;
 	}

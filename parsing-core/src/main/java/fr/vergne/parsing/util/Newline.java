@@ -1,9 +1,9 @@
 package fr.vergne.parsing.util;
 
 import fr.vergne.parsing.definition.Definition;
-import fr.vergne.parsing.layer.standard.impl.Regex;
+import fr.vergne.parsing.layer.standard.impl.JavaPatternRegex;
 
-public class Newline extends Regex {
+public class Newline extends JavaPatternRegex {
 
 	public Newline() {
 		super("(?:(?:\r\n)|(?:\n\r)|(?:(?<!\n)\r(?!\n))|(?:(?<!\r)\n(?!\r)))");

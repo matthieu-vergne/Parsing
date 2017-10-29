@@ -1,21 +1,25 @@
-package fr.vergne.parsing.definition.impl;
+package fr.vergne.parsing.layer.standard.impl;
 
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 
 import fr.vergne.parsing.definition.Definition;
 import fr.vergne.parsing.layer.Layer;
+import fr.vergne.parsing.layer.standard.Choice;
+import fr.vergne.parsing.layer.standard.Constant;
+import fr.vergne.parsing.layer.standard.Loop;
+import fr.vergne.parsing.layer.standard.Option;
 import fr.vergne.parsing.layer.standard.Quantifier;
-import fr.vergne.parsing.layer.standard.impl.Choice;
-import fr.vergne.parsing.layer.standard.impl.Constant;
-import fr.vergne.parsing.layer.standard.impl.Loop;
-import fr.vergne.parsing.layer.standard.impl.Option;
-import fr.vergne.parsing.layer.standard.impl.Regex;
-import fr.vergne.parsing.layer.standard.impl.SeparatedLoop;
-import fr.vergne.parsing.layer.standard.impl.Sequence;
+import fr.vergne.parsing.layer.standard.Regex;
+import fr.vergne.parsing.layer.standard.SeparatedLoop;
+import fr.vergne.parsing.layer.standard.Sequence;
 
+// TODO Doc
+// TODO Test
 public class StandardDefinitionFactory {
 
 	public Definition<Regex> defineRegex(String regex) {
@@ -28,7 +32,7 @@ public class StandardDefinitionFactory {
 
 			@Override
 			public Regex create() {
-				return new Regex(regex);
+				return new JavaPatternRegex(regex);
 			}
 
 			@Override
@@ -43,17 +47,54 @@ public class StandardDefinitionFactory {
 
 			@Override
 			public String getRegex() {
-				return create().getRegex();
+				return Pattern.quote(content);
 			}
 
 			@Override
 			public Constant create() {
-				return new Constant(content);
+				Regex regex = defineRegex(getRegex()).create();
+				return new Constant() {
+
+					@Override
+					public void setContent(String content) {
+						regex.setContent(content);
+					}
+
+					@Override
+					public String getContent() {
+						return regex.getContent();
+					}
+
+					@Override
+					public InputStream getInputStream() throws NoContentException {
+						return regex.getInputStream();
+					}
+
+					@Override
+					public void removeContentListener(ContentListener listener) {
+						regex.removeContentListener(listener);
+					}
+
+					@Override
+					public void addContentListener(ContentListener listener) {
+						regex.addContentListener(listener);
+					}
+
+					@Override
+					public String getConstant() {
+						return content;
+					}
+
+					@Override
+					public String toString() {
+						return getName() + "[" + content + "]";
+					}
+				};
 			}
 
 			@Override
 			public boolean isCompatibleWith(Constant layer) {
-				return layer.getRegex().equals(create().getRegex());
+				return layer.getConstant().equals(content);
 			}
 		};
 	}
@@ -75,7 +116,7 @@ public class StandardDefinitionFactory {
 
 			@Override
 			public Option<T> create() {
-				return new Option<T>(definition, quantifier);
+				return new BasicOption<T>(definition, quantifier);
 			}
 
 			@Override
@@ -108,7 +149,7 @@ public class StandardDefinitionFactory {
 
 			@Override
 			public Sequence create() {
-				return new Sequence(items);
+				return new BasicSequence(items);
 			}
 
 			@Override
@@ -117,10 +158,6 @@ public class StandardDefinitionFactory {
 				return otherItems.containsAll(items) && items.containsAll(otherItems);
 			}
 		};
-	}
-
-	public <Item extends Layer> Definition<Loop<Item>> defineLoop(Definition<Item> item) {
-		return defineLoop(item, 0, Integer.MAX_VALUE, Quantifier.GREEDY);
 	}
 
 	public <Item extends Layer> Definition<Loop<Item>> defineLoop(Definition<Item> itemDefinition, int min, int max,
@@ -137,7 +174,7 @@ public class StandardDefinitionFactory {
 
 			@Override
 			public Loop<Item> create() {
-				return new Loop<>(itemDefinition, min, max, quantifier);
+				return new BasicLoop<>(itemDefinition, min, max, quantifier);
 			}
 
 			@Override
@@ -146,6 +183,14 @@ public class StandardDefinitionFactory {
 						&& layer.getMax() == max && layer.getQuantifier().equals(quantifier);
 			}
 		};
+	}
+
+	public <Item extends Layer> Definition<Loop<Item>> defineLoop(Definition<Item> item, int min, int max) {
+		return defineLoop(item, min, max, Quantifier.GREEDY);
+	}
+
+	public <Item extends Layer> Definition<Loop<Item>> defineLoop(Definition<Item> item) {
+		return defineLoop(item, 0, Integer.MAX_VALUE, Quantifier.GREEDY);
 	}
 
 	public <Item extends Layer, Separator extends Layer> Definition<SeparatedLoop<Item, Separator>> defineSeparatedLoop(
@@ -164,6 +209,11 @@ public class StandardDefinitionFactory {
 	}
 
 	public <Item extends Layer, Separator extends Layer> Definition<SeparatedLoop<Item, Separator>> defineSeparatedLoop(
+			Definition<Item> item, Definition<Separator> separator, int min, int max) {
+		return defineSeparatedLoop(item, separator, min, max, Quantifier.GREEDY);
+	}
+
+	public <Item extends Layer, Separator extends Layer> Definition<SeparatedLoop<Item, Separator>> defineSeparatedLoop(
 			Definition<Item> item, Definition<Separator> separator, int min, int max, Quantifier quantifier) {
 		return new Definition<SeparatedLoop<Item, Separator>>() {
 
@@ -177,7 +227,7 @@ public class StandardDefinitionFactory {
 
 			@Override
 			public SeparatedLoop<Item, Separator> create() {
-				return new SeparatedLoop<>(item, separator, min, max, quantifier);
+				return new LoopBasedSeparatedLoop<>(item, separator, min, max, quantifier);
 			}
 
 			@Override
@@ -199,7 +249,8 @@ public class StandardDefinitionFactory {
 
 			@Override
 			public SeparatedLoop<Item, Separator> create() {
-				SeparatedLoop<Item, Separator> loop = new SeparatedLoop<>(item, separator, min, max, quantifier);
+				SeparatedLoop<Item, Separator> loop = defineSeparatedLoop(item, separator, min, max, quantifier)
+						.create();
 				loop.setDefaultSeparator(defaultSeparator);
 				return loop;
 			}
@@ -244,7 +295,7 @@ public class StandardDefinitionFactory {
 
 			@Override
 			public Choice create() {
-				return new Choice(definitions);
+				return new BasicChoice(definitions);
 			}
 
 			@Override

@@ -5,12 +5,12 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 import fr.vergne.parsing.definition.Definition;
-import fr.vergne.parsing.definition.impl.StandardDefinitionFactory;
-import fr.vergne.parsing.definition.impl.StandardDefinitionFactory.DefinitionProxy;
-import fr.vergne.parsing.layer.standard.impl.Choice;
-import fr.vergne.parsing.layer.standard.impl.Loop;
-import fr.vergne.parsing.layer.standard.impl.Regex;
-import fr.vergne.parsing.layer.standard.impl.Sequence;
+import fr.vergne.parsing.layer.standard.Choice;
+import fr.vergne.parsing.layer.standard.Loop;
+import fr.vergne.parsing.layer.standard.Regex;
+import fr.vergne.parsing.layer.standard.Sequence;
+import fr.vergne.parsing.layer.standard.impl.StandardDefinitionFactory;
+import fr.vergne.parsing.layer.standard.impl.StandardDefinitionFactory.DefinitionProxy;
 
 public class Xml {
 

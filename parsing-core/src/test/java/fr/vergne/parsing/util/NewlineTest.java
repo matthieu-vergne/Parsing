@@ -7,10 +7,11 @@ import java.util.Arrays;
 import org.junit.Test;
 
 import fr.vergne.parsing.definition.Definition;
-import fr.vergne.parsing.definition.impl.StandardDefinitionFactory;
 import fr.vergne.parsing.layer.exception.ParsingException;
-import fr.vergne.parsing.layer.standard.impl.Regex;
-import fr.vergne.parsing.layer.standard.impl.Sequence;
+import fr.vergne.parsing.layer.standard.Regex;
+import fr.vergne.parsing.layer.standard.Sequence;
+import fr.vergne.parsing.layer.standard.impl.BasicSequence;
+import fr.vergne.parsing.layer.standard.impl.StandardDefinitionFactory;
 
 public class NewlineTest {
 
@@ -53,7 +54,7 @@ public class NewlineTest {
 		StandardDefinitionFactory factory = new StandardDefinitionFactory();
 		Definition<Regex> leftPart = factory.defineRegex(".*");
 		Definition<Regex> rightPart = factory.defineRegex(".*");
-		Sequence suite = new Sequence(leftPart, Newline.DEFINITION, rightPart);
+		Sequence suite = new BasicSequence(leftPart, Newline.DEFINITION, rightPart);
 		for (String newline : Arrays.asList("\r", "\n", "\r\n", "\n\r")) {
 			{
 				String left = "left";
@@ -75,7 +76,7 @@ public class NewlineTest {
 	@Test
 	public void testNewlineSequence() {
 		for (String newline : Arrays.asList("\r", "\n", "\r\n", "\n\r")) {
-			Sequence suite = new Sequence(Newline.DEFINITION, Newline.DEFINITION, Newline.DEFINITION);
+			Sequence suite = new BasicSequence(Newline.DEFINITION, Newline.DEFINITION, Newline.DEFINITION);
 			suite.setContent(newline + newline + newline);
 			try {
 				suite.setContent(newline + newline);

@@ -6,19 +6,14 @@ import fr.vergne.parsing.definition.Definition;
 import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.exception.ParsingException;
 import fr.vergne.parsing.layer.impl.AbstractLayer;
+import fr.vergne.parsing.layer.standard.Option;
 import fr.vergne.parsing.layer.standard.Quantifier;
 import fr.vergne.parsing.util.ContentInputStream;
 import fr.vergne.parsing.util.Named;
 
-/**
- * An {@link Option} make a {@link Layer} optional. Thus, a compatible content
- * is one which fits the optional {@link Layer} or an empty one.
- * 
- * @author Matthieu Vergne <matthieu.vergne@gmail.com>
- * 
- * @param <CLayer>
- */
-public class Option<CLayer extends Layer> extends AbstractLayer implements Named {
+// TODO Replace Basic by more explicit term
+// TODO Doc
+public class BasicOption<CLayer extends Layer> extends AbstractLayer implements Option<CLayer> {
 
 	private final Definition<CLayer> optionDefinition;
 	private final Quantifier quantifier;
@@ -31,16 +26,22 @@ public class Option<CLayer extends Layer> extends AbstractLayer implements Named
 		}
 	};
 
-	public Option(Definition<CLayer> definition, Quantifier quantifier) {
+	public BasicOption(Definition<CLayer> definition, Quantifier quantifier) {
 		this.optionDefinition = definition;
 		this.layer = null;
 		this.quantifier = quantifier;
 	}
 
-	public Option(Definition<CLayer> definition) {
+	public BasicOption(Definition<CLayer> definition) {
 		this(definition, Quantifier.GREEDY);
 	}
 
+	@Override
+	public Definition<CLayer> getOptionalDefinition() {
+		return optionDefinition;
+	}
+
+	@Override
 	public Quantifier getQuantifier() {
 		return quantifier;
 	}
@@ -57,11 +58,11 @@ public class Option<CLayer extends Layer> extends AbstractLayer implements Named
 	@Override
 	protected void setInternalContent(String content) {
 		if (content.isEmpty()) {
-			if (layer != null) {
+			if (layer == null) {
+				// already null
+			} else {
 				layer.removeContentListener(deepListener);
 				layer = null;
-			} else {
-				// already null
 			}
 		} else {
 			if (layer == null) {
@@ -79,30 +80,12 @@ public class Option<CLayer extends Layer> extends AbstractLayer implements Named
 		}
 	}
 
-	/**
-	 * 
-	 * @return <code>true</code> if the current content fits the option,
-	 *         <code>false</code> otherwise (empty content)
-	 */
+	@Override
 	public boolean isPresent() {
 		return layer != null;
 	}
 
-	/**
-	 * 
-	 * @return the {@link Definition} of the {@link Layer} used in this
-	 *         {@link Option}
-	 */
-	public Definition<CLayer> getOptionalDefinition() {
-		return optionDefinition;
-	}
-
-	/**
-	 * 
-	 * @return the {@link Layer} wrapped by this {@link Option}
-	 * @throws RuntimeException
-	 *             if the option is not present
-	 */
+	@Override
 	public CLayer getOption() {
 		if (isPresent()) {
 			return layer;
@@ -111,6 +94,7 @@ public class Option<CLayer extends Layer> extends AbstractLayer implements Named
 		}
 	}
 
+	@Override
 	public void setOption(CLayer layer) {
 		if (!optionDefinition.isCompatibleWith(layer)) {
 			throw new IllegalArgumentException("Invalid layer: " + layer);
@@ -124,11 +108,6 @@ public class Option<CLayer extends Layer> extends AbstractLayer implements Named
 			this.layer.addContentListener(deepListener);
 			fireContentUpdate();
 		}
-	}
-
-	@Override
-	public String getName() {
-		return "OPT";
 	}
 
 	@Override

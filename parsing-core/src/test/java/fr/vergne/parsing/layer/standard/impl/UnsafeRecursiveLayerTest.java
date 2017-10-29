@@ -8,7 +8,6 @@ import java.util.Map;
 import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
-import fr.vergne.parsing.definition.impl.StandardDefinitionFactory;
 import fr.vergne.parsing.layer.ComposedLayerTest;
 import fr.vergne.parsing.layer.Layer;
 

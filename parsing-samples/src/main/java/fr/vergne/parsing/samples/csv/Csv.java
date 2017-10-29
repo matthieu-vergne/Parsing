@@ -6,13 +6,13 @@ import java.util.Iterator;
 import java.util.List;
 
 import fr.vergne.parsing.definition.Definition;
-import fr.vergne.parsing.definition.impl.StandardDefinitionFactory;
 import fr.vergne.parsing.layer.Layer;
+import fr.vergne.parsing.layer.standard.Constant;
 import fr.vergne.parsing.layer.standard.Quantifier;
-import fr.vergne.parsing.layer.standard.impl.Constant;
-import fr.vergne.parsing.layer.standard.impl.Regex;
-import fr.vergne.parsing.layer.standard.impl.SeparatedLoop;
-import fr.vergne.parsing.layer.standard.impl.Sequence;
+import fr.vergne.parsing.layer.standard.Regex;
+import fr.vergne.parsing.layer.standard.SeparatedLoop;
+import fr.vergne.parsing.layer.standard.Sequence;
+import fr.vergne.parsing.layer.standard.impl.StandardDefinitionFactory;
 import fr.vergne.parsing.samples.csv.Csv.Row;
 import fr.vergne.parsing.util.Newline;
 

@@ -1,4 +1,4 @@
-package fr.vergne.parsing.layer.standard.impl;
+package fr.vergne.parsing.layer.standard;
 
 import static org.junit.Assert.*;
 
@@ -12,13 +12,16 @@ import org.junit.runner.RunWith;
 
 import fr.vergne.parsing.layer.LayerTest;
 import fr.vergne.parsing.layer.exception.ParsingException;
+import fr.vergne.parsing.layer.standard.Regex;
 
 @RunWith(JUnitPlatform.class)
-public class RegexTest implements LayerTest<Regex> {
+public interface RegexTest extends LayerTest<Regex> {
+	
+	Regex instantiateRegex(String regex);
 
 	@Override
-	public Map<String, Regex> instantiateLayers(Collection<String> specialCharacters) {
-		Regex formula = new Regex("(?s:.+)");
+	default Map<String, Regex> instantiateLayers(Collection<String> specialCharacters) {
+		Regex formula = instantiateRegex("(?s:.+)");
 		Map<String, Regex> map = new HashMap<>();
 		for (String content : specialCharacters) {
 			map.put(content, formula);
@@ -27,31 +30,31 @@ public class RegexTest implements LayerTest<Regex> {
 	}
 
 	@Test
-	public void testSetGetContent() {
+	default void testSetGetContent() {
 		{
 			String content = "test";
-			Regex formula = new Regex("[a-z]{4}");
+			Regex formula = instantiateRegex("[a-z]{4}");
 			formula.setContent(content);
 			assertEquals(content, formula.getContent());
 		}
 		{
 			String content = "test\ntest";
-			Regex formula = new Regex("[a-z\n]{9}");
+			Regex formula = instantiateRegex("[a-z\n]{9}");
 			formula.setContent(content);
 			assertEquals(content, formula.getContent());
 		}
 		{
 			String content = "";
-			Regex formula = new Regex("");
+			Regex formula = instantiateRegex("");
 			formula.setContent(content);
 			assertEquals(content, formula.getContent());
 		}
 	}
 
 	@Test
-	public void testDifferent() {
+	default void testDifferent() {
 		{
-			Regex formula = new Regex("[a-z]{4}");
+			Regex formula = instantiateRegex("[a-z]{4}");
 			try {
 				formula.setContent("abc");
 				fail("Exception not thrown.");
@@ -60,7 +63,7 @@ public class RegexTest implements LayerTest<Regex> {
 			}
 		}
 		{
-			Regex formula = new Regex("[a-z\n]{9}");
+			Regex formula = instantiateRegex("[a-z\n]{9}");
 			try {
 				formula.setContent("abc");
 				fail("Exception not thrown.");
@@ -69,7 +72,7 @@ public class RegexTest implements LayerTest<Regex> {
 			}
 		}
 		{
-			Regex formula = new Regex("");
+			Regex formula = instantiateRegex("");
 			try {
 				formula.setContent("abc");
 				fail("Exception not thrown.");
@@ -80,10 +83,10 @@ public class RegexTest implements LayerTest<Regex> {
 	}
 
 	@Test
-	public void testTooLongOnRight() {
+	default void testTooLongOnRight() {
 		{
 			String content = "test";
-			Regex formula = new Regex("[a-z]{4}");
+			Regex formula = instantiateRegex("[a-z]{4}");
 			try {
 				formula.setContent(content + "abc");
 				fail("Exception not thrown.");
@@ -93,7 +96,7 @@ public class RegexTest implements LayerTest<Regex> {
 		}
 		{
 			String content = "test\ntest";
-			Regex formula = new Regex("[a-z\n]{9}");
+			Regex formula = instantiateRegex("[a-z\n]{9}");
 			try {
 				formula.setContent(content + "abc");
 				fail("Exception not thrown.");
@@ -103,7 +106,7 @@ public class RegexTest implements LayerTest<Regex> {
 		}
 		{
 			String content = "";
-			Regex formula = new Regex("");
+			Regex formula = instantiateRegex("");
 			try {
 				formula.setContent(content + "abc");
 				fail("Exception not thrown.");
@@ -114,10 +117,10 @@ public class RegexTest implements LayerTest<Regex> {
 	}
 
 	@Test
-	public void testTooLongOnLeft() {
+	default void testTooLongOnLeft() {
 		{
 			String content = "test";
-			Regex formula = new Regex("[a-z]{4}");
+			Regex formula = instantiateRegex("[a-z]{4}");
 			try {
 				formula.setContent("abc" + content);
 				fail("Exception not thrown.");
@@ -127,7 +130,7 @@ public class RegexTest implements LayerTest<Regex> {
 		}
 		{
 			String content = "test\ntest";
-			Regex formula = new Regex("[a-z\n]{9}");
+			Regex formula = instantiateRegex("[a-z\n]{9}");
 			try {
 				formula.setContent("abc" + content);
 				fail("Exception not thrown.");
@@ -137,7 +140,7 @@ public class RegexTest implements LayerTest<Regex> {
 		}
 		{
 			String content = "";
-			Regex formula = new Regex("");
+			Regex formula = instantiateRegex("");
 			try {
 				formula.setContent("abc" + content);
 				fail("Exception not thrown.");
@@ -148,10 +151,10 @@ public class RegexTest implements LayerTest<Regex> {
 	}
 
 	@Test
-	public void testTooLongOnMiddle() {
+	default void testTooLongOnMiddle() {
 		{
 			String content = "test";
-			Regex formula = new Regex("[a-z]{4}");
+			Regex formula = instantiateRegex("[a-z]{4}");
 			try {
 				formula.setContent(content.substring(0, 2) + "abc" + content.substring(2));
 				fail("Exception not thrown.");
@@ -161,7 +164,7 @@ public class RegexTest implements LayerTest<Regex> {
 		}
 		{
 			String content = "test\ntest";
-			Regex formula = new Regex("[a-z\n]{9}");
+			Regex formula = instantiateRegex("[a-z\n]{9}");
 			try {
 				formula.setContent(content.substring(0, 2) + "abc" + content.substring(2));
 				fail("Exception not thrown.");
@@ -178,10 +181,10 @@ public class RegexTest implements LayerTest<Regex> {
 	}
 
 	@Test
-	public void testTooShortOnRight() {
+	default void testTooShortOnRight() {
 		{
 			String content = "test";
-			Regex formula = new Regex("[a-z]{4}");
+			Regex formula = instantiateRegex("[a-z]{4}");
 			try {
 				formula.setContent(content.substring(0, 2));
 				fail("Exception not thrown.");
@@ -191,7 +194,7 @@ public class RegexTest implements LayerTest<Regex> {
 		}
 		{
 			String content = "test\ntest";
-			Regex formula = new Regex("[a-z\n]{9}");
+			Regex formula = instantiateRegex("[a-z\n]{9}");
 			try {
 				formula.setContent(content.substring(0, 2));
 				fail("Exception not thrown.");
@@ -208,10 +211,10 @@ public class RegexTest implements LayerTest<Regex> {
 	}
 
 	@Test
-	public void testTooShortOnLeft() {
+	default void testTooShortOnLeft() {
 		{
 			String content = "test";
-			Regex formula = new Regex("[a-z]{4}");
+			Regex formula = instantiateRegex("[a-z]{4}");
 			try {
 				formula.setContent(content.substring(2));
 				fail("Exception not thrown.");
@@ -221,7 +224,7 @@ public class RegexTest implements LayerTest<Regex> {
 		}
 		{
 			String content = "test\ntest";
-			Regex formula = new Regex("[a-z\n]{9}");
+			Regex formula = instantiateRegex("[a-z\n]{9}");
 			try {
 				formula.setContent(content.substring(2));
 				fail("Exception not thrown.");
@@ -238,10 +241,10 @@ public class RegexTest implements LayerTest<Regex> {
 	}
 
 	@Test
-	public void testTooShortOnMiddle() {
+	default void testTooShortOnMiddle() {
 		{
 			String content = "test";
-			Regex formula = new Regex("[a-z]{4}");
+			Regex formula = instantiateRegex("[a-z]{4}");
 			try {
 				formula.setContent(content.substring(0, 1) + content.substring(2));
 				fail("Exception not thrown.");
@@ -251,7 +254,7 @@ public class RegexTest implements LayerTest<Regex> {
 		}
 		{
 			String content = "test\ntest";
-			Regex formula = new Regex("[a-z\n]{9}");
+			Regex formula = instantiateRegex("[a-z\n]{9}");
 			try {
 				formula.setContent(content.substring(0, 2) + content.substring(3));
 				fail("Exception not thrown.");
@@ -274,18 +277,18 @@ public class RegexTest implements LayerTest<Regex> {
 	}
 
 	@Test
-	public void testRegex() {
+	default void testRegex() {
 		{
 			String regex = "[abc]{2}";
-			assertEquals(regex, new Regex(regex).getRegex());
+			assertEquals(regex, instantiateRegex(regex).getRegex());
 		}
 		{
 			String regex = "test+";
-			assertEquals(regex, new Regex(regex).getRegex());
+			assertEquals(regex, instantiateRegex(regex).getRegex());
 		}
 		{
 			String regex = "([a-z]+|[0-9]{3,5})";
-			assertEquals(regex, new Regex(regex).getRegex());
+			assertEquals(regex, instantiateRegex(regex).getRegex());
 		}
 	}
 }
