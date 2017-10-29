@@ -21,7 +21,7 @@ import fr.vergne.parsing.layer.standard.Choice.InvalidChoiceException;
 import fr.vergne.parsing.layer.standard.impl.JavaPatternRegex;
 import fr.vergne.parsing.layer.standard.impl.StandardDefinitionFactory;
 import fr.vergne.parsing.layer.standard.impl.UnsafeRecursiveLayer;
-import fr.vergne.parsing.layer.standard.impl.StandardDefinitionFactory.DefinitionProxy;
+import fr.vergne.parsing.layer.standard.impl.StandardDefinitionFactory.DelayedDefinition;
 
 // TODO Test definition factory with standard tests
 // TODO Remove basic listener tests in standard tests
@@ -65,9 +65,8 @@ public interface ChoiceTest extends ComposedLayerTest<Choice> {
 	@Override
 	default Layer instantiateRecursiveLayer() {
 		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		DefinitionProxy<Choice> choiceProxy = factory.prepareDefinition();
-		Definition<Choice> choice = choiceProxy.getDefinition();
-		choiceProxy.defineAs(factory.defineChoice(UnsafeRecursiveLayer.defineOn(choice), factory.defineConstant("")));
+		DelayedDefinition<Choice> choice = factory.prepareDefinition();
+		choice.redefineAs(factory.defineChoice(UnsafeRecursiveLayer.defineOn(choice), factory.defineConstant("")));
 		return choice.create();
 	}
 	

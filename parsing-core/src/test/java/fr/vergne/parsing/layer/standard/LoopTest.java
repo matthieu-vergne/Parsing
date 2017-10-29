@@ -24,7 +24,7 @@ import fr.vergne.parsing.layer.standard.Loop.BoundException;
 import fr.vergne.parsing.layer.standard.impl.JavaPatternRegex;
 import fr.vergne.parsing.layer.standard.impl.StandardDefinitionFactory;
 import fr.vergne.parsing.layer.standard.impl.UnsafeRecursiveLayer;
-import fr.vergne.parsing.layer.standard.impl.StandardDefinitionFactory.DefinitionProxy;
+import fr.vergne.parsing.layer.standard.impl.StandardDefinitionFactory.DelayedDefinition;
 
 @RunWith(JUnitPlatform.class)
 public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
@@ -147,9 +147,8 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	@Override
 	default Loop<UnsafeRecursiveLayer> instantiateRecursiveLayer() {
 		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		DefinitionProxy<Loop<UnsafeRecursiveLayer>> loopProxy = factory.prepareDefinition();
-		Definition<Loop<UnsafeRecursiveLayer>> loop = loopProxy.getDefinition();
-		loopProxy.defineAs(factory.defineLoop(UnsafeRecursiveLayer.defineOn(loop)));
+		DelayedDefinition<Loop<UnsafeRecursiveLayer>> loop = factory.prepareDefinition();
+		loop.redefineAs(factory.defineLoop(UnsafeRecursiveLayer.defineOn(loop)));
 
 		return loop.create();
 	}

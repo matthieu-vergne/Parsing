@@ -22,7 +22,7 @@ import fr.vergne.parsing.layer.standard.Loop.BoundException;
 import fr.vergne.parsing.layer.standard.impl.JavaPatternRegex;
 import fr.vergne.parsing.layer.standard.impl.StandardDefinitionFactory;
 import fr.vergne.parsing.layer.standard.impl.UnsafeRecursiveLayer;
-import fr.vergne.parsing.layer.standard.impl.StandardDefinitionFactory.DefinitionProxy;
+import fr.vergne.parsing.layer.standard.impl.StandardDefinitionFactory.DelayedDefinition;
 
 // TODO Test quantifiers?
 @RunWith(JUnitPlatform.class)
@@ -77,7 +77,7 @@ public interface SeparatedLoopTest extends ModifiableComposedLayerTest<Separated
 		}
 		return sublayers;
 	}
-	
+
 	@Override
 	default Collection<SublayerUpdate> getSublayersUpdates(SeparatedLoop<Regex, Constant> parent) {
 		// TODO Auto-generated method stub
@@ -228,10 +228,8 @@ public interface SeparatedLoopTest extends ModifiableComposedLayerTest<Separated
 	@Override
 	default Layer instantiateRecursiveLayer() {
 		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		DefinitionProxy<SeparatedLoop<UnsafeRecursiveLayer, Constant>> loopProxy = factory.prepareDefinition();
-		Definition<SeparatedLoop<UnsafeRecursiveLayer, Constant>> loop = loopProxy.getDefinition();
-		loopProxy.defineAs(
-				factory.defineSeparatedLoop(UnsafeRecursiveLayer.defineOn(loop), factory.defineConstant(",")));
+		DelayedDefinition<SeparatedLoop<UnsafeRecursiveLayer, Constant>> loop = factory.prepareDefinition();
+		loop.redefineAs(factory.defineSeparatedLoop(UnsafeRecursiveLayer.defineOn(loop), factory.defineConstant(",")));
 		return loop.create();
 	}
 

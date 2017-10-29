@@ -349,57 +349,53 @@ public class StandardDefinitionFactory {
 	 * Sometimes, one want to use a {@link Definition} before to know exactly what
 	 * it will be. This is particularly true for recursive cases, where one needs to
 	 * define some basic elements first, but already need the final one to define
-	 * them. This method provides such a facility through a {@link DefinitionProxy},
-	 * which allows to obtain a {@link Definition} immediately while telling later
-	 * how to actually build it.
+	 * them. This method provides such a facility through a
+	 * {@link DelayedDefinition}, which allows to obtain a {@link Definition}
+	 * immediately while telling later how to actually build it.
 	 * 
-	 * @return a {@link DefinitionProxy} for a given {@link Definition}
+	 * @return a {@link DelayedDefinition} for a given {@link Definition}
 	 */
-	public <T extends Layer> DefinitionProxy<T> prepareDefinition() {
-		return new DefinitionProxy<T>();
+	public <T extends Layer> DelayedDefinition<T> prepareDefinition() {
+		return new DelayedDefinition<T>() {
+			
+			private Definition<T> definition;
+
+			@Override
+			public String getRegex() {
+				return definition.getRegex();
+			}
+
+			@Override
+			public T create() {
+				return definition.create();
+			}
+
+			@Override
+			public boolean isCompatibleWith(T layer) {
+				return definition.isCompatibleWith(layer);
+			}
+
+			@Override
+			public void redefineAs(Definition<T> definition) {
+				this.definition = definition;
+			}
+		};
 	}
 
 	/**
-	 * A {@link DefinitionProxy} allows to obtain a {@link Definition} for which we
-	 * want to delay the actual definition. When having a {@link DefinitionProxy},
-	 * one can call {@link #getDefinition()} to obtain the {@link Definition}
-	 * instance, which we will call <em>final def</em>. The same instance is
-	 * returned by each call, so it can be called immediately and used as any
-	 * {@link Definition}. Once a {@link Definition} is built and we want <em>final
-	 * def</em> to represent it, it should be given to
-	 * {@link #defineAs(Definition)}. Only then <em>final def</em> can create
-	 * instances through {@link Definition#create()}.
+	 * A {@link DelayedDefinition} allows to obtain a {@link Definition} for which
+	 * we want to delay the specification. When having a {@link DelayedDefinition},
+	 * one can use it as any {@link Definition} instance. Once the specification is
+	 * known, it should be built and provided to {@link #redefineAs(Definition)}.
+	 * Only then the {@link DelayedDefinition} can create instances through
+	 * {@link DelayedDefinition#create()}.
 	 * 
 	 * @author Matthieu Vergne <matthieu.vergne@gmail.com>
 	 *
 	 * @param <T>
 	 */
-	public class DefinitionProxy<T extends Layer> {
-		private Definition<T> sourceDefinition;
-		private final Definition<T> resultDefinition = new Definition<T>() {
-			@Override
-			public String getRegex() {
-				return sourceDefinition.getRegex();
-			}
-
-			@Override
-			public T create() {
-				return sourceDefinition.create();
-			}
-
-			@Override
-			public boolean isCompatibleWith(T layer) {
-				return sourceDefinition.isCompatibleWith(layer);
-			}
-		};
-
-		public void defineAs(Definition<T> definition) {
-			this.sourceDefinition = definition;
-		}
-
-		public Definition<T> getDefinition() {
-			return resultDefinition;
-		}
+	public interface DelayedDefinition<T extends Layer> extends Definition<T> {
+		public void redefineAs(Definition<T> definition);
 	}
 
 	public static String buildRegexCardinality(Quantifier quantifier, int min, int max) {

@@ -10,7 +10,7 @@ import fr.vergne.parsing.layer.standard.Loop;
 import fr.vergne.parsing.layer.standard.Regex;
 import fr.vergne.parsing.layer.standard.Sequence;
 import fr.vergne.parsing.layer.standard.impl.StandardDefinitionFactory;
-import fr.vergne.parsing.layer.standard.impl.StandardDefinitionFactory.DefinitionProxy;
+import fr.vergne.parsing.layer.standard.impl.StandardDefinitionFactory.DelayedDefinition;
 
 public class Xml {
 
@@ -49,17 +49,16 @@ public class Xml {
 				factory.defineConstant("/>"));
 
 		// If it is not auto-closed it may have children, which we will define later
-		// through a proxy
-		DefinitionProxy<Loop<Choice>> childrenNodeProxy = factory.prepareDefinition();
-		childrenNode = childrenNodeProxy.getDefinition();
+		DelayedDefinition<Loop<Choice>> childrenNode = factory.prepareDefinition();
 		nonAutoClosingNode = factory.defineSequence(blank, factory.defineConstant("<node"), fields,
 				factory.defineConstant(">"), childrenNode, blank, factory.defineConstant("</node>"));
 
 		// A node can be a auto-closing or not
 		node = factory.defineChoice(autoClosingNode, nonAutoClosingNode);
 
-		// Now we know what is a node, so we can define children nodes through the proxy
-		childrenNodeProxy.defineAs(factory.defineLoop(node));
+		// Now we know what is a node, so we can redefine children nodes as a loop of
+		// nodes
+		childrenNode.redefineAs(factory.defineLoop(node));
 
 		// The XML nodes are all enclosed in a a XML tree
 		tree = factory.defineSequence(factory.defineConstant("<tree>"), childrenNode, blank,

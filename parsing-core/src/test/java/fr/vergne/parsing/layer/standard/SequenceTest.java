@@ -22,7 +22,7 @@ import fr.vergne.parsing.layer.exception.ParsingException;
 import fr.vergne.parsing.layer.standard.impl.JavaPatternRegex;
 import fr.vergne.parsing.layer.standard.impl.StandardDefinitionFactory;
 import fr.vergne.parsing.layer.standard.impl.UnsafeRecursiveLayer;
-import fr.vergne.parsing.layer.standard.impl.StandardDefinitionFactory.DefinitionProxy;
+import fr.vergne.parsing.layer.standard.impl.StandardDefinitionFactory.DelayedDefinition;
 
 @RunWith(JUnitPlatform.class)
 public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
@@ -133,9 +133,8 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	@Override
 	default Sequence instantiateRecursiveLayer() {
 		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		DefinitionProxy<Sequence> sequenceProxy = factory.prepareDefinition();
-		Definition<Sequence> sequence = sequenceProxy.getDefinition();
-		sequenceProxy.defineAs(factory.defineSequence(UnsafeRecursiveLayer.defineOn(sequence)));
+		DelayedDefinition<Sequence> sequence = factory.prepareDefinition();
+		sequence.redefineAs(factory.defineSequence(UnsafeRecursiveLayer.defineOn(sequence)));
 
 		return sequence.create();
 	}

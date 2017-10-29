@@ -19,7 +19,7 @@ import fr.vergne.parsing.layer.ModifiableComposedLayerTest;
 import fr.vergne.parsing.layer.exception.ParsingException;
 import fr.vergne.parsing.layer.standard.impl.StandardDefinitionFactory;
 import fr.vergne.parsing.layer.standard.impl.UnsafeRecursiveLayer;
-import fr.vergne.parsing.layer.standard.impl.StandardDefinitionFactory.DefinitionProxy;
+import fr.vergne.parsing.layer.standard.impl.StandardDefinitionFactory.DelayedDefinition;
 
 // TODO Add quantifier tests?
 @RunWith(JUnitPlatform.class)
@@ -92,9 +92,8 @@ public interface OptionTest extends ModifiableComposedLayerTest<Option<Regex>> {
 	@Override
 	default Option<UnsafeRecursiveLayer> instantiateRecursiveLayer() {
 		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		DefinitionProxy<Option<UnsafeRecursiveLayer>> optionProxy = factory.prepareDefinition();
-		Definition<Option<UnsafeRecursiveLayer>> option = optionProxy.getDefinition();
-		optionProxy.defineAs(factory.defineOptional(UnsafeRecursiveLayer.defineOn(option)));
+		DelayedDefinition<Option<UnsafeRecursiveLayer>> option = factory.prepareDefinition();
+		option.redefineAs(factory.defineOptional(UnsafeRecursiveLayer.defineOn(option)));
 
 		return option.create();
 	}
