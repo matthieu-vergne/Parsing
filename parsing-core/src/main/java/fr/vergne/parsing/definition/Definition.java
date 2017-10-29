@@ -10,6 +10,7 @@ import fr.vergne.parsing.layer.Layer;
  *
  * @param <T>
  */
+// TODO Import quantifier here? Should it go together with regex?
 public interface Definition<T extends Layer> {
 	/**
 	 * This method provides the complete regular expression which represents the
