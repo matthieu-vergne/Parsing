@@ -10,8 +10,6 @@ import fr.vergne.parsing.definition.Definition;
 import fr.vergne.parsing.layer.exception.ParsingException;
 import fr.vergne.parsing.layer.standard.Regex;
 import fr.vergne.parsing.layer.standard.Sequence;
-import fr.vergne.parsing.layer.standard.impl.BasicSequence;
-import fr.vergne.parsing.layer.standard.impl.StandardDefinitionFactory;
 
 public class NewlineTest {
 
@@ -51,10 +49,9 @@ public class NewlineTest {
 
 	@Test
 	public void testNewlineEnclosed() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> leftPart = factory.defineRegex(".*");
-		Definition<Regex> rightPart = factory.defineRegex(".*");
-		Sequence suite = new BasicSequence(leftPart, Newline.DEFINITION, rightPart);
+		Definition<Regex> leftPart = Regex.define(".*");
+		Definition<Regex> rightPart = Regex.define(".*");
+		Sequence suite = new Sequence(leftPart, Newline.define(), rightPart);
 		for (String newline : Arrays.asList("\r", "\n", "\r\n", "\n\r")) {
 			{
 				String left = "left";
@@ -76,7 +73,7 @@ public class NewlineTest {
 	@Test
 	public void testNewlineSequence() {
 		for (String newline : Arrays.asList("\r", "\n", "\r\n", "\n\r")) {
-			Sequence suite = new BasicSequence(Newline.DEFINITION, Newline.DEFINITION, Newline.DEFINITION);
+			Sequence suite = new Sequence(Newline.define(), Newline.define(), Newline.define());
 			suite.setContent(newline + newline + newline);
 			try {
 				suite.setContent(newline + newline);

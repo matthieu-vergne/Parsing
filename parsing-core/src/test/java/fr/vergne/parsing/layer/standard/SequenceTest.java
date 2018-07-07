@@ -14,35 +14,26 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import fr.vergne.parsing.definition.Definition;
+import fr.vergne.parsing.definition.Definition.DefinitionProxy;
 import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.Layer.ContentListener;
 import fr.vergne.parsing.layer.Layer.NoContentException;
 import fr.vergne.parsing.layer.ModifiableComposedLayerTest;
 import fr.vergne.parsing.layer.exception.ParsingException;
-import fr.vergne.parsing.layer.standard.impl.JavaPatternRegex;
-import fr.vergne.parsing.layer.standard.impl.StandardDefinitionFactory;
 import fr.vergne.parsing.layer.standard.impl.UnsafeRecursiveLayer;
-import fr.vergne.parsing.layer.standard.impl.StandardDefinitionFactory.DelayedDefinition;
 
 @RunWith(JUnitPlatform.class)
-public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
-
-	Sequence instantiateSequence(List<Definition<?>> definitions);
-
-	default Sequence instantiateSequence(Definition<?>... definitions) {
-		return instantiateSequence(Arrays.asList(definitions));
-	}
+public class SequenceTest implements ModifiableComposedLayerTest<Sequence> {
 
 	@Override
-	default Map<String, Sequence> instantiateLayers(Collection<String> specialCharacters) {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+	public Map<String, Sequence> instantiateLayers(Collection<String> specialCharacters) {
 		StringBuilder builder = new StringBuilder();
 		List<Definition<?>> definitions = new LinkedList<>();
 		for (String character : specialCharacters) {
 			builder.append(character);
-			definitions.add(factory.defineConstant(character));
+			definitions.add(Constant.define(character));
 		}
-		Sequence sequence = instantiateSequence(definitions);
+		Sequence sequence = new Sequence(definitions);
 
 		Map<String, Sequence> map = new HashMap<>();
 		map.put(builder.toString(), sequence);
@@ -50,22 +41,22 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Override
-	default Collection<Layer> getUsedSubLayers(Sequence sequence) {
+	public Collection<Layer> getUsedSubLayers(Sequence sequence) {
 		Collection<Layer> sublayers = new LinkedList<>();
 		for (int i = 0; i < sequence.size(); i++) {
 			sublayers.add(sequence.get(i));
 		}
 		return sublayers;
 	}
-	
+
 	@Override
-	default Collection<SublayerUpdate> getSublayersUpdates(Sequence parent) {
+	public Collection<SublayerUpdate> getSublayersUpdates(Sequence parent) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	default Collection<SublayerReplacement> getSublayersReplacements(Sequence sequence) {
+	public Collection<SublayerReplacement> getSublayersReplacements(Sequence sequence) {
 		Collection<SublayerReplacement> updates = new LinkedList<>();
 
 		// Set through index
@@ -131,74 +122,68 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Override
-	default Sequence instantiateRecursiveLayer() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		DelayedDefinition<Sequence> sequence = factory.prepareDefinition();
-		sequence.redefineAs(factory.defineSequence(UnsafeRecursiveLayer.defineOn(sequence)));
+	public Sequence instantiateRecursiveLayer() {
+		DefinitionProxy<Sequence> sequence = Definition.prepare();
+		sequence.setDelegate(Sequence.define(UnsafeRecursiveLayer.defineOn(sequence)));
 
 		return sequence.create();
 	}
 
 	@Override
-	default String getValidRecursiveContent(Layer layer) {
+	public String getValidRecursiveContent(Layer layer) {
 		return "-----";
 	}
 
 	@Test
-	default void testGetContentEqualsSetContent1() {
+	public void testGetContentEqualsSetContent1() {
 		String content = "test";
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> letter1 = factory.defineRegex("[a-zA-Z]");
-		Definition<Constant> letter2 = factory.defineConstant("e");
-		Definition<Constant> letter3 = factory.defineConstant("s");
-		Definition<Regex> letter4 = factory.defineRegex("[a-zA-Z]");
-		Sequence sequence = instantiateSequence(letter1, letter2, letter3, letter4);
+		Definition<Regex> letter1 = Regex.define("[a-zA-Z]");
+		Definition<Constant> letter2 = Constant.define("e");
+		Definition<Constant> letter3 = Constant.define("s");
+		Definition<Regex> letter4 = Regex.define("[a-zA-Z]");
+		Sequence sequence = new Sequence(letter1, letter2, letter3, letter4);
 		sequence.setContent(content);
 		assertEquals(content, sequence.getContent());
 	}
 
 	@Test
-	default void testGetContentEqualsSetContent2() {
+	public void testGetContentEqualsSetContent2() {
 		String content = "test\ntest";
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word1 = factory.defineRegex("[a-z]{4}");
-		Definition<Regex> space = factory.defineRegex("\\s+");
-		Definition<Regex> word2 = factory.defineRegex("[a-z]{4}");
-		Sequence sequence = instantiateSequence(word1, space, word2);
+		Definition<Regex> word1 = Regex.define("[a-z]{4}");
+		Definition<Regex> space = Regex.define("\\s+");
+		Definition<Regex> word2 = Regex.define("[a-z]{4}");
+		Sequence sequence = new Sequence(word1, space, word2);
 		sequence.setContent(content);
 		assertEquals(content, sequence.getContent());
 	}
 
 	@Test
-	default void testGetContentEqualsSetContentWithEmptySublayers() {
+	public void testGetContentEqualsSetContentWithEmptySublayers() {
 		String content = "test";
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word1 = factory.defineRegex("");
-		Definition<Constant> word2 = factory.defineConstant("test");
-		Definition<Regex> word3 = factory.defineRegex("");
-		Sequence sequence = instantiateSequence(word1, word2, word3);
+		Definition<Regex> word1 = Regex.define("");
+		Definition<Constant> word2 = Constant.define("test");
+		Definition<Regex> word3 = Regex.define("");
+		Sequence sequence = new Sequence(word1, word2, word3);
 		sequence.setContent(content);
 		assertEquals(content, sequence.getContent());
 	}
 
 	@Test
-	default void testSizeEqualsNumberOfSubLayers() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-z]+");
-		assertEquals(1, instantiateSequence(word).size());
-		assertEquals(2, instantiateSequence(word, word).size());
-		assertEquals(3, instantiateSequence(word, word, word).size());
+	public void testSizeEqualsNumberOfSubLayers() {
+		Definition<Regex> word = Regex.define("[a-z]+");
+		assertEquals(1, new Sequence(word).size());
+		assertEquals(2, new Sequence(word, word).size());
+		assertEquals(3, new Sequence(word, word, word).size());
 	}
 
 	@Test
-	default void testDifferent() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+	public void testDifferent() {
 		{
-			Definition<Regex> letter1 = factory.defineRegex("[a-zA-Z]");
-			Definition<Constant> letter2 = factory.defineConstant("e");
-			Definition<Constant> letter3 = factory.defineConstant("s");
-			Definition<Regex> letter4 = factory.defineRegex("[a-zA-Z]");
-			Sequence sequence = instantiateSequence(letter1, letter2, letter3, letter4);
+			Definition<Regex> letter1 = Regex.define("[a-zA-Z]");
+			Definition<Constant> letter2 = Constant.define("e");
+			Definition<Constant> letter3 = Constant.define("s");
+			Definition<Regex> letter4 = Regex.define("[a-zA-Z]");
+			Sequence sequence = new Sequence(letter1, letter2, letter3, letter4);
 			try {
 				sequence.setContent("1esr");
 				fail("Exception not thrown.");
@@ -229,10 +214,10 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 			}
 		}
 		{
-			Definition<Regex> word1 = factory.defineRegex("[a-z]{4}");
-			Definition<Regex> space = factory.defineRegex("\\s+");
-			Definition<Regex> word2 = factory.defineRegex("[a-z]{4}");
-			Sequence sequence = instantiateSequence(word1, space, word2);
+			Definition<Regex> word1 = Regex.define("[a-z]{4}");
+			Definition<Regex> space = Regex.define("\\s+");
+			Definition<Regex> word2 = Regex.define("[a-z]{4}");
+			Sequence sequence = new Sequence(word1, space, word2);
 			try {
 				sequence.setContent("abc\ndef");
 				fail("Exception not thrown.");
@@ -256,10 +241,10 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 			}
 		}
 		{
-			Definition<Regex> word1 = factory.defineRegex("");
-			Definition<Constant> word2 = factory.defineConstant("test");
-			Definition<Regex> word3 = factory.defineRegex("");
-			Sequence sequence = instantiateSequence(word1, word2, word3);
+			Definition<Regex> word1 = Regex.define("");
+			Definition<Constant> word2 = Constant.define("test");
+			Definition<Regex> word3 = Regex.define("");
+			Sequence sequence = new Sequence(word1, word2, word3);
 			try {
 				sequence.setContent("abc");
 				fail("Exception not thrown.");
@@ -271,15 +256,14 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testTooLongOnRight() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+	public void testTooLongOnRight() {
 		{
 			String content = "test";
-			Definition<Regex> letter1 = factory.defineRegex("[a-zA-Z]");
-			Definition<Constant> letter2 = factory.defineConstant("e");
-			Definition<Constant> letter3 = factory.defineConstant("s");
-			Definition<Regex> letter4 = factory.defineRegex("[a-zA-Z]");
-			Sequence sequence = instantiateSequence(letter1, letter2, letter3, letter4);
+			Definition<Regex> letter1 = Regex.define("[a-zA-Z]");
+			Definition<Constant> letter2 = Constant.define("e");
+			Definition<Constant> letter3 = Constant.define("s");
+			Definition<Regex> letter4 = Regex.define("[a-zA-Z]");
+			Sequence sequence = new Sequence(letter1, letter2, letter3, letter4);
 			try {
 				sequence.setContent(content + "abc");
 				fail("Exception not thrown.");
@@ -290,10 +274,10 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 		}
 		{
 			String content = "test\ntest";
-			Definition<Regex> word1 = factory.defineRegex("[a-z]{4}");
-			Definition<Regex> space = factory.defineRegex("\\s+");
-			Definition<Regex> word2 = factory.defineRegex("[a-z]{4}");
-			Sequence sequence = instantiateSequence(word1, space, word2);
+			Definition<Regex> word1 = Regex.define("[a-z]{4}");
+			Definition<Regex> space = Regex.define("\\s+");
+			Definition<Regex> word2 = Regex.define("[a-z]{4}");
+			Sequence sequence = new Sequence(word1, space, word2);
 			try {
 				sequence.setContent(content + "abc");
 				fail("Exception not thrown.");
@@ -304,10 +288,10 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 		}
 		{
 			String content = "test";
-			Definition<Regex> word1 = factory.defineRegex("");
-			Definition<Constant> word2 = factory.defineConstant("test");
-			Definition<Regex> word3 = factory.defineRegex("");
-			Sequence sequence = instantiateSequence(word1, word2, word3);
+			Definition<Regex> word1 = Regex.define("");
+			Definition<Constant> word2 = Constant.define("test");
+			Definition<Regex> word3 = Regex.define("");
+			Sequence sequence = new Sequence(word1, word2, word3);
 			try {
 				sequence.setContent(content + "abc");
 				fail("Exception not thrown.");
@@ -319,15 +303,14 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testTooLongOnLeft() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+	public void testTooLongOnLeft() {
 		{
 			String content = "test";
-			Definition<Regex> letter1 = factory.defineRegex("[a-zA-Z]");
-			Definition<Constant> letter2 = factory.defineConstant("e");
-			Definition<Constant> letter3 = factory.defineConstant("s");
-			Definition<Regex> letter4 = factory.defineRegex("[a-zA-Z]");
-			Sequence sequence = instantiateSequence(letter1, letter2, letter3, letter4);
+			Definition<Regex> letter1 = Regex.define("[a-zA-Z]");
+			Definition<Constant> letter2 = Constant.define("e");
+			Definition<Constant> letter3 = Constant.define("s");
+			Definition<Regex> letter4 = Regex.define("[a-zA-Z]");
+			Sequence sequence = new Sequence(letter1, letter2, letter3, letter4);
 			try {
 				sequence.setContent("abc" + content);
 				fail("Exception not thrown.");
@@ -338,10 +321,10 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 		}
 		{
 			String content = "test\ntest";
-			Definition<Regex> word1 = factory.defineRegex("[a-z]{4}");
-			Definition<Regex> space = factory.defineRegex("\\s+");
-			Definition<Regex> word2 = factory.defineRegex("[a-z]{4}");
-			Sequence sequence = instantiateSequence(word1, space, word2);
+			Definition<Regex> word1 = Regex.define("[a-z]{4}");
+			Definition<Regex> space = Regex.define("\\s+");
+			Definition<Regex> word2 = Regex.define("[a-z]{4}");
+			Sequence sequence = new Sequence(word1, space, word2);
 			try {
 				sequence.setContent("abc" + content);
 				fail("Exception not thrown.");
@@ -352,10 +335,10 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 		}
 		{
 			String content = "test";
-			Definition<Regex> word1 = factory.defineRegex("");
-			Definition<Constant> word2 = factory.defineConstant("test");
-			Definition<Regex> word3 = factory.defineRegex("");
-			Sequence sequence = instantiateSequence(word1, word2, word3);
+			Definition<Regex> word1 = Regex.define("");
+			Definition<Constant> word2 = Constant.define("test");
+			Definition<Regex> word3 = Regex.define("");
+			Sequence sequence = new Sequence(word1, word2, word3);
 			try {
 				sequence.setContent("abc" + content);
 				fail("Exception not thrown.");
@@ -367,14 +350,13 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testTooLongOnMiddle() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+	public void testTooLongOnMiddle() {
 		{
-			Definition<Regex> letter1 = factory.defineRegex("[a-zA-Z]");
-			Definition<Constant> letter2 = factory.defineConstant("e");
-			Definition<Constant> letter3 = factory.defineConstant("s");
-			Definition<Regex> letter4 = factory.defineRegex("[a-zA-Z]");
-			Sequence sequence = instantiateSequence(letter1, letter2, letter3, letter4);
+			Definition<Regex> letter1 = Regex.define("[a-zA-Z]");
+			Definition<Constant> letter2 = Constant.define("e");
+			Definition<Constant> letter3 = Constant.define("s");
+			Definition<Regex> letter4 = Regex.define("[a-zA-Z]");
+			Sequence sequence = new Sequence(letter1, letter2, letter3, letter4);
 			try {
 				sequence.setContent("teabcst");
 				fail("Exception not thrown.");
@@ -385,10 +367,10 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 		}
 		{
 			String content = "test\ntest";
-			Definition<Regex> word1 = factory.defineRegex("[a-z]{4}");
-			Definition<Regex> space = factory.defineRegex("\\s+");
-			Definition<Regex> word2 = factory.defineRegex("[a-z]{4}");
-			Sequence sequence = instantiateSequence(word1, space, word2);
+			Definition<Regex> word1 = Regex.define("[a-z]{4}");
+			Definition<Regex> space = Regex.define("\\s+");
+			Definition<Regex> word2 = Regex.define("[a-z]{4}");
+			Sequence sequence = new Sequence(word1, space, word2);
 			try {
 				sequence.setContent(content.substring(0, 2) + "abc" + content.substring(2));
 				fail("Exception not thrown.");
@@ -407,15 +389,14 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testTooShortOnRight() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+	public void testTooShortOnRight() {
 		{
 			String content = "test";
-			Definition<Regex> letter1 = factory.defineRegex("[a-zA-Z]");
-			Definition<Constant> letter2 = factory.defineConstant("e");
-			Definition<Constant> letter3 = factory.defineConstant("s");
-			Definition<Regex> letter4 = factory.defineRegex("[a-zA-Z]");
-			Sequence sequence = instantiateSequence(letter1, letter2, letter3, letter4);
+			Definition<Regex> letter1 = Regex.define("[a-zA-Z]");
+			Definition<Constant> letter2 = Constant.define("e");
+			Definition<Constant> letter3 = Constant.define("s");
+			Definition<Regex> letter4 = Regex.define("[a-zA-Z]");
+			Sequence sequence = new Sequence(letter1, letter2, letter3, letter4);
 			try {
 				sequence.setContent(content.substring(0, 2));
 				fail("Exception not thrown.");
@@ -426,10 +407,10 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 		}
 		{
 			String content = "test\ntest";
-			Definition<Regex> word1 = factory.defineRegex("[a-z]{4}");
-			Definition<Regex> space = factory.defineRegex("\\s+");
-			Definition<Regex> word2 = factory.defineRegex("[a-z]{4}");
-			Sequence sequence = instantiateSequence(word1, space, word2);
+			Definition<Regex> word1 = Regex.define("[a-z]{4}");
+			Definition<Regex> space = Regex.define("\\s+");
+			Definition<Regex> word2 = Regex.define("[a-z]{4}");
+			Sequence sequence = new Sequence(word1, space, word2);
 			try {
 				sequence.setContent(content.substring(0, 2));
 				fail("Exception not thrown.");
@@ -462,15 +443,14 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testTooShortOnLeft() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+	public void testTooShortOnLeft() {
 		{
 			String content = "test";
-			Definition<Regex> letter1 = factory.defineRegex("[a-zA-Z]");
-			Definition<Constant> letter2 = factory.defineConstant("e");
-			Definition<Constant> letter3 = factory.defineConstant("s");
-			Definition<Regex> letter4 = factory.defineRegex("[a-zA-Z]");
-			Sequence sequence = instantiateSequence(letter1, letter2, letter3, letter4);
+			Definition<Regex> letter1 = Regex.define("[a-zA-Z]");
+			Definition<Constant> letter2 = Constant.define("e");
+			Definition<Constant> letter3 = Constant.define("s");
+			Definition<Regex> letter4 = Regex.define("[a-zA-Z]");
+			Sequence sequence = new Sequence(letter1, letter2, letter3, letter4);
 			try {
 				sequence.setContent(content.substring(2));
 				fail("Exception not thrown.");
@@ -481,10 +461,10 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 		}
 		{
 			String content = "test\ntest";
-			Definition<Regex> word1 = factory.defineRegex("[a-z]{4}");
-			Definition<Regex> space = factory.defineRegex("\\s+");
-			Definition<Regex> word2 = factory.defineRegex("[a-z]{4}");
-			Sequence sequence = instantiateSequence(word1, space, word2);
+			Definition<Regex> word1 = Regex.define("[a-z]{4}");
+			Definition<Regex> space = Regex.define("\\s+");
+			Definition<Regex> word2 = Regex.define("[a-z]{4}");
+			Sequence sequence = new Sequence(word1, space, word2);
 			try {
 				sequence.setContent(content.substring(2));
 				fail("Exception not thrown.");
@@ -503,15 +483,14 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testTooShortOnMiddle() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+	public void testTooShortOnMiddle() {
 		{
 			String content = "test";
-			Definition<Regex> letter1 = factory.defineRegex("[a-zA-Z]");
-			Definition<Constant> letter2 = factory.defineConstant("e");
-			Definition<Constant> letter3 = factory.defineConstant("s");
-			Definition<Regex> letter4 = factory.defineRegex("[a-zA-Z]");
-			Sequence sequence = instantiateSequence(letter1, letter2, letter3, letter4);
+			Definition<Regex> letter1 = Regex.define("[a-zA-Z]");
+			Definition<Constant> letter2 = Constant.define("e");
+			Definition<Constant> letter3 = Constant.define("s");
+			Definition<Regex> letter4 = Regex.define("[a-zA-Z]");
+			Sequence sequence = new Sequence(letter1, letter2, letter3, letter4);
 			try {
 				sequence.setContent(content.substring(0, 1) + content.substring(2));
 				fail("Exception not thrown.");
@@ -522,10 +501,10 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 		}
 		{
 			String content = "test\ntest";
-			Definition<Regex> word1 = factory.defineRegex("[a-z]{4}");
-			Definition<Regex> space = factory.defineRegex("\\s+");
-			Definition<Regex> word2 = factory.defineRegex("[a-z]{4}");
-			Sequence sequence = instantiateSequence(word1, space, word2);
+			Definition<Regex> word1 = Regex.define("[a-z]{4}");
+			Definition<Regex> space = Regex.define("\\s+");
+			Definition<Regex> word2 = Regex.define("[a-z]{4}");
+			Sequence sequence = new Sequence(word1, space, word2);
 			try {
 				sequence.setContent(content.substring(0, 2) + content.substring(3));
 				fail("Exception not thrown.");
@@ -551,16 +530,15 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testInnerContentSynchronization() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+	public void testInnerContentSynchronization() {
 		String content = "A testing case.";
-		Definition<Regex> word1 = factory.defineRegex("[a-zA-Z]+");
-		Definition<Regex> word2 = factory.defineRegex("[a-zA-Z]+");
-		Definition<Regex> word3 = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space1 = factory.defineConstant(" ");
-		Definition<Constant> space2 = factory.defineConstant(" ");
-		Definition<Constant> dot = factory.defineConstant(".");
-		Sequence sequence = instantiateSequence(Arrays.asList(word1, space1, word2, space2, word3, dot));
+		Definition<Regex> word1 = Regex.define("[a-zA-Z]+");
+		Definition<Regex> word2 = Regex.define("[a-zA-Z]+");
+		Definition<Regex> word3 = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space1 = Constant.define(" ");
+		Definition<Constant> space2 = Constant.define(" ");
+		Definition<Constant> dot = Constant.define(".");
+		Sequence sequence = new Sequence(Arrays.asList(word1, space1, word2, space2, word3, dot));
 		sequence.setContent(content);
 
 		assertEquals("A", sequence.get(word1).getContent());
@@ -576,12 +554,11 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testGetIndexReturnsProperContent() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Definition<Constant> dot = factory.defineConstant(".");
-		Sequence sequence = instantiateSequence(word, space, word, space, word, dot);
+	public void testGetIndexReturnsProperContent() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Definition<Constant> dot = Constant.define(".");
+		Sequence sequence = new Sequence(word, space, word, space, word, dot);
 		sequence.setContent("This is testing.");
 
 		assertEquals("This", sequence.get(0).getContent());
@@ -593,12 +570,11 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testGetFromDefinitionReturnsProperContent() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Definition<Regex> number = factory.defineRegex("\\d+");
-		Sequence sequence = instantiateSequence(word, space, number);
+	public void testGetFromDefinitionReturnsProperContent() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Definition<Regex> number = Regex.define("\\d+");
+		Sequence sequence = new Sequence(word, space, number);
 		sequence.setContent("Answer 42");
 
 		assertEquals("Answer", sequence.get(word).getContent());
@@ -607,12 +583,11 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testGetDefinitionProvidesCorrectDefinition() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Definition<Regex> number = factory.defineRegex("\\d+");
-		Sequence sequence = instantiateSequence(word, space, number);
+	public void testGetDefinitionProvidesCorrectDefinition() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Definition<Regex> number = Regex.define("\\d+");
+		Sequence sequence = new Sequence(word, space, number);
 		sequence.setContent("Answer 42");
 
 		assertEquals(word, sequence.getDefinition(0));
@@ -621,12 +596,11 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testSetIndexContentChangesIndexContentCorrespondingly() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Definition<Regex> number = factory.defineRegex("\\d+");
-		Sequence sequence = instantiateSequence(word, space, number);
+	public void testSetIndexContentChangesIndexContentCorrespondingly() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Definition<Regex> number = Regex.define("\\d+");
+		Sequence sequence = new Sequence(word, space, number);
 		sequence.setContent("Answer 42");
 
 		sequence.set(0, "Test");
@@ -635,24 +609,22 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testSetIndexContentReturnsOldContent() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Definition<Regex> number = factory.defineRegex("\\d+");
-		Sequence sequence = instantiateSequence(word, space, number);
+	public void testSetIndexContentReturnsOldContent() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Definition<Regex> number = Regex.define("\\d+");
+		Sequence sequence = new Sequence(word, space, number);
 		sequence.setContent("Answer 42");
 
 		assertEquals("Answer", sequence.set(0, "Test"));
 	}
 
 	@Test
-	default void testSetIndexContentChangesOverallContentCorrespondingly() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Definition<Regex> number = factory.defineRegex("\\d+");
-		Sequence sequence = instantiateSequence(word, space, number);
+	public void testSetIndexContentChangesOverallContentCorrespondingly() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Definition<Regex> number = Regex.define("\\d+");
+		Sequence sequence = new Sequence(word, space, number);
 		sequence.setContent("Answer 42");
 
 		sequence.set(0, "Test");
@@ -661,12 +633,11 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testSetIndexContentNotifiesListeners() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Definition<Regex> number = factory.defineRegex("\\d+");
-		Sequence sequence = instantiateSequence(word, space, number);
+	public void testSetIndexContentNotifiesListeners() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Definition<Regex> number = Regex.define("\\d+");
+		Sequence sequence = new Sequence(word, space, number);
 		sequence.setContent("Answer 42");
 
 		String[] value = { null };
@@ -677,12 +648,11 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testSetIndexContentRejectsNullContent() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Definition<Regex> number = factory.defineRegex("\\d+");
-		Sequence sequence = instantiateSequence(word, space, number);
+	public void testSetIndexContentRejectsNullContent() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Definition<Regex> number = Regex.define("\\d+");
+		Sequence sequence = new Sequence(word, space, number);
 		sequence.setContent("Answer 42");
 
 		try {
@@ -694,12 +664,11 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testSetIndexContentRejectsInvalidContent() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Definition<Regex> number = factory.defineRegex("\\d+");
-		Sequence sequence = instantiateSequence(word, space, number);
+	public void testSetIndexContentRejectsInvalidContent() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Definition<Regex> number = Regex.define("\\d+");
+		Sequence sequence = new Sequence(word, space, number);
 		sequence.setContent("Answer 42");
 
 		try {
@@ -711,12 +680,11 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testSetIndexLayerChangesIndexContentCorrespondingly() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Definition<Regex> number = factory.defineRegex("\\d+");
-		Sequence sequence = instantiateSequence(word, space, number);
+	public void testSetIndexLayerChangesIndexContentCorrespondingly() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Definition<Regex> number = Regex.define("\\d+");
+		Sequence sequence = new Sequence(word, space, number);
 		sequence.setContent("Answer 42");
 
 		Regex layer = word.create();
@@ -727,12 +695,11 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testSetIndexLayerChangesIndexLayerCorrespondingly() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Definition<Regex> number = factory.defineRegex("\\d+");
-		Sequence sequence = instantiateSequence(word, space, number);
+	public void testSetIndexLayerChangesIndexLayerCorrespondingly() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Definition<Regex> number = Regex.define("\\d+");
+		Sequence sequence = new Sequence(word, space, number);
 		sequence.setContent("Answer 42");
 
 		Regex layer = word.create();
@@ -743,12 +710,11 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testSetIndexLayerReturnsOldLayer() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Definition<Regex> number = factory.defineRegex("\\d+");
-		Sequence sequence = instantiateSequence(word, space, number);
+	public void testSetIndexLayerReturnsOldLayer() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Definition<Regex> number = Regex.define("\\d+");
+		Sequence sequence = new Sequence(word, space, number);
 		sequence.setContent("Answer 42");
 
 		Layer oldLayer = sequence.get(0);
@@ -759,12 +725,11 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testSetIndexLayerChangesOverallContentCorrespondingly() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Definition<Regex> number = factory.defineRegex("\\d+");
-		Sequence sequence = instantiateSequence(word, space, number);
+	public void testSetIndexLayerChangesOverallContentCorrespondingly() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Definition<Regex> number = Regex.define("\\d+");
+		Sequence sequence = new Sequence(word, space, number);
 		sequence.setContent("Answer 42");
 
 		Regex layer = word.create();
@@ -775,12 +740,11 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testSetIndexLayerNotifiesListeners() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Definition<Regex> number = factory.defineRegex("\\d+");
-		Sequence sequence = instantiateSequence(word, space, number);
+	public void testSetIndexLayerNotifiesListeners() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Definition<Regex> number = Regex.define("\\d+");
+		Sequence sequence = new Sequence(word, space, number);
 		sequence.setContent("Answer 42");
 
 		String[] value = { null };
@@ -793,12 +757,11 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testSetIndexLayerRejectsNullLayer() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Definition<Regex> number = factory.defineRegex("\\d+");
-		Sequence sequence = instantiateSequence(word, space, number);
+	public void testSetIndexLayerRejectsNullLayer() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Definition<Regex> number = Regex.define("\\d+");
+		Sequence sequence = new Sequence(word, space, number);
 		sequence.setContent("Answer 42");
 
 		try {
@@ -810,15 +773,14 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testSetIndexLayerRejectsInvalidLayer() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Definition<Regex> number = factory.defineRegex("\\d+");
-		Sequence sequence = instantiateSequence(word, space, number);
+	public void testSetIndexLayerRejectsInvalidLayer() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Definition<Regex> number = Regex.define("\\d+");
+		Sequence sequence = new Sequence(word, space, number);
 		sequence.setContent("Answer 42");
 
-		Regex element = new JavaPatternRegex("[a-zA-Z0-9]+");
+		Regex element = new Regex("[a-zA-Z0-9]+");
 		element.setContent("Test");
 		try {
 			sequence.set(0, element);
@@ -829,12 +791,11 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testSetDefinitionContentChangesDefinitionContentCorrespondingly() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Definition<Regex> number = factory.defineRegex("\\d+");
-		Sequence sequence = instantiateSequence(word, space, number);
+	public void testSetDefinitionContentChangesDefinitionContentCorrespondingly() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Definition<Regex> number = Regex.define("\\d+");
+		Sequence sequence = new Sequence(word, space, number);
 		sequence.setContent("Answer 42");
 
 		sequence.set(word, "Test");
@@ -843,24 +804,22 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testSetDefinitionContentReturnsOldContent() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Definition<Regex> number = factory.defineRegex("\\d+");
-		Sequence sequence = instantiateSequence(word, space, number);
+	public void testSetDefinitionContentReturnsOldContent() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Definition<Regex> number = Regex.define("\\d+");
+		Sequence sequence = new Sequence(word, space, number);
 		sequence.setContent("Answer 42");
 
 		assertEquals("Answer", sequence.set(word, "Test"));
 	}
 
 	@Test
-	default void testSetDefinitionContentChangesOverallContentCorrespondingly() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Definition<Regex> number = factory.defineRegex("\\d+");
-		Sequence sequence = instantiateSequence(word, space, number);
+	public void testSetDefinitionContentChangesOverallContentCorrespondingly() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Definition<Regex> number = Regex.define("\\d+");
+		Sequence sequence = new Sequence(word, space, number);
 		sequence.setContent("Answer 42");
 
 		sequence.set(word, "Test");
@@ -869,12 +828,11 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testSetDefinitionContentNotifiesListeners() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Definition<Regex> number = factory.defineRegex("\\d+");
-		Sequence sequence = instantiateSequence(word, space, number);
+	public void testSetDefinitionContentNotifiesListeners() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Definition<Regex> number = Regex.define("\\d+");
+		Sequence sequence = new Sequence(word, space, number);
 		sequence.setContent("Answer 42");
 
 		String[] value = { null };
@@ -885,12 +843,11 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testSetDefinitionContentRejectsNullContent() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Definition<Regex> number = factory.defineRegex("\\d+");
-		Sequence sequence = instantiateSequence(word, space, number);
+	public void testSetDefinitionContentRejectsNullContent() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Definition<Regex> number = Regex.define("\\d+");
+		Sequence sequence = new Sequence(word, space, number);
 		sequence.setContent("Answer 42");
 
 		try {
@@ -902,12 +859,11 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testSetDefinitionContentRejectsInvalidContent() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Definition<Regex> number = factory.defineRegex("\\d+");
-		Sequence sequence = instantiateSequence(word, space, number);
+	public void testSetDefinitionContentRejectsInvalidContent() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Definition<Regex> number = Regex.define("\\d+");
+		Sequence sequence = new Sequence(word, space, number);
 		sequence.setContent("Answer 42");
 
 		try {
@@ -919,12 +875,11 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testSetDefinitionContentRejectsNullDefinition() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Definition<Regex> number = factory.defineRegex("\\d+");
-		Sequence sequence = instantiateSequence(word, space, number);
+	public void testSetDefinitionContentRejectsNullDefinition() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Definition<Regex> number = Regex.define("\\d+");
+		Sequence sequence = new Sequence(word, space, number);
 		sequence.setContent("Answer 42");
 
 		try {
@@ -936,11 +891,10 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testSetDefinitionContentRejectsAmbiguousDefinition() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Sequence sequence = instantiateSequence(word, space, word);
+	public void testSetDefinitionContentRejectsAmbiguousDefinition() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Sequence sequence = new Sequence(word, space, word);
 		sequence.setContent("Answer test");
 
 		try {
@@ -952,16 +906,15 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testSetDefinitionContentRejectsUnknownDefinition() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Definition<Regex> number = factory.defineRegex("\\d+");
-		Sequence sequence = instantiateSequence(word, space, number);
+	public void testSetDefinitionContentRejectsUnknownDefinition() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Definition<Regex> number = Regex.define("\\d+");
+		Sequence sequence = new Sequence(word, space, number);
 		sequence.setContent("Answer 42");
 
 		try {
-			sequence.set(factory.defineRegex("[a-zA-Z]+"), "Test");
+			sequence.set(Regex.define("[a-zA-Z]+"), "Test");
 			fail("No exception thrown");
 		} catch (IllegalArgumentException cause) {
 			// OK
@@ -969,12 +922,11 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testSetDefinitionLayerChangesDefinitionContentCorrespondingly() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Definition<Regex> number = factory.defineRegex("\\d+");
-		Sequence sequence = instantiateSequence(word, space, number);
+	public void testSetDefinitionLayerChangesDefinitionContentCorrespondingly() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Definition<Regex> number = Regex.define("\\d+");
+		Sequence sequence = new Sequence(word, space, number);
 		sequence.setContent("Answer 42");
 
 		Regex layer = word.create();
@@ -985,12 +937,11 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testSetDefinitionLayerChangesDefinitionLayerCorrespondingly() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Definition<Regex> number = factory.defineRegex("\\d+");
-		Sequence sequence = instantiateSequence(word, space, number);
+	public void testSetDefinitionLayerChangesDefinitionLayerCorrespondingly() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Definition<Regex> number = Regex.define("\\d+");
+		Sequence sequence = new Sequence(word, space, number);
 		sequence.setContent("Answer 42");
 
 		Regex layer = word.create();
@@ -1001,12 +952,11 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testSetDefinitionLayerReturnsOldLayer() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Definition<Regex> number = factory.defineRegex("\\d+");
-		Sequence sequence = instantiateSequence(word, space, number);
+	public void testSetDefinitionLayerReturnsOldLayer() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Definition<Regex> number = Regex.define("\\d+");
+		Sequence sequence = new Sequence(word, space, number);
 		sequence.setContent("Answer 42");
 
 		Layer oldLayer = sequence.get(word);
@@ -1017,12 +967,11 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testSetDefinitionLayerChangesOverallContentCorrespondingly() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Definition<Regex> number = factory.defineRegex("\\d+");
-		Sequence sequence = instantiateSequence(word, space, number);
+	public void testSetDefinitionLayerChangesOverallContentCorrespondingly() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Definition<Regex> number = Regex.define("\\d+");
+		Sequence sequence = new Sequence(word, space, number);
 		sequence.setContent("Answer 42");
 
 		Regex layer = word.create();
@@ -1033,12 +982,11 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testSetDefinitionLayerNotifiesListeners() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Definition<Regex> number = factory.defineRegex("\\d+");
-		Sequence sequence = instantiateSequence(word, space, number);
+	public void testSetDefinitionLayerNotifiesListeners() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Definition<Regex> number = Regex.define("\\d+");
+		Sequence sequence = new Sequence(word, space, number);
 		sequence.setContent("Answer 42");
 
 		String[] value = { null };
@@ -1051,12 +999,11 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testDirectUpdateOnSubLayerNotifiesListeners() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Definition<Regex> number = factory.defineRegex("\\d+");
-		Sequence sequence = instantiateSequence(word, space, number);
+	public void testDirectUpdateOnSubLayerNotifiesListeners() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Definition<Regex> number = Regex.define("\\d+");
+		Sequence sequence = new Sequence(word, space, number);
 		sequence.setContent("Answer 42");
 
 		String[] value = { null };
@@ -1070,12 +1017,11 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testDirectUpdateOnSetSubLayerNotifiesListeners() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Definition<Regex> number = factory.defineRegex("\\d+");
-		Sequence sequence = instantiateSequence(word, space, number);
+	public void testDirectUpdateOnSetSubLayerNotifiesListeners() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Definition<Regex> number = Regex.define("\\d+");
+		Sequence sequence = new Sequence(word, space, number);
 		sequence.setContent("Answer 42");
 
 		String[] value = { null };
@@ -1097,12 +1043,11 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testSetDefinitionLayerRejectsNullLayer() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Definition<Regex> number = factory.defineRegex("\\d+");
-		Sequence sequence = instantiateSequence(word, space, number);
+	public void testSetDefinitionLayerRejectsNullLayer() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Definition<Regex> number = Regex.define("\\d+");
+		Sequence sequence = new Sequence(word, space, number);
 		sequence.setContent("Answer 42");
 
 		try {
@@ -1114,15 +1059,14 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testSetDefinitionLayerRejectsInvalidLayer() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Definition<Regex> number = factory.defineRegex("\\d+");
-		Sequence sequence = instantiateSequence(word, space, number);
+	public void testSetDefinitionLayerRejectsInvalidLayer() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Definition<Regex> number = Regex.define("\\d+");
+		Sequence sequence = new Sequence(word, space, number);
 		sequence.setContent("Answer 42");
 
-		Regex element = new JavaPatternRegex("[a-zA-Z0-9]+");
+		Regex element = new Regex("[a-zA-Z0-9]+");
 		element.setContent("Test");
 		try {
 			sequence.set(word, element);
@@ -1133,12 +1077,11 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testSetDefinitionLayerRejectsNullDefinition() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Definition<Regex> number = factory.defineRegex("\\d+");
-		Sequence sequence = instantiateSequence(word, space, number);
+	public void testSetDefinitionLayerRejectsNullDefinition() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Definition<Regex> number = Regex.define("\\d+");
+		Sequence sequence = new Sequence(word, space, number);
 		sequence.setContent("Answer 42");
 
 		Regex item = word.create();
@@ -1152,18 +1095,17 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testSetDefinitionLayerRejectsUnknownDefinition() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Definition<Regex> number = factory.defineRegex("\\d+");
-		Sequence sequence = instantiateSequence(word, space, number);
+	public void testSetDefinitionLayerRejectsUnknownDefinition() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Definition<Regex> number = Regex.define("\\d+");
+		Sequence sequence = new Sequence(word, space, number);
 		sequence.setContent("Answer 42");
 
-		Regex element = new JavaPatternRegex("[a-zA-Z0-9]+");
+		Regex element = new Regex("[a-zA-Z0-9]+");
 		element.setContent("Test");
 		try {
-			sequence.set(factory.defineRegex("[a-zA-Z]+"), element);
+			sequence.set(Regex.define("[a-zA-Z]+"), element);
 			fail("No exception thrown");
 		} catch (IllegalArgumentException cause) {
 			// OK
@@ -1171,14 +1113,13 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testSetDefinitionLayerRejectsAmbiguousDefinition() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space = factory.defineConstant(" ");
-		Sequence sequence = instantiateSequence(word, space, word);
+	public void testSetDefinitionLayerRejectsAmbiguousDefinition() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space = Constant.define(" ");
+		Sequence sequence = new Sequence(word, space, word);
 		sequence.setContent("Answer test");
 
-		Regex element = new JavaPatternRegex("[a-zA-Z0-9]+");
+		Regex element = new Regex("[a-zA-Z0-9]+");
 		element.setContent("try");
 		try {
 			sequence.set(word, element);
@@ -1189,15 +1130,14 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testInnerContentUpdateOfFilledSequenceNotifiesListeners() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word1 = factory.defineRegex("[a-zA-Z]+");
-		Definition<Regex> word2 = factory.defineRegex("[a-zA-Z]+");
-		Definition<Regex> word3 = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space1 = factory.defineConstant(" ");
-		Definition<Constant> space2 = factory.defineConstant(" ");
-		Definition<Constant> dot = factory.defineConstant(".");
-		Sequence sequence = instantiateSequence(word1, space1, word2, space2, word3, dot);
+	public void testInnerContentUpdateOfFilledSequenceNotifiesListeners() {
+		Definition<Regex> word1 = Regex.define("[a-zA-Z]+");
+		Definition<Regex> word2 = Regex.define("[a-zA-Z]+");
+		Definition<Regex> word3 = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space1 = Constant.define(" ");
+		Definition<Constant> space2 = Constant.define(" ");
+		Definition<Constant> dot = Constant.define(".");
+		Sequence sequence = new Sequence(word1, space1, word2, space2, word3, dot);
 		sequence.setContent("A testing case.");
 
 		final String[] value = new String[] { null };
@@ -1216,10 +1156,9 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testUpdateOfUnfilledSequenceThrowsException() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word = factory.defineRegex("[a-zA-Z]+");
-		Sequence sequence = instantiateSequence(word);
+	public void testUpdateOfUnfilledSequenceThrowsException() {
+		Definition<Regex> word = Regex.define("[a-zA-Z]+");
+		Sequence sequence = new Sequence(word);
 
 		try {
 			sequence.get(word);
@@ -1230,15 +1169,14 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testListenersNotifiedOncePerAtomicUpdate() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> word1 = factory.defineRegex("[a-zA-Z]+");
-		Definition<Regex> word2 = factory.defineRegex("[a-zA-Z]+");
-		Definition<Regex> word3 = factory.defineRegex("[a-zA-Z]+");
-		Definition<Constant> space1 = factory.defineConstant(" ");
-		Definition<Constant> space2 = factory.defineConstant(" ");
-		Definition<Constant> dot = factory.defineConstant(".");
-		Sequence sequence = instantiateSequence(word1, space1, word2, space2, word3, dot);
+	public void testListenersNotifiedOncePerAtomicUpdate() {
+		Definition<Regex> word1 = Regex.define("[a-zA-Z]+");
+		Definition<Regex> word2 = Regex.define("[a-zA-Z]+");
+		Definition<Regex> word3 = Regex.define("[a-zA-Z]+");
+		Definition<Constant> space1 = Constant.define(" ");
+		Definition<Constant> space2 = Constant.define(" ");
+		Definition<Constant> dot = Constant.define(".");
+		Sequence sequence = new Sequence(word1, space1, word2, space2, word3, dot);
 		final LinkedList<String> values = new LinkedList<String>();
 		sequence.addContentListener(new ContentListener() {
 
@@ -1260,11 +1198,9 @@ public interface SequenceTest extends ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	default void testNoProblemWithLazyComponents() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+	public void testNoProblemWithLazyComponents() {
 		String content = "abc?def";
-		Sequence sequence = instantiateSequence(factory.defineRegex(".+?"), factory.defineConstant("?"),
-				factory.defineRegex(".+?"));
+		Sequence sequence = new Sequence(Regex.define(".+?"), Constant.define("?"), Regex.define(".+?"));
 
 		sequence.setContent(content);
 		assertEquals(content, sequence.getContent());

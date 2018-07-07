@@ -13,36 +13,27 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import fr.vergne.parsing.definition.Definition;
+import fr.vergne.parsing.definition.Definition.DefinitionProxy;
 import fr.vergne.parsing.definition.impl.SimpleDefinition;
 import fr.vergne.parsing.layer.ComposedLayerTest;
 import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.exception.ParsingException;
 import fr.vergne.parsing.layer.standard.Choice.InvalidChoiceException;
-import fr.vergne.parsing.layer.standard.impl.JavaPatternRegex;
-import fr.vergne.parsing.layer.standard.impl.StandardDefinitionFactory;
 import fr.vergne.parsing.layer.standard.impl.UnsafeRecursiveLayer;
-import fr.vergne.parsing.layer.standard.impl.StandardDefinitionFactory.DelayedDefinition;
 
 // TODO Test definition factory with standard tests
 // TODO Remove basic listener tests in standard tests
 // TODO Revise standard interfaces & tests to move what is irrelevant
 @RunWith(JUnitPlatform.class)
-public interface ChoiceTest extends ComposedLayerTest<Choice> {
-
-	Choice instantiateChoice(Collection<Definition<?>> alternatives);
-	
-	default Choice instantiateChoice(Definition<?>... alternatives) {
-		return instantiateChoice(Arrays.asList(alternatives));
-	}
+public class ChoiceTest implements ComposedLayerTest<Choice> {
 
 	@Override
-	default Map<String, Choice> instantiateLayers(Collection<String> specialCharacters) {
+	public Map<String, Choice> instantiateLayers(Collection<String> specialCharacters) {
 		Collection<Definition<?>> alternatives = new LinkedList<>();
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
 		for (String content : specialCharacters) {
-			alternatives.add(factory.defineConstant(content));
+			alternatives.add(Constant.define(content));
 		}
-		Choice choice = instantiateChoice(alternatives);
+		Choice choice = new Choice(alternatives);
 
 		Map<String, Choice> map = new HashMap<String, Choice>();
 		for (String content : specialCharacters) {
@@ -52,63 +43,60 @@ public interface ChoiceTest extends ComposedLayerTest<Choice> {
 	}
 
 	@Override
-	default Collection<Layer> getUsedSubLayers(Choice choice) {
+	public Collection<Layer> getUsedSubLayers(Choice choice) {
 		return Arrays.asList(choice.get());
 	}
-	
+
 	@Override
-	default Collection<SublayerUpdate> getSublayersUpdates(Choice parent) {
+	public Collection<SublayerUpdate> getSublayersUpdates(Choice parent) {
 		// TODO Auto-generated method stub
 		return null;
 	}
-	
+
 	@Override
-	default Layer instantiateRecursiveLayer() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		DelayedDefinition<Choice> choice = factory.prepareDefinition();
-		choice.redefineAs(factory.defineChoice(UnsafeRecursiveLayer.defineOn(choice), factory.defineConstant("")));
+	public Layer instantiateRecursiveLayer() {
+		DefinitionProxy<Choice> choice = Definition.prepare();
+		choice.setDelegate(Choice.define(UnsafeRecursiveLayer.defineOn(choice), Constant.define("")));
 		return choice.create();
 	}
-	
+
 	@Override
-	default String getValidRecursiveContent(Layer layer) {
+	public String getValidRecursiveContent(Layer layer) {
 		return "-----";
 	}
 
 	@Test
-	default void testSetGetContent() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> contiguous = factory.defineRegex("[a-z]+");
-		Definition<Regex> newline = factory.defineRegex("[A-Z\n]+");
-		Definition<Constant> empty = factory.defineConstant("");
+	public void testSetGetContent() {
+		Definition<Regex> contiguous = Regex.define("[a-z]+");
+		Definition<Regex> newline = Regex.define("[A-Z\n]+");
+		Definition<Constant> empty = Constant.define("");
 		{
 			String content = "test";
-			Choice choice = instantiateChoice(contiguous, newline, empty);
+			Choice choice = new Choice(contiguous, newline, empty);
 			choice.setContent(content);
 			assertEquals(content, choice.getContent());
 		}
 		{
 			String content = "TEST\nTEST";
-			Choice choice = instantiateChoice(contiguous, newline, empty);
+			Choice choice = new Choice(contiguous, newline, empty);
 			choice.setContent(content);
 			assertEquals(content, choice.getContent());
 		}
 		{
 			String content = "";
-			Choice choice = instantiateChoice(contiguous, newline, empty);
+			Choice choice = new Choice(contiguous, newline, empty);
 			choice.setContent(content);
 			assertEquals(content, choice.getContent());
 		}
 	}
 
 	@Test
-	default void testDifferent() {
+	public void testDifferent() {
 		{
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-			Definition<Regex> contiguous = factory.defineRegex("[a-z]+");
-			Definition<Regex> newline = factory.defineRegex("[A-Z\n]+");
-			Definition<Regex> empty = factory.defineRegex("");
-			Choice choice = instantiateChoice(contiguous, newline, empty);
+			Definition<Regex> contiguous = Regex.define("[a-z]+");
+			Definition<Regex> newline = Regex.define("[A-Z\n]+");
+			Definition<Regex> empty = Regex.define("");
+			Choice choice = new Choice(contiguous, newline, empty);
 			try {
 				choice.setContent("123");
 				fail("Exception not thrown.");
@@ -119,12 +107,11 @@ public interface ChoiceTest extends ComposedLayerTest<Choice> {
 	}
 
 	@Test
-	default void testIsProperLayer() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> lower = factory.defineRegex("[a-z]+");
-		Definition<Regex> upper = factory.defineRegex("[A-Z]+");
-		Definition<Regex> number = factory.defineRegex("[0-9]+");
-		Choice choice = instantiateChoice(lower, upper, number);
+	public void testIsProperLayer() {
+		Definition<Regex> lower = Regex.define("[a-z]+");
+		Definition<Regex> upper = Regex.define("[A-Z]+");
+		Definition<Regex> number = Regex.define("[0-9]+");
+		Choice choice = new Choice(lower, upper, number);
 
 		choice.setContent("abc");
 		assertTrue(choice.is(lower));
@@ -137,12 +124,11 @@ public interface ChoiceTest extends ComposedLayerTest<Choice> {
 	}
 
 	@Test
-	default void testGetLayerWithCorrectContent() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> lower = factory.defineRegex("[a-z]+");
-		Definition<Regex> upper = factory.defineRegex("[A-Z]+");
-		Definition<Regex> number = factory.defineRegex("[0-9]+");
-		Choice choice = instantiateChoice(lower, upper, number);
+	public void testGetLayerWithCorrectContent() {
+		Definition<Regex> lower = Regex.define("[a-z]+");
+		Definition<Regex> upper = Regex.define("[A-Z]+");
+		Definition<Regex> number = Regex.define("[0-9]+");
+		Choice choice = new Choice(lower, upper, number);
 
 		choice.setContent("abc");
 		assertEquals("abc", choice.get().getContent());
@@ -155,23 +141,23 @@ public interface ChoiceTest extends ComposedLayerTest<Choice> {
 	}
 
 	@Test
-	default void testGetCorrectLayer() {
+	public void testGetCorrectLayer() {
 		Collection<Regex> lowerInstances = new LinkedList<>();
 		// TODO Rethink SimpleDefinition (regex from instance not good)
 		Definition<Regex> lower = new SimpleDefinition<>(() -> {
-			Regex instance = new JavaPatternRegex("[a-z]+");
+			Regex instance = new Regex("[a-z]+");
 			lowerInstances.add(instance);
 			return instance;
 		}, Regex::getRegex);
 
 		Collection<Regex> upperInstances = new LinkedList<>();
 		Definition<Regex> upper = new SimpleDefinition<>(() -> {
-			Regex instance = new JavaPatternRegex("[A-Z]+");
+			Regex instance = new Regex("[A-Z]+");
 			upperInstances.add(instance);
 			return instance;
 		}, Regex::getRegex);
 
-		Choice choice = instantiateChoice(lower, upper);
+		Choice choice = new Choice(lower, upper);
 
 		choice.setContent("abc");
 		assertTrue(lowerInstances.contains(choice.get()));
@@ -183,12 +169,11 @@ public interface ChoiceTest extends ComposedLayerTest<Choice> {
 	}
 
 	@Test
-	default void testGetAsCorrectLayer() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> lower = factory.defineRegex("[a-z]+");
-		Definition<Regex> upper = factory.defineRegex("[A-Z]+");
-		Definition<Regex> number = factory.defineRegex("[0-9]+");
-		Choice choice = instantiateChoice(lower, upper, number);
+	public void testGetAsCorrectLayer() {
+		Definition<Regex> lower = Regex.define("[a-z]+");
+		Definition<Regex> upper = Regex.define("[A-Z]+");
+		Definition<Regex> number = Regex.define("[0-9]+");
+		Choice choice = new Choice(lower, upper, number);
 
 		choice.setContent("abc");
 		assertSame(choice.get(), choice.getAs(lower));
@@ -201,12 +186,11 @@ public interface ChoiceTest extends ComposedLayerTest<Choice> {
 	}
 
 	@Test
-	default void testGetAsRejectsInvalidLayer() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> lower = factory.defineRegex("[a-z]+");
-		Definition<Regex> upper = factory.defineRegex("[A-Z]+");
-		Definition<Regex> number = factory.defineRegex("[0-9]+");
-		Choice choice = instantiateChoice(lower, upper, number);
+	public void testGetAsRejectsInvalidLayer() {
+		Definition<Regex> lower = Regex.define("[a-z]+");
+		Definition<Regex> upper = Regex.define("[A-Z]+");
+		Definition<Regex> number = Regex.define("[0-9]+");
+		Choice choice = new Choice(lower, upper, number);
 
 		choice.setContent("ABC");
 		try {
@@ -225,12 +209,11 @@ public interface ChoiceTest extends ComposedLayerTest<Choice> {
 	}
 
 	@Test
-	default void testGetCurrentDefinitionCorrespondsToContent() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> lower = factory.defineRegex("[a-z]+");
-		Definition<Regex> upper = factory.defineRegex("[A-Z]+");
-		Definition<Regex> number = factory.defineRegex("[0-9]+");
-		Choice choice = instantiateChoice(lower, upper, number);
+	public void testGetCurrentDefinitionCorrespondsToContent() {
+		Definition<Regex> lower = Regex.define("[a-z]+");
+		Definition<Regex> upper = Regex.define("[A-Z]+");
+		Definition<Regex> number = Regex.define("[0-9]+");
+		Choice choice = new Choice(lower, upper, number);
 
 		String content = "abc";
 		choice.setContent(content);
@@ -246,13 +229,12 @@ public interface ChoiceTest extends ComposedLayerTest<Choice> {
 	}
 
 	@Test
-	default void testGetDefinitionReturnsCorrectDefinition() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> lower = factory.defineRegex("[a-z]+");
-		Definition<Regex> upper = factory.defineRegex("[A-Z]+");
-		Definition<Regex> number = factory.defineRegex("[0-9]+");
-		Definition<Constant> test = factory.defineConstant("T35T");
-		Choice choice = instantiateChoice(lower, upper, number, test);
+	public void testGetDefinitionReturnsCorrectDefinition() {
+		Definition<Regex> lower = Regex.define("[a-z]+");
+		Definition<Regex> upper = Regex.define("[A-Z]+");
+		Definition<Regex> number = Regex.define("[0-9]+");
+		Definition<Constant> test = Constant.define("T35T");
+		Choice choice = new Choice(lower, upper, number, test);
 
 		assertSame(lower, choice.getDefinition(0));
 		assertSame(upper, choice.getDefinition(1));
@@ -261,12 +243,11 @@ public interface ChoiceTest extends ComposedLayerTest<Choice> {
 	}
 
 	@Test
-	default void testGetDefinitionsReturnsProvidedDefinitions() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> lower = factory.defineRegex("[a-z]+");
-		Definition<Regex> upper = factory.defineRegex("[A-Z]+");
-		Definition<Regex> number = factory.defineRegex("[0-9]+");
-		Choice choice = instantiateChoice(lower, upper, number);
+	public void testGetDefinitionsReturnsProvidedDefinitions() {
+		Definition<Regex> lower = Regex.define("[a-z]+");
+		Definition<Regex> upper = Regex.define("[A-Z]+");
+		Definition<Regex> number = Regex.define("[0-9]+");
+		Choice choice = new Choice(lower, upper, number);
 
 		String content = choice.getDefinitions().toString();
 		assertEquals(content, 3, choice.getDefinitions().size());
@@ -276,27 +257,25 @@ public interface ChoiceTest extends ComposedLayerTest<Choice> {
 	}
 
 	@Test
-	default void testSizeReturnsNumberOfChoices() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> lower = factory.defineRegex("[a-z]+");
-		Definition<Regex> upper = factory.defineRegex("[A-Z]+");
-		Definition<Regex> number = factory.defineRegex("[0-9]+");
-		Definition<Constant> test = factory.defineConstant("T35T");
+	public void testSizeReturnsNumberOfChoices() {
+		Definition<Regex> lower = Regex.define("[a-z]+");
+		Definition<Regex> upper = Regex.define("[A-Z]+");
+		Definition<Regex> number = Regex.define("[0-9]+");
+		Definition<Constant> test = Constant.define("T35T");
 
-		assertEquals(0, instantiateChoice().size());
-		assertEquals(1, instantiateChoice(lower).size());
-		assertEquals(2, instantiateChoice(lower, upper).size());
-		assertEquals(3, instantiateChoice(lower, upper, number).size());
-		assertEquals(4, instantiateChoice(lower, upper, number, test).size());
+		assertEquals(0, new Choice().size());
+		assertEquals(1, new Choice(lower).size());
+		assertEquals(2, new Choice(lower, upper).size());
+		assertEquals(3, new Choice(lower, upper, number).size());
+		assertEquals(4, new Choice(lower, upper, number, test).size());
 	}
 
 	@Test
-	default void testReferenceDefinition() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> partial = factory.defineRegex("[a-z]");
-		Definition<Regex> lessPartial = factory.defineRegex("[A-Z][a-z]");
-		Definition<Regex> complete = factory.defineRegex("[A-Z][a-z][a-z]");
-		Choice choice = instantiateChoice(partial, lessPartial, complete);
+	public void testReferenceDefinition() {
+		Definition<Regex> partial = Regex.define("[a-z]");
+		Definition<Regex> lessPartial = Regex.define("[A-Z][a-z]");
+		Definition<Regex> complete = Regex.define("[A-Z][a-z][a-z]");
+		Choice choice = new Choice(partial, lessPartial, complete);
 
 		String content = "123";
 		for (Definition<Regex> definition1 : Arrays.asList(partial, lessPartial, complete)) {

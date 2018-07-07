@@ -13,28 +13,24 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import fr.vergne.parsing.definition.Definition;
+import fr.vergne.parsing.definition.Definition.DefinitionProxy;
 import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.Layer.ContentListener;
 import fr.vergne.parsing.layer.ModifiableComposedLayerTest;
 import fr.vergne.parsing.layer.exception.ParsingException;
-import fr.vergne.parsing.layer.standard.impl.StandardDefinitionFactory;
 import fr.vergne.parsing.layer.standard.impl.UnsafeRecursiveLayer;
-import fr.vergne.parsing.layer.standard.impl.StandardDefinitionFactory.DelayedDefinition;
 
 // TODO Add quantifier tests?
 @RunWith(JUnitPlatform.class)
-public interface OptionTest extends ModifiableComposedLayerTest<Option<Regex>> {
-
-	<T extends Layer> Option<T> instantiateOption(Definition<T> definition);
+public class OptionTest implements ModifiableComposedLayerTest<Option<Regex>> {
 
 	@Override
-	default Map<String, Option<Regex>> instantiateLayers(Collection<String> specialCharacters) {
+	public Map<String, Option<Regex>> instantiateLayers(Collection<String> specialCharacters) {
 		StringBuilder builder = new StringBuilder();
 		for (String character : specialCharacters) {
 			builder.append(character);
 		}
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Option<Regex> option = instantiateOption(factory.defineRegex("(?s:.+)"));
+		Option<Regex> option = new Option<>(Regex.define("(?s:.+)"));
 
 		Map<String, Option<Regex>> map = new HashMap<>();
 		map.put(builder.toString(), option);
@@ -42,18 +38,18 @@ public interface OptionTest extends ModifiableComposedLayerTest<Option<Regex>> {
 	}
 
 	@Override
-	default Collection<Layer> getUsedSubLayers(Option<Regex> option) {
+	public Collection<Layer> getUsedSubLayers(Option<Regex> option) {
 		return Arrays.asList(option.getOption());
 	}
-	
+
 	@Override
-	default Collection<SublayerUpdate> getSublayersUpdates(Option<Regex> parent) {
+	public Collection<SublayerUpdate> getSublayersUpdates(Option<Regex> parent) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	default Collection<SublayerReplacement> getSublayersReplacements(Option<Regex> option) {
+	public Collection<SublayerReplacement> getSublayersReplacements(Option<Regex> option) {
 		Collection<SublayerReplacement> updates = new LinkedList<>();
 
 		if (option.isPresent()) {
@@ -90,23 +86,21 @@ public interface OptionTest extends ModifiableComposedLayerTest<Option<Regex>> {
 	}
 
 	@Override
-	default Option<UnsafeRecursiveLayer> instantiateRecursiveLayer() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		DelayedDefinition<Option<UnsafeRecursiveLayer>> option = factory.prepareDefinition();
-		option.redefineAs(factory.defineOptional(UnsafeRecursiveLayer.defineOn(option)));
+	public Option<UnsafeRecursiveLayer> instantiateRecursiveLayer() {
+		DefinitionProxy<Option<UnsafeRecursiveLayer>> option = Definition.prepare();
+		option.setDelegate(Option.define(UnsafeRecursiveLayer.defineOn(option)));
 
 		return option.create();
 	}
 
 	@Override
-	default String getValidRecursiveContent(Layer layer) {
+	public String getValidRecursiveContent(Layer layer) {
 		return "-----";
 	}
 
 	@Test
-	default void testSetGetContent() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Option<Regex> option = instantiateOption(factory.defineRegex("[abc]+"));
+	public void testSetGetContent() {
+		Option<Regex> option = new Option<>(Regex.define("[abc]+"));
 		{
 			String content = "";
 			option.setContent(content);
@@ -130,9 +124,8 @@ public interface OptionTest extends ModifiableComposedLayerTest<Option<Regex>> {
 	}
 
 	@Test
-	default void testIsPresent() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Option<Regex> option = instantiateOption(factory.defineRegex("[abc]+"));
+	public void testIsPresent() {
+		Option<Regex> option = new Option<>(Regex.define("[abc]+"));
 		{
 			String content = "";
 			option.setContent(content);
@@ -156,10 +149,9 @@ public interface OptionTest extends ModifiableComposedLayerTest<Option<Regex>> {
 	}
 
 	@Test
-	default void testDifferent() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> regex = factory.defineRegex("[abc]+");
-		Option<Regex> option = instantiateOption(regex);
+	public void testDifferent() {
+		Definition<Regex> regex = Regex.define("[abc]+");
+		Option<Regex> option = new Option<>(regex);
 		try {
 			option.setContent("abd");
 		} catch (ParsingException e) {
@@ -168,9 +160,8 @@ public interface OptionTest extends ModifiableComposedLayerTest<Option<Regex>> {
 	}
 
 	@Test
-	default void testSetContentNotifiesListeners() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Option<Regex> option = instantiateOption(factory.defineRegex("[abc]+"));
+	public void testSetContentNotifiesListeners() {
+		Option<Regex> option = new Option<>(Regex.define("[abc]+"));
 		final String[] value = new String[] { null };
 		option.addContentListener(new ContentListener() {
 
@@ -187,10 +178,9 @@ public interface OptionTest extends ModifiableComposedLayerTest<Option<Regex>> {
 	}
 
 	@Test
-	default void testSetOptionNotifiesListeners() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> regex = factory.defineRegex("[abc]+");
-		Option<Regex> option = instantiateOption(regex);
+	public void testSetOptionNotifiesListeners() {
+		Definition<Regex> regex = Regex.define("[abc]+");
+		Option<Regex> option = new Option<>(regex);
 		final String[] value = new String[] { null };
 		option.addContentListener(new ContentListener() {
 
@@ -212,9 +202,8 @@ public interface OptionTest extends ModifiableComposedLayerTest<Option<Regex>> {
 	}
 
 	@Test
-	default void testOptionDirectUpdateNotifiesListeners() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Option<Regex> option = instantiateOption(factory.defineRegex("[abc]+"));
+	public void testOptionDirectUpdateNotifiesListeners() {
+		Option<Regex> option = new Option<>(Regex.define("[abc]+"));
 		option.setContent("abba");
 		final String[] value = new String[] { null };
 		option.addContentListener(new ContentListener() {
@@ -230,10 +219,9 @@ public interface OptionTest extends ModifiableComposedLayerTest<Option<Regex>> {
 	}
 
 	@Test
-	default void testGetCorrectOptionalDefinition() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Definition<Regex> definition = factory.defineRegex("[abc]+");
-		Option<Regex> option = instantiateOption(definition);
+	public void testGetCorrectOptionalDefinition() {
+		Definition<Regex> definition = Regex.define("[abc]+");
+		Option<Regex> option = new Option<>(definition);
 
 		assertEquals(definition, option.getOptionalDefinition());
 	}

@@ -1,6 +1,13 @@
 package fr.vergne.parsing.layer.standard;
 
+import java.io.InputStream;
+import java.util.regex.Pattern;
+
+import fr.vergne.parsing.definition.Definition;
 import fr.vergne.parsing.layer.Layer;
+import fr.vergne.parsing.layer.exception.ParsingException;
+import fr.vergne.parsing.layer.impl.AbstractLayer;
+import fr.vergne.parsing.util.ContentInputStream;
 import fr.vergne.parsing.util.Named;
 
 /**
@@ -20,17 +27,93 @@ import fr.vergne.parsing.util.Named;
  * @author Matthieu Vergne <matthieu.vergne@gmail.com>
  * 
  */
-public interface Regex extends Layer, Named {
+public class Regex extends AbstractLayer implements Named {
+
+	private final String regex;
+	private String content;
+
+	/**
+	 * Create a {@link Regex} without any content yet.
+	 * 
+	 * @param regex
+	 *            the regex of this {@link Regex}
+	 */
+	public Regex(String regex) {
+		this.regex = regex;
+	}
+
+	/**
+	 * Create a {@link Regex} with an initial content. The content should be
+	 * compatible with the regex provided.
+	 * 
+	 * @param regex
+	 *            the regex of this {@link Regex}
+	 * @param content
+	 *            the content of this {@link Regex}
+	 */
+	public Regex(String regex, String content) {
+		this(regex);
+		setContent(content);
+	}
+
+	@Override
+	public String getContent() {
+		return content;
+	}
+
+	@Override
+	public InputStream getInputStream() {
+		if (content == null) {
+			throw new NoContentException();
+		} else {
+			return new ContentInputStream(content);
+		}
+	}
+
+	@Override
+	protected void setInternalContent(String content) {
+		if (Pattern.matches("^" + regex + "$", content)) {
+			this.content = content;
+		} else {
+			throw new ParsingException(regex, content);
+		}
+	}
 
 	/**
 	 * 
 	 * @return the regular expression of this {@link Regex}
 	 */
-	public String getRegex();
+	public String getRegex() {
+		return regex;
+	}
 
 	@Override
-	default String getName() {
+	public String getName() {
 		return "REGEX";
 	}
 
+	@Override
+	public String toString() {
+		return getName() + "[" + regex + "]";
+	}
+
+	public static Definition<Regex> define(String regex) {
+		return new Definition<Regex>() {
+
+			@Override
+			public String getRegex() {
+				return regex;
+			}
+
+			@Override
+			public Regex create() {
+				return new Regex(regex);
+			}
+
+			@Override
+			public boolean isCompatibleWith(Regex layer) {
+				return layer.getRegex().equals(regex);
+			}
+		};
+	}
 }

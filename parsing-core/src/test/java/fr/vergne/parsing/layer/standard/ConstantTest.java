@@ -12,51 +12,48 @@ import org.junit.runner.RunWith;
 
 import fr.vergne.parsing.layer.LayerTest;
 import fr.vergne.parsing.layer.exception.ParsingException;
-import fr.vergne.parsing.layer.standard.Constant;
 
 @RunWith(JUnitPlatform.class)
-public interface ConstantTest extends LayerTest<Constant> {
-	
-	Constant instantiateConstant(String content);
+public class ConstantTest implements LayerTest<Constant> {
 
 	@Override
-	default Map<String, Constant> instantiateLayers(Collection<String> specialCharacters) {
+	public Map<String, Constant> instantiateLayers(Collection<String> specialCharacters) {
 		Map<String, Constant> map = new HashMap<>();
 		for (String content : specialCharacters) {
-			map.put(content, instantiateConstant(content));
+			map.put(content, new Constant(content));
 		}
 		return map;
 	}
 
 	@Test
-	default void testSetGetContent() {
+	public void testSetGetContent() {
 		{
 			String content = "test";
-			Constant atom = instantiateConstant(content);
-			atom.setContent(content);
-			assertEquals(content, atom.getContent());
+			Constant constant = new Constant(content);
+			constant.setContent(content);
+			assertEquals(content, constant.getContent());
 		}
 		{
 			String content = "test\ntest";
-			Constant atom = instantiateConstant(content);
-			atom.setContent(content);
-			assertEquals(content, atom.getContent());
+			Constant constant = new Constant(content);
+			constant.setContent(content);
+			assertEquals(content, constant.getContent());
 		}
 		{
 			String content = "";
-			Constant atom = instantiateConstant(content);
-			atom.setContent(content);
-			assertEquals(content, atom.getContent());
+			Constant constant = new Constant(content);
+			constant.setContent(content);
+			assertEquals(content, constant.getContent());
 		}
 	}
 
 	@Test
-	default void testDifferent() {
+	public void testDifferent() {
 		{
 			String content = "test";
-			Constant atom = instantiateConstant(content);
+			Constant constant = new Constant(content);
 			try {
-				atom.setContent("abc");
+				constant.setContent("abc");
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals("Incompatible regex \"\\Qtest\\E\" for content \"abc\"", e.getMessage());
@@ -64,9 +61,9 @@ public interface ConstantTest extends LayerTest<Constant> {
 		}
 		{
 			String content = "test\ntest";
-			Constant atom = instantiateConstant(content);
+			Constant constant = new Constant(content);
 			try {
-				atom.setContent("abc");
+				constant.setContent("abc");
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals("Incompatible regex \"\\Qtest\\ntest\\E\" for content \"abc\"", e.getMessage());
@@ -74,9 +71,9 @@ public interface ConstantTest extends LayerTest<Constant> {
 		}
 		{
 			String content = "";
-			Constant atom = instantiateConstant(content);
+			Constant constant = new Constant(content);
 			try {
-				atom.setContent("abc");
+				constant.setContent("abc");
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals("Incompatible regex \"\\Q\\E\" for content \"abc\"", e.getMessage());
@@ -85,12 +82,12 @@ public interface ConstantTest extends LayerTest<Constant> {
 	}
 
 	@Test
-	default void testTooLongOnRight() {
+	public void testTooLongOnRight() {
 		{
 			String content = "test";
-			Constant atom = instantiateConstant(content);
+			Constant constant = new Constant(content);
 			try {
-				atom.setContent(content + "abc");
+				constant.setContent(content + "abc");
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals("Incompatible regex \"\\Qtest\\E\" for content \"testabc\"", e.getMessage());
@@ -98,9 +95,9 @@ public interface ConstantTest extends LayerTest<Constant> {
 		}
 		{
 			String content = "test\ntest";
-			Constant atom = instantiateConstant(content);
+			Constant constant = new Constant(content);
 			try {
-				atom.setContent(content + "abc");
+				constant.setContent(content + "abc");
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals("Incompatible regex \"\\Qtest\\ntest\\E\" for content \"test\\ntestabc\"", e.getMessage());
@@ -108,9 +105,9 @@ public interface ConstantTest extends LayerTest<Constant> {
 		}
 		{
 			String content = "";
-			Constant atom = instantiateConstant(content);
+			Constant constant = new Constant(content);
 			try {
-				atom.setContent(content + "abc");
+				constant.setContent(content + "abc");
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals("Incompatible regex \"\\Q\\E\" for content \"abc\"", e.getMessage());
@@ -119,12 +116,12 @@ public interface ConstantTest extends LayerTest<Constant> {
 	}
 
 	@Test
-	default void testTooLongOnLeft() {
+	public void testTooLongOnLeft() {
 		{
 			String content = "test";
-			Constant atom = instantiateConstant(content);
+			Constant constant = new Constant(content);
 			try {
-				atom.setContent("abc" + content);
+				constant.setContent("abc" + content);
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals("Incompatible regex \"\\Qtest\\E\" for content \"abctest\"", e.getMessage());
@@ -132,9 +129,9 @@ public interface ConstantTest extends LayerTest<Constant> {
 		}
 		{
 			String content = "test\ntest";
-			Constant atom = instantiateConstant(content);
+			Constant constant = new Constant(content);
 			try {
-				atom.setContent("abc" + content);
+				constant.setContent("abc" + content);
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals("Incompatible regex \"\\Qtest\\ntest\\E\" for content \"abctest\\ntest\"", e.getMessage());
@@ -142,9 +139,9 @@ public interface ConstantTest extends LayerTest<Constant> {
 		}
 		{
 			String content = "";
-			Constant atom = instantiateConstant(content);
+			Constant constant = new Constant(content);
 			try {
-				atom.setContent("abc" + content);
+				constant.setContent("abc" + content);
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals("Incompatible regex \"\\Q\\E\" for content \"abc\"", e.getMessage());
@@ -153,12 +150,12 @@ public interface ConstantTest extends LayerTest<Constant> {
 	}
 
 	@Test
-	default void testTooLongOnMiddle() {
+	public void testTooLongOnMiddle() {
 		{
 			String content = "test";
-			Constant atom = instantiateConstant(content);
+			Constant constant = new Constant(content);
 			try {
-				atom.setContent(content.substring(0, 2) + "abc" + content.substring(2));
+				constant.setContent(content.substring(0, 2) + "abc" + content.substring(2));
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals("Incompatible regex \"\\Qtest\\E\" for content \"teabcst\"", e.getMessage());
@@ -166,15 +163,15 @@ public interface ConstantTest extends LayerTest<Constant> {
 		}
 		{
 			String content = "test\ntest";
-			Constant atom = instantiateConstant(content);
+			Constant constant = new Constant(content);
 			try {
-				atom.setContent(content.substring(0, 2) + "abc" + content.substring(2));
+				constant.setContent(content.substring(0, 2) + "abc" + content.substring(2));
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals("Incompatible regex \"\\Qtest\\ntest\\E\" for content \"teabcst\\ntest\"", e.getMessage());
 			}
 			try {
-				atom.setContent(content.substring(0, 6) + "abc" + content.substring(6));
+				constant.setContent(content.substring(0, 6) + "abc" + content.substring(6));
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals("Incompatible regex \"\\Qtest\\ntest\\E\" for content \"test\\ntabcest\"", e.getMessage());
@@ -183,12 +180,12 @@ public interface ConstantTest extends LayerTest<Constant> {
 	}
 
 	@Test
-	default void testTooShortOnRight() {
+	public void testTooShortOnRight() {
 		{
 			String content = "test";
-			Constant atom = instantiateConstant(content);
+			Constant constant = new Constant(content);
 			try {
-				atom.setContent(content.substring(0, 2));
+				constant.setContent(content.substring(0, 2));
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals("Incompatible regex \"\\Qtest\\E\" for content \"te\"", e.getMessage());
@@ -196,15 +193,15 @@ public interface ConstantTest extends LayerTest<Constant> {
 		}
 		{
 			String content = "test\ntest";
-			Constant atom = instantiateConstant(content);
+			Constant constant = new Constant(content);
 			try {
-				atom.setContent(content.substring(0, 2));
+				constant.setContent(content.substring(0, 2));
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals("Incompatible regex \"\\Qtest\\ntest\\E\" for content \"te\"", e.getMessage());
 			}
 			try {
-				atom.setContent(content.substring(0, 4));
+				constant.setContent(content.substring(0, 4));
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals("Incompatible regex \"\\Qtest\\ntest\\E\" for content \"test\"", e.getMessage());
@@ -213,12 +210,12 @@ public interface ConstantTest extends LayerTest<Constant> {
 	}
 
 	@Test
-	default void testTooShortOnLeft() {
+	public void testTooShortOnLeft() {
 		{
 			String content = "test";
-			Constant atom = instantiateConstant(content);
+			Constant constant = new Constant(content);
 			try {
-				atom.setContent(content.substring(2));
+				constant.setContent(content.substring(2));
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals("Incompatible regex \"\\Qtest\\E\" for content \"st\"", e.getMessage());
@@ -226,15 +223,15 @@ public interface ConstantTest extends LayerTest<Constant> {
 		}
 		{
 			String content = "test\ntest";
-			Constant atom = instantiateConstant(content);
+			Constant constant = new Constant(content);
 			try {
-				atom.setContent(content.substring(2));
+				constant.setContent(content.substring(2));
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals("Incompatible regex \"\\Qtest\\ntest\\E\" for content \"st\\ntest\"", e.getMessage());
 			}
 			try {
-				atom.setContent(content.substring(5));
+				constant.setContent(content.substring(5));
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals("Incompatible regex \"\\Qtest\\ntest\\E\" for content \"test\"", e.getMessage());
@@ -243,12 +240,12 @@ public interface ConstantTest extends LayerTest<Constant> {
 	}
 
 	@Test
-	default void testTooShortOnMiddle() {
+	public void testTooShortOnMiddle() {
 		{
 			String content = "test";
-			Constant atom = instantiateConstant(content);
+			Constant constant = new Constant(content);
 			try {
-				atom.setContent(content.substring(0, 1) + content.substring(2));
+				constant.setContent(content.substring(0, 1) + content.substring(2));
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals("Incompatible regex \"\\Qtest\\E\" for content \"tst\"", e.getMessage());
@@ -256,21 +253,21 @@ public interface ConstantTest extends LayerTest<Constant> {
 		}
 		{
 			String content = "test\ntest";
-			Constant atom = instantiateConstant(content);
+			Constant constant = new Constant(content);
 			try {
-				atom.setContent(content.substring(0, 2) + content.substring(3));
+				constant.setContent(content.substring(0, 2) + content.substring(3));
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals("Incompatible regex \"\\Qtest\\ntest\\E\" for content \"tet\\ntest\"", e.getMessage());
 			}
 			try {
-				atom.setContent(content.substring(0, 2) + content.substring(6));
+				constant.setContent(content.substring(0, 2) + content.substring(6));
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals("Incompatible regex \"\\Qtest\\ntest\\E\" for content \"teest\"", e.getMessage());
 			}
 			try {
-				atom.setContent(content.substring(0, 6) + content.substring(7));
+				constant.setContent(content.substring(0, 6) + content.substring(7));
 				fail("Exception not thrown.");
 			} catch (ParsingException e) {
 				assertEquals("Incompatible regex \"\\Qtest\\ntest\\E\" for content \"test\\ntst\"", e.getMessage());

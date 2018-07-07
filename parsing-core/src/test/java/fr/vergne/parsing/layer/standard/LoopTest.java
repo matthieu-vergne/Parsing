@@ -16,38 +16,29 @@ import org.junit.platform.runner.JUnitPlatform;
 import org.junit.runner.RunWith;
 
 import fr.vergne.parsing.definition.Definition;
+import fr.vergne.parsing.definition.Definition.DefinitionProxy;
 import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.Layer.ContentListener;
 import fr.vergne.parsing.layer.ModifiableComposedLayerTest;
 import fr.vergne.parsing.layer.exception.ParsingException;
 import fr.vergne.parsing.layer.standard.Loop.BoundException;
-import fr.vergne.parsing.layer.standard.impl.JavaPatternRegex;
-import fr.vergne.parsing.layer.standard.impl.StandardDefinitionFactory;
 import fr.vergne.parsing.layer.standard.impl.UnsafeRecursiveLayer;
-import fr.vergne.parsing.layer.standard.impl.StandardDefinitionFactory.DelayedDefinition;
 
 @RunWith(JUnitPlatform.class)
-public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
-
-	<T extends Layer> Loop<T> instantiateLoop(Definition<T> itemDefinition, int min, int max, Quantifier quantifier);
-
-	<T extends Layer> Loop<T> instantiateLoop(Definition<T> itemDefinition, int min, int max);
-
-	<T extends Layer> Loop<T> instantiateLoop(Definition<T> itemDefinition);
+public class LoopTest implements ModifiableComposedLayerTest<Loop<Regex>> {
 
 	@Override
-	default Map<String, Loop<Regex>> instantiateLayers(Collection<String> specialCharacters) {
+	public Map<String, Loop<Regex>> instantiateLayers(Collection<String> specialCharacters) {
 		StringBuilder builder = new StringBuilder();
 		for (String character : specialCharacters) {
 			builder.append(character);
 		}
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
 
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("(?s:.)"));
+		Loop<Regex> loop = new Loop<>(Regex.define("(?s:.)"));
 		Map<String, Loop<Regex>> map = new HashMap<>();
 		map.put(builder.toString(), loop);
 
-		Loop<Regex> loop2 = instantiateLoop(factory.defineRegex("[a-zA-Z\n]"));
+		Loop<Regex> loop2 = new Loop<>(Regex.define("[a-zA-Z\n]"));
 		map.put("test", loop2);
 		map.put("test\ntest", loop2);
 		map.put("", loop2);
@@ -56,22 +47,22 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Override
-	default Collection<Layer> getUsedSubLayers(Loop<Regex> loop) {
+	public Collection<Layer> getUsedSubLayers(Loop<Regex> loop) {
 		Collection<Layer> sublayers = new LinkedList<>();
 		for (int i = 0; i < loop.size(); i++) {
 			sublayers.add(loop.get(i));
 		}
 		return sublayers;
 	}
-	
+
 	@Override
-	default Collection<SublayerUpdate> getSublayersUpdates(Loop<Regex> parent) {
+	public Collection<SublayerUpdate> getSublayersUpdates(Loop<Regex> parent) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	default Collection<SublayerReplacement> getSublayersReplacements(Loop<Regex> loop) {
+	public Collection<SublayerReplacement> getSublayersReplacements(Loop<Regex> loop) {
 		Collection<SublayerReplacement> updates = new LinkedList<>();
 
 		if (loop.size() > 0) {
@@ -145,23 +136,22 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Override
-	default Loop<UnsafeRecursiveLayer> instantiateRecursiveLayer() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		DelayedDefinition<Loop<UnsafeRecursiveLayer>> loop = factory.prepareDefinition();
-		loop.redefineAs(factory.defineLoop(UnsafeRecursiveLayer.defineOn(loop)));
+	public Loop<UnsafeRecursiveLayer> instantiateRecursiveLayer() {
+		DefinitionProxy<Loop<UnsafeRecursiveLayer>> loop = Definition.prepare();
+		loop.setDelegate(Loop.define(UnsafeRecursiveLayer.defineOn(loop)));
 
 		return loop.create();
 	}
 
 	@Override
-	default String getValidRecursiveContent(Layer layer) {
+	public String getValidRecursiveContent(Layer layer) {
 		return "-----";
 	}
 
 	@Test
-	default void testGeneratorInstanceProperlyGeneratesInstancesWhenRequired() {
+	public void testGeneratorInstanceProperlyGeneratesInstancesWhenRequired() {
 		final Collection<Regex> generated = new HashSet<Regex>();
-		Loop<Regex> loop = instantiateLoop(new Definition<Regex>() {
+		Loop<Regex> loop = new Loop<>(new Definition<Regex>() {
 
 			@Override
 			public String getRegex() {
@@ -172,7 +162,7 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 			@Override
 			public Regex create() {
 				// TODO Use SimpleDefinition?
-				Regex formula = new JavaPatternRegex("[a-zA-Z]");
+				Regex formula = new Regex("[a-zA-Z]");
 				generated.add(formula);
 				return formula;
 			}
@@ -203,18 +193,17 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	default void testGeneratorInstanceThrowsExceptionOnNullGenerator() {
+	public void testGeneratorInstanceThrowsExceptionOnNullGenerator() {
 		try {
-			instantiateLoop((Definition<Regex>) null);
+			new Loop<>((Definition<Regex>) null);
 			fail("No exception thrown");
 		} catch (NullPointerException e) {
 		}
 	}
 
 	@Test
-	default void testInvalidContentForRegexThrowsParsingException() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[a-zA-Z\n]"));
+	public void testInvalidContentForRegexThrowsParsingException() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z\n]"));
 
 		try {
 			loop.setContent("123");
@@ -250,16 +239,14 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	default void testNoContentReturnsNull() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[a-zA-Z\n]"));
+	public void testNoContentReturnsNull() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z\n]"));
 		assertEquals(null, loop.getContent());
 	}
 
 	@Test
-	default void testInvalidContentForMinThrowsParsingException() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[0-9\n]"), 5, 10);
+	public void testInvalidContentForMinThrowsParsingException() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[0-9\n]"), 5, 10);
 
 		try {
 			loop.setContent("123");
@@ -287,9 +274,8 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	default void testInvalidContentForMaxThrowsParsingException() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[0-9\n]"), 0, 5);
+	public void testInvalidContentForMaxThrowsParsingException() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[0-9\n]"), 0, 5);
 
 		try {
 			loop.setContent("123456789");
@@ -307,9 +293,8 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	default void testSizeCorrespondsToNumberOfElementsInLoop() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[a-zA-Z]"));
+	public void testSizeCorrespondsToNumberOfElementsInLoop() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"));
 
 		loop.setContent("Test");
 		assertEquals(4, loop.size());
@@ -324,9 +309,8 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	default void testIsEmptyOnlyWhenActuallyEmpty() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[a-zA-Z]"));
+	public void testIsEmptyOnlyWhenActuallyEmpty() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"));
 
 		loop.setContent("Tes");
 		assertFalse(loop.isEmpty());
@@ -339,9 +323,8 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	default void testOccurrenceContentCorrespondsToLoopContent() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[a-zA-Z]---"));
+	public void testOccurrenceContentCorrespondsToLoopContent() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]---"));
 		loop.setContent("a---b---c---");
 
 		assertEquals("a---", loop.get(0).getContent());
@@ -350,9 +333,8 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	default void testUpdateOnOccurrenceContentProperlyUpdateLoopContent() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[a-zA-Z]"));
+	public void testUpdateOnOccurrenceContentProperlyUpdateLoopContent() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"));
 		loop.setContent("Test");
 
 		loop.get(0).setContent("C");
@@ -364,9 +346,8 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	default void testUpdateOnOccurrenceContentNotifiesLoopListeners() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[a-zA-Z]"));
+	public void testUpdateOnOccurrenceContentNotifiesLoopListeners() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"));
 		loop.setContent("Test");
 		final String[] value = new String[] { null };
 		loop.addContentListener(new ContentListener() {
@@ -388,9 +369,8 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	default void testAddContentProperlyAddsElement() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[a-zA-Z]"));
+	public void testAddContentProperlyAddsElement() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"));
 		loop.setContent("");
 
 		loop.add(loop.size(), "i");
@@ -411,9 +391,8 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	default void testAddContentReturnsCorrectOccurrence() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[a-zA-Z]"));
+	public void testAddContentReturnsCorrectOccurrence() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"));
 		loop.setContent("Test");
 
 		assertEquals("a", loop.add(3, "a").getContent());
@@ -422,9 +401,8 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	default void testAddContentProperlyNotifiesListeners() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[a-zA-Z]"));
+	public void testAddContentProperlyNotifiesListeners() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"));
 		loop.setContent("Test");
 		final String[] value = new String[] { null };
 		loop.addContentListener(new ContentListener() {
@@ -453,9 +431,8 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	default void testUpdateOnAddedContentProperlyNotifiesListeners() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[a-zA-Z]"));
+	public void testUpdateOnAddedContentProperlyNotifiesListeners() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"));
 		loop.setContent("Test");
 		Regex added = loop.add(2, "a");
 
@@ -473,9 +450,8 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	default void testAddContentThrowsExceptionOnInvalidContent() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[a-zA-Z]"));
+	public void testAddContentThrowsExceptionOnInvalidContent() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"));
 		loop.setContent("Test");
 
 		try {
@@ -494,9 +470,8 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	default void testAddContentThrowsExceptionOnInvalidIndex() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[a-zA-Z]"));
+	public void testAddContentThrowsExceptionOnInvalidIndex() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"));
 		loop.setContent("Test");
 
 		try {
@@ -513,9 +488,8 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	default void testAddContentThrowsExceptionIfMaxNotRespected() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[a-zA-Z]"), 0, 5);
+	public void testAddContentThrowsExceptionIfMaxNotRespected() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"), 0, 5);
 		loop.setContent("abcde");
 
 		try {
@@ -526,32 +500,30 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	default void testAddElementProperlyAddsElement() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[a-zA-Z]"));
+	public void testAddElementProperlyAddsElement() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"));
 		loop.setContent("Test");
 
-		loop.add(loop.size(), new JavaPatternRegex("[a-zA-Z]", "i"));
+		loop.add(loop.size(), new Regex("[a-zA-Z]", "i"));
 		assertEquals("Testi", loop.getContent());
-		loop.add(loop.size(), new JavaPatternRegex("[a-zA-Z]", "n"));
+		loop.add(loop.size(), new Regex("[a-zA-Z]", "n"));
 		assertEquals("Testin", loop.getContent());
-		loop.add(loop.size(), new JavaPatternRegex("[a-zA-Z]", "g"));
+		loop.add(loop.size(), new Regex("[a-zA-Z]", "g"));
 		assertEquals("Testing", loop.getContent());
 
-		loop.add(0, new JavaPatternRegex("[a-zA-Z]", "V"));
+		loop.add(0, new Regex("[a-zA-Z]", "V"));
 		assertEquals("VTesting", loop.getContent());
-		loop.add(1, new JavaPatternRegex("[a-zA-Z]", "i"));
+		loop.add(1, new Regex("[a-zA-Z]", "i"));
 		assertEquals("ViTesting", loop.getContent());
-		loop.add(2, new JavaPatternRegex("[a-zA-Z]", "v"));
+		loop.add(2, new Regex("[a-zA-Z]", "v"));
 		assertEquals("VivTesting", loop.getContent());
-		loop.add(3, new JavaPatternRegex("[a-zA-Z]", "a"));
+		loop.add(3, new Regex("[a-zA-Z]", "a"));
 		assertEquals("VivaTesting", loop.getContent());
 	}
 
 	@Test
-	default void testAddElementProperlyNotifiesListeners() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[a-zA-Z]"));
+	public void testAddElementProperlyNotifiesListeners() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"));
 		loop.setContent("Test");
 		final String[] value = new String[] { null };
 		loop.addContentListener(new ContentListener() {
@@ -562,29 +534,28 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 			}
 		});
 
-		loop.add(loop.size(), new JavaPatternRegex("[a-zA-Z]", "i"));
+		loop.add(loop.size(), new Regex("[a-zA-Z]", "i"));
 		assertEquals("Testi", value[0]);
-		loop.add(loop.size(), new JavaPatternRegex("[a-zA-Z]", "n"));
+		loop.add(loop.size(), new Regex("[a-zA-Z]", "n"));
 		assertEquals("Testin", value[0]);
-		loop.add(loop.size(), new JavaPatternRegex("[a-zA-Z]", "g"));
+		loop.add(loop.size(), new Regex("[a-zA-Z]", "g"));
 		assertEquals("Testing", value[0]);
 
-		loop.add(0, new JavaPatternRegex("[a-zA-Z]", "V"));
+		loop.add(0, new Regex("[a-zA-Z]", "V"));
 		assertEquals("VTesting", value[0]);
-		loop.add(1, new JavaPatternRegex("[a-zA-Z]", "i"));
+		loop.add(1, new Regex("[a-zA-Z]", "i"));
 		assertEquals("ViTesting", value[0]);
-		loop.add(2, new JavaPatternRegex("[a-zA-Z]", "v"));
+		loop.add(2, new Regex("[a-zA-Z]", "v"));
 		assertEquals("VivTesting", value[0]);
-		loop.add(3, new JavaPatternRegex("[a-zA-Z]", "a"));
+		loop.add(3, new Regex("[a-zA-Z]", "a"));
 		assertEquals("VivaTesting", value[0]);
 	}
 
 	@Test
-	default void testUpdateOnAddedElementProperlyNotifiesListeners() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[a-zA-Z]"));
+	public void testUpdateOnAddedElementProperlyNotifiesListeners() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"));
 		loop.setContent("Test");
-		Regex added = new JavaPatternRegex("[a-zA-Z]", "a");
+		Regex added = new Regex("[a-zA-Z]", "a");
 		loop.add(2, added);
 
 		final String[] value = new String[] { null };
@@ -601,54 +572,50 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	default void testAddElementThrowsExceptionOnInvalidRegex() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[a-zA-Z]"));
+	public void testAddElementThrowsExceptionOnInvalidRegex() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"));
 		loop.setContent("Test");
 
 		try {
-			loop.add(3, new JavaPatternRegex("[a-zA-Z!]", "a"));
+			loop.add(3, new Regex("[a-zA-Z!]", "a"));
 			fail("Exception not thrown with " + loop);
 		} catch (IllegalArgumentException e) {
 		}
 	}
 
 	@Test
-	default void testAddElementThrowsExceptionOnInvalidIndex() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[a-zA-Z]"));
+	public void testAddElementThrowsExceptionOnInvalidIndex() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"));
 		loop.setContent("Test");
 
 		try {
-			loop.add(20, new JavaPatternRegex("[a-zA-Z]", "a"));
+			loop.add(20, new Regex("[a-zA-Z]", "a"));
 			fail("Exception not thrown with " + loop);
 		} catch (IndexOutOfBoundsException e) {
 		}
 
 		try {
-			loop.add(-5, new JavaPatternRegex("[a-zA-Z]", "a"));
+			loop.add(-5, new Regex("[a-zA-Z]", "a"));
 			fail("Exception not thrown with " + loop);
 		} catch (IndexOutOfBoundsException e) {
 		}
 	}
 
 	@Test
-	default void testAddElementThrowsExceptionIfMaxNotRespected() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[a-zA-Z]"), 0, 5);
+	public void testAddElementThrowsExceptionIfMaxNotRespected() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"), 0, 5);
 		loop.setContent("abcde");
 
 		try {
-			loop.add(2, new JavaPatternRegex("[a-zA-Z]", "a"));
+			loop.add(2, new Regex("[a-zA-Z]", "a"));
 			fail("Exception not thrown with " + loop);
 		} catch (BoundException e) {
 		}
 	}
 
 	@Test
-	default void testRemoveProperlyRemovesElements() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[a-zA-Z]"));
+	public void testRemoveProperlyRemovesElements() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"));
 		loop.setContent("Test");
 
 		loop.remove(0);
@@ -662,9 +629,8 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	default void testRemoveReturnsCorrectOccurrence() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[a-zA-Z]"));
+	public void testRemoveReturnsCorrectOccurrence() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"));
 		loop.setContent("Test");
 
 		assertEquals("T", loop.remove(0).getContent());
@@ -674,9 +640,8 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	default void testRemoveProperlyNotifiesListeners() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[a-zA-Z]"));
+	public void testRemoveProperlyNotifiesListeners() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"));
 		loop.setContent("Test");
 		final String[] value = new String[] { null };
 		loop.addContentListener(new ContentListener() {
@@ -698,9 +663,8 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	default void testUpdateOnRemovedOccurrenceDoesNotNotifyListeners() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[a-zA-Z]"));
+	public void testUpdateOnRemovedOccurrenceDoesNotNotifyListeners() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"));
 		loop.setContent("Test");
 		Regex removed = loop.remove(2);
 
@@ -718,9 +682,8 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	default void testRemoveThrowsExceptionOnInvalidIndex() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[a-zA-Z]"));
+	public void testRemoveThrowsExceptionOnInvalidIndex() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"));
 		loop.setContent("Test");
 
 		try {
@@ -737,9 +700,8 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	default void testIndexRemoveThrowsExceptionIfMinNotRespected() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Constant> loop = instantiateLoop(factory.defineConstant("a"), 5, 10);
+	public void testIndexRemoveThrowsExceptionIfMinNotRespected() {
+		Loop<Constant> loop = new Loop<>(Constant.define("a"), 5, 10);
 		loop.setContent("aaaaa");
 
 		for (int index = 0; index < loop.size(); index++) {
@@ -752,9 +714,8 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	default void testIteratorGivesCorrectSequence() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[a-zA-Z]"));
+	public void testIteratorGivesCorrectSequence() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"));
 		loop.setContent("Test");
 
 		Iterator<Regex> iterator = loop.iterator();
@@ -766,9 +727,8 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	default void testIteratorRemoveProperlyRemoves() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[a-zA-Z]"));
+	public void testIteratorRemoveProperlyRemoves() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"));
 		loop.setContent("Test");
 
 		Iterator<Regex> iterator = loop.iterator();
@@ -783,9 +743,8 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	default void testIteratorRemoveProperlyNotifiesListener() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[a-zA-Z]"));
+	public void testIteratorRemoveProperlyNotifiesListener() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"));
 		loop.setContent("Test");
 		final String[] value = new String[] { null };
 		loop.addContentListener(new ContentListener() {
@@ -808,9 +767,8 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	default void testUpdateOnIteratorRemovedOccurrenceDoesNotNotifyListeners() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[a-zA-Z]"));
+	public void testUpdateOnIteratorRemovedOccurrenceDoesNotNotifyListeners() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"));
 		loop.setContent("Test");
 
 		Regex removed = loop.get(2);
@@ -834,9 +792,8 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	default void testIteratorRemoveThrowsExceptionIfMinNotRespected() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Constant> loop = instantiateLoop(factory.defineConstant("a"), 5, 10);
+	public void testIteratorRemoveThrowsExceptionIfMinNotRespected() {
+		Loop<Constant> loop = new Loop<>(Constant.define("a"), 5, 10);
 		loop.setContent("aaaaa");
 		Iterator<Constant> iterator = loop.iterator();
 
@@ -853,9 +810,8 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	default void testClearRemovesAll() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[a-zA-Z]"));
+	public void testClearRemovesAll() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"));
 		loop.setContent("abcde");
 
 		loop.clear();
@@ -864,9 +820,8 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	default void testClearNotifiesListeners() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[a-zA-Z]"));
+	public void testClearNotifiesListeners() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"));
 		loop.setContent("abcde");
 		final String[] value = new String[] { null };
 		loop.addContentListener(new ContentListener() {
@@ -882,9 +837,8 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	default void testUpdateOnClearedDoesNotNotifyListeners() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[a-zA-Z]"));
+	public void testUpdateOnClearedDoesNotNotifyListeners() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"));
 		loop.setContent("abcde");
 		final String[] value = new String[] { null };
 		loop.addContentListener(new ContentListener() {
@@ -910,9 +864,8 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	default void testClearThrowsExceptionIfMin() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[a-zA-Z]"), 5, 10);
+	public void testClearThrowsExceptionIfMin() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"), 5, 10);
 		loop.setContent("abcde");
 
 		try {
@@ -923,9 +876,8 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	default void testListenersNotifiedOncePerAtomicUpdate() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex("[a-zA-Z]"));
+	public void testListenersNotifiedOncePerAtomicUpdate() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"));
 		final LinkedList<String> values = new LinkedList<String>();
 		loop.addContentListener(new ContentListener() {
 
@@ -953,15 +905,15 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 		assertEquals(++operationCounter, values.size());
 		assertEquals(loop.getContent(), values.getFirst());
 
-		loop.add(0, new JavaPatternRegex("[a-zA-Z]", "x"));
+		loop.add(0, new Regex("[a-zA-Z]", "x"));
 		assertEquals(++operationCounter, values.size());
 		assertEquals(loop.getContent(), values.getFirst());
 
-		loop.add(2, new JavaPatternRegex("[a-zA-Z]", "x"));
+		loop.add(2, new Regex("[a-zA-Z]", "x"));
 		assertEquals(++operationCounter, values.size());
 		assertEquals(loop.getContent(), values.getFirst());
 
-		loop.add(loop.size(), new JavaPatternRegex("[a-zA-Z]", "x"));
+		loop.add(loop.size(), new Regex("[a-zA-Z]", "x"));
 		assertEquals(++operationCounter, values.size());
 		assertEquals(loop.getContent(), values.getFirst());
 
@@ -977,18 +929,18 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 		assertEquals(++operationCounter, values.size());
 		assertEquals(loop.getContent(), values.getFirst());
 
-		loop.addAll(0, Arrays.asList(new JavaPatternRegex("[a-zA-Z]", "a"), new JavaPatternRegex("[a-zA-Z]", "b"),
-				new JavaPatternRegex("[a-zA-Z]", "c")));
+		loop.addAll(0,
+				Arrays.asList(new Regex("[a-zA-Z]", "a"), new Regex("[a-zA-Z]", "b"), new Regex("[a-zA-Z]", "c")));
 		assertEquals(++operationCounter, values.size());
 		assertEquals(loop.getContent(), values.getFirst());
 
-		loop.addAll(2, Arrays.asList(new JavaPatternRegex("[a-zA-Z]", "a"), new JavaPatternRegex("[a-zA-Z]", "b"),
-				new JavaPatternRegex("[a-zA-Z]", "c")));
+		loop.addAll(2,
+				Arrays.asList(new Regex("[a-zA-Z]", "a"), new Regex("[a-zA-Z]", "b"), new Regex("[a-zA-Z]", "c")));
 		assertEquals(++operationCounter, values.size());
 		assertEquals(loop.getContent(), values.getFirst());
 
-		loop.addAll(loop.size(), Arrays.asList(new JavaPatternRegex("[a-zA-Z]", "a"), new JavaPatternRegex("[a-zA-Z]", "b"),
-				new JavaPatternRegex("[a-zA-Z]", "c")));
+		loop.addAll(loop.size(),
+				Arrays.asList(new Regex("[a-zA-Z]", "a"), new Regex("[a-zA-Z]", "b"), new Regex("[a-zA-Z]", "c")));
 		assertEquals(++operationCounter, values.size());
 		assertEquals(loop.getContent(), values.getFirst());
 
@@ -1021,11 +973,10 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	default void testNoProblemWithLazyComponents() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
+	public void testNoProblemWithLazyComponents() {
 		{
 			String content = "abc";
-			Loop<Regex> loop = instantiateLoop(factory.defineRegex(".+?"));
+			Loop<Regex> loop = new Loop<>(Regex.define(".+?"));
 
 			loop.setContent(content);
 			assertEquals(content, loop.getContent());
@@ -1035,7 +986,7 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 		}
 		{
 			String content = "?abc?def";
-			Loop<Regex> loop = instantiateLoop(factory.defineRegex("\\?.+?"));
+			Loop<Regex> loop = new Loop<>(Regex.define("\\?.+?"));
 
 			loop.setContent(content);
 			assertEquals(content, loop.getContent());
@@ -1044,7 +995,7 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 		}
 		{
 			String content = "abc?def?";
-			Loop<Regex> loop = instantiateLoop(factory.defineRegex(".+?\\?"));
+			Loop<Regex> loop = new Loop<>(Regex.define(".+?\\?"));
 
 			loop.setContent(content);
 			assertEquals(content, loop.getContent());
@@ -1054,10 +1005,8 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	default void testBigLoop() {
-		StandardDefinitionFactory factory = new StandardDefinitionFactory();
-		Loop<Regex> loop = instantiateLoop(factory.defineRegex(">[0-9]++"), 0, Integer.MAX_VALUE,
-				Quantifier.POSSESSIVE);
+	public void testBigLoop() {
+		Loop<Regex> loop = new Loop<>(Regex.define(">[0-9]++"), 0, Integer.MAX_VALUE, Quantifier.POSSESSIVE);
 		Random rand = new Random();
 		StringBuilder builder = new StringBuilder();
 		for (long i = 0; i < 1e6; i++) {
@@ -1070,7 +1019,7 @@ public interface LoopTest extends ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	default void testRecursiveLoopReturnsCorrectParsingException() {
+	public void testRecursiveLoopReturnsCorrectParsingException() {
 		Loop<UnsafeRecursiveLayer> loop = instantiateRecursiveLayer();
 		try {
 			loop.setContent("---a---");

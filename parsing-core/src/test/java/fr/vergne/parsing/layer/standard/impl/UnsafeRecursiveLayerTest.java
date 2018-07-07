@@ -10,17 +10,16 @@ import org.junit.runner.RunWith;
 
 import fr.vergne.parsing.layer.ComposedLayerTest;
 import fr.vergne.parsing.layer.Layer;
+import fr.vergne.parsing.layer.standard.Regex;
 
 @RunWith(JUnitPlatform.class)
 public class UnsafeRecursiveLayerTest implements ComposedLayerTest<UnsafeRecursiveLayer> {
-
-	StandardDefinitionFactory factory = new StandardDefinitionFactory();
 
 	@Override
 	public Map<String, UnsafeRecursiveLayer> instantiateLayers(Collection<String> specialCharacters) {
 		Map<String, UnsafeRecursiveLayer> map = new HashMap<>();
 		for (String character : specialCharacters) {
-			map.put("-" + character, new UnsafeRecursiveLayer(factory.defineRegex(character)));
+			map.put("-" + character, new UnsafeRecursiveLayer(Regex.define(character)));
 		}
 		return map;
 	}
@@ -28,6 +27,12 @@ public class UnsafeRecursiveLayerTest implements ComposedLayerTest<UnsafeRecursi
 	@Override
 	public Collection<Layer> getUsedSubLayers(UnsafeRecursiveLayer layer) {
 		return Arrays.asList(layer.getSublayer());
+	}
+
+	@Override
+	public Collection<SublayerUpdate> getSublayersUpdates(UnsafeRecursiveLayer parent) {
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	@Override
@@ -41,4 +46,5 @@ public class UnsafeRecursiveLayerTest implements ComposedLayerTest<UnsafeRecursi
 		// The class is unsafe for recursivity, so we ignore it
 		return null;
 	}
+
 }

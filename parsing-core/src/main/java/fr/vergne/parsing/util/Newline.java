@@ -1,9 +1,10 @@
 package fr.vergne.parsing.util;
 
 import fr.vergne.parsing.definition.Definition;
-import fr.vergne.parsing.layer.standard.impl.JavaPatternRegex;
+import fr.vergne.parsing.layer.standard.Regex;
 
-public class Newline extends JavaPatternRegex {
+// TODO doc
+public class Newline extends Regex {
 
 	public Newline() {
 		super("(?:(?:\r\n)|(?:\n\r)|(?:(?<!\n)\r(?!\n))|(?:(?<!\r)\n(?!\r)))");
@@ -15,7 +16,11 @@ public class Newline extends JavaPatternRegex {
 		return getClass().getSimpleName();
 	}
 
-	public static Definition<Newline> DEFINITION = new Definition<Newline>() {
+	public static Definition<Newline> define() {
+		return definition;
+	}
+
+	private static final Definition<Newline> definition = new Definition<Newline>() {
 
 		@Override
 		public String getRegex() {
@@ -32,4 +37,5 @@ public class Newline extends JavaPatternRegex {
 			return true;
 		}
 	};
+
 }

@@ -1,6 +1,13 @@
 package fr.vergne.parsing.layer.standard;
 
+import java.io.InputStream;
+import java.util.regex.Pattern;
+
+import fr.vergne.parsing.definition.Definition;
 import fr.vergne.parsing.layer.Layer;
+import fr.vergne.parsing.layer.exception.ParsingException;
+import fr.vergne.parsing.layer.impl.AbstractLayer;
+import fr.vergne.parsing.util.ContentInputStream;
 import fr.vergne.parsing.util.Named;
 
 /**
@@ -11,7 +18,27 @@ import fr.vergne.parsing.util.Named;
  * @author Matthieu Vergne <matthieu.vergne@gmail.com>
  * 
  */
-public interface Constant extends Layer, Named {
+public class Constant extends AbstractLayer implements Named {
+
+	private final String constant;
+
+	public Constant(String content) {
+		this.constant = content;
+	}
+
+	@Override
+	public InputStream getInputStream() throws NoContentException {
+		return new ContentInputStream(constant);
+	}
+
+	@Override
+	protected void setInternalContent(String content) {
+		if (content.equals(this.constant)) {
+			// OK
+		} else {
+			throw new ParsingException(define(constant).getRegex(), content);
+		}
+	}
 
 	/**
 	 * This method provides the reference content of this {@link Constant}. As
@@ -22,11 +49,37 @@ public interface Constant extends Layer, Named {
 	 * 
 	 * @return the expected content of this {@link Constant}
 	 */
-	public String getConstant();
+	public String getConstant() {
+		return constant;
+	}
 
 	@Override
-	default String getName() {
+	public String getName() {
 		return "CONST";
 	}
 
+	@Override
+	public String toString() {
+		return getName() + "[" + constant + "]";
+	}
+
+	public static Definition<Constant> define(String content) {
+		return new Definition<Constant>() {
+
+			@Override
+			public String getRegex() {
+				return Pattern.quote(content);
+			}
+
+			@Override
+			public Constant create() {
+				return new Constant(content);
+			}
+
+			@Override
+			public boolean isCompatibleWith(Constant layer) {
+				return layer.getConstant().equals(content);
+			}
+		};
+	}
 }
