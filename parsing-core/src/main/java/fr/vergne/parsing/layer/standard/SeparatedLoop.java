@@ -3,6 +3,7 @@ package fr.vergne.parsing.layer.standard;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.regex.Pattern;
@@ -29,7 +30,7 @@ import fr.vergne.parsing.util.RegexRecursivityLimiter;
  */
 // TODO Doc
 // TODO Revise exceptions (inspire from Loop)
-// TODO Transform standards tests into interfaces + create impl tests
+// TODO reduce responsibilities (min/max, quantifier, default, etc.)
 public class SeparatedLoop<Item extends Layer, Separator extends Layer> extends AbstractLayer
 		implements Iterable<Item>, Named {
 
@@ -92,13 +93,13 @@ public class SeparatedLoop<Item extends Layer, Separator extends Layer> extends 
 
 	@Override
 	protected void setInternalContent(String content) {
-		overall.removeContentListener(deepListener);
+		Executor undo = deactivateNotifications(false);
 		try {
 			overall.setContent(content);
 		} catch (ParsingException e) {
 			throw new ParsingException(this, overallDefinition, content, e.getStart(), content.length(), e);
 		} finally {
-			overall.addContentListener(deepListener);
+			undo.execute();
 		}
 	}
 
@@ -212,83 +213,57 @@ public class SeparatedLoop<Item extends Layer, Separator extends Layer> extends 
 		}
 	}
 
-	public void add(Item item) {
-		add(size(), item);
-	}
-
-	public void add(String content) {
-		add(size(), content);
-	}
-
-	public void add(int index, Item item) {
-		addAll(index, Arrays.asList(item));
+	public Item add(String content) {
+		return add(size(), content);
 	}
 
 	public Item add(int index, String content) {
-		Item item = itemDefinition.create();
-		item.setContent(content);
-		add(index, item);
-		return item;
+		return addAll(index, Arrays.asList(content)).iterator().next();
 	}
 
-	public Collection<Item> addAllContents(int index, Collection<String> contents) {
-		Collection<Item> items = new LinkedList<Item>();
-		for (String content : contents) {
-			Item item = itemDefinition.create();
-			item.setContent(content);
-			items.add(item);
-		}
-		addAll(index, items);
-		return items;
-	}
-
-	public void addAll(int index, Collection<Item> items) {
-		if (items.isEmpty()) {
+	public Collection<Item> addAll(int index, Collection<String> contents) {
+		Collection<Item> addeds = new LinkedList<>();
+		if (contents.isEmpty()) {
 			// nothing to add
 		} else {
-			for (Item item : items) {
-				if (item == null) {
-					throw new IllegalArgumentException("Null item provided: " + items);
-				} else if (!itemDefinition.isCompatibleWith(item)) {
-					throw new IllegalArgumentException("Invalid item provided: " + item);
+			for (String content : contents) {
+				if (content == null) {
+					throw new IllegalArgumentException("Null content provided: " + contents);
 				} else {
 					continue;
 				}
 			}
 
-			overall.removeContentListener(deepListener);
+			Executor undo = deactivateNotifications(true);
 			try {
-				LinkedList<Item> remaining = new LinkedList<Item>(items);
-				if (size() == 0 && index == 0) {
+				LinkedList<String> remaining = new LinkedList<>(contents);
+				if (index == 0) {
+					if (size() > 0) {
+						String movedContent = getExistingSeparatorContent() + getHead().getContent();
+						getOverallSequence().get(loop).add(0, movedContent);
+					} else {
+						// Nothing to move
+					}
+
 					setHead(remaining.removeFirst());
-					getOverallSequence().get(loop).setContent("");
-					index++;
-				} else if (index == 0) {
-					Sequence added = couple.create();
-					added.setContent(getExistingSeparatorContent() + getHead().getContent());
-					added.set(separatorDefinition, createFilledSeparator());
-					added.set(itemDefinition, getHead());
-					setHead(remaining.removeFirst());
-					getOverallSequence().get(loop).add(0, added);
+					addeds.add(getHead());
 					index++;
 				} else {
 					// add all to the loop
 				}
 
 				index--;
-				for (Item item : remaining) {
-					Sequence sequence = couple.create();
-					sequence.setContent(getExistingSeparatorContent() + item.getContent());
-					sequence.set(separatorDefinition, createFilledSeparator());
-					sequence.set(itemDefinition, item);
-					getOverallSequence().get(loop).add(index, sequence);
+				for (String content : remaining) {
+					String addedContent = getExistingSeparatorContent() + content;
+					Sequence added = getOverallSequence().get(loop).add(index, addedContent);
+					addeds.add(added.get(itemDefinition));
 					index++;
 				}
 			} finally {
-				overall.addContentListener(deepListener);
+				undo.execute();
 			}
-			fireContentUpdate();
 		}
+		return addeds;
 	}
 
 	private String getExistingSeparatorContent() {
@@ -300,27 +275,88 @@ public class SeparatedLoop<Item extends Layer, Separator extends Layer> extends 
 		}
 	}
 
-	private Separator createFilledSeparator() {
-		Separator separator = separatorDefinition.create();
-		separator.setContent(getExistingSeparatorContent());
-		return separator;
+	public void sort(Comparator<Item> comparator) {
+		if (size() <= 1) {
+			// Nothing to sort
+		} else {
+			Executor undo = deactivateNotifications(true);
+
+			// Duplicate head to have all content in loop
+			// TODO This strategy should fail with a complete bounded loop, should do better
+			add(get(0).getContent());
+
+			// Sort loop
+			Comparator<Sequence> seqComparator = (s1, s2) -> {
+				Item i1 = s1.get(itemDefinition);
+				Item i2 = s2.get(itemDefinition);
+				return comparator.compare(i1, i2);
+			};
+			getOverallSequence().get(loop).sort(seqComparator);
+
+			// Remove duplicate head
+			remove(0);
+
+			undo.execute();
+		}
+	}
+
+	private interface Executor {
+		void execute();
+	}
+
+	private int notificationDeactivationLevel = 0;
+
+	/**
+	 * A method might do several things on the current instance, which may lead to
+	 * fire several notifications. To avoid this, this method should be called to
+	 * cancel notifications. The returned {@link Executor} allows to reactivate the
+	 * notifications and, optionally, fire a notification. Calls to this method are
+	 * stackable: if a parent method deactivates and call a child method which
+	 * deactivates too, the reactivation of the child will be ineffective. Only the
+	 * first deactivator will actually reactivate notifications.
+	 * 
+	 * @param fireContentUpdate
+	 *            tells whether the {@link #fireContentUpdate()} should be called
+	 *            when notifications are reactivated
+	 * @return the reactivation {@link Executor}
+	 */
+	private Executor deactivateNotifications(boolean fireContentUpdate) {
+		if (notificationDeactivationLevel == 0) {
+			overall.removeContentListener(deepListener);
+		} else {
+			// Already removed
+		}
+		notificationDeactivationLevel++;
+
+		return () -> {
+			notificationDeactivationLevel--;
+			if (notificationDeactivationLevel == 0) {
+				overall.addContentListener(deepListener);
+				if (fireContentUpdate) {
+					fireContentUpdate();
+				} else {
+					// Don't fire
+				}
+			} else {
+				// Don't restore yet
+			}
+		};
 	}
 
 	public Item remove(int index) {
 		if (index == 0) {
-			overall.removeContentListener(deepListener);
+			Executor undo = deactivateNotifications(true);
 			Item removed = itemDefinition.create();
 			removed.setContent(getHead().getContent());
 			try {
 				if (size() == 1) {
 					overall.setContent("");
 				} else {
-					setHead(getOverallSequence().get(loop).remove(0).get(itemDefinition));
+					setHead(getOverallSequence().get(loop).remove(0).get(itemDefinition).getContent());
 				}
 			} finally {
-				overall.addContentListener(deepListener);
+				undo.execute();
 			}
-			fireContentUpdate();
 			return removed;
 		} else {
 			return getOverallSequence().get(loop).remove(index - 1).get(itemDefinition);
@@ -375,42 +411,27 @@ public class SeparatedLoop<Item extends Layer, Separator extends Layer> extends 
 		return getOverallSequence().get(head);
 	}
 
-	private void setHead(Item item) {
-		if (item == null) {
-			throw new IllegalArgumentException("No item provided: " + item);
-		} else if (!itemDefinition.isCompatibleWith(item)) {
-			throw new IllegalArgumentException("Invalid item: " + item);
-		} else {
-			if (size() == 0) {
-				Sequence seq = sequence.create();
-				seq.setContent(item.getContent());
-				seq.set(head, item);
-				setOverallSequence(seq);
+	@SuppressWarnings("unchecked")
+	private void setHead(String content) {
+		if (size() == 0) {
+			if (min == 0) {
+				((Option<Sequence>) overall).setContent(content);
 			} else {
-				getOverallSequence().set(head, item);
+				Sequence seq = sequence.create();
+				seq.setContent(content);
+				overall = seq;
 			}
+		} else {
+			getOverallSequence().set(head, content);
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	private Sequence getOverallSequence() {
-		Sequence seq;
 		if (min == 0) {
-			@SuppressWarnings("unchecked")
-			Option<Sequence> option = (Option<Sequence>) overall;
-			seq = option.getOption();
+			return ((Option<Sequence>) overall).getOption();
 		} else {
-			seq = (Sequence) overall;
-		}
-		return seq;
-	}
-
-	private void setOverallSequence(Sequence sequence) {
-		if (min == 0) {
-			@SuppressWarnings("unchecked")
-			Option<Sequence> option = (Option<Sequence>) overall;
-			option.setOption(sequence);
-		} else {
-			overall = sequence;
+			return (Sequence) overall;
 		}
 	}
 
@@ -450,11 +471,6 @@ public class SeparatedLoop<Item extends Layer, Separator extends Layer> extends 
 			public SeparatedLoop<Item, Separator> create() {
 				return new SeparatedLoop<>(item, separator, min, max, quantifier);
 			}
-
-			@Override
-			public boolean isCompatibleWith(SeparatedLoop<Item, Separator> layer) {
-				return layer.getRegex().equals(create().getRegex());
-			}
 		};
 	}
 
@@ -473,11 +489,6 @@ public class SeparatedLoop<Item extends Layer, Separator extends Layer> extends 
 				SeparatedLoop<Item, Separator> loop = define(item, separator, min, max, quantifier).create();
 				loop.setDefaultSeparator(defaultSeparator);
 				return loop;
-			}
-
-			@Override
-			public boolean isCompatibleWith(SeparatedLoop<Item, Separator> layer) {
-				return layer.getRegex().equals(create().getRegex());
 			}
 		};
 	}

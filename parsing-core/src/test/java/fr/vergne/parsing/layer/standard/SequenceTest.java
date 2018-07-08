@@ -15,28 +15,34 @@ import org.junit.runner.RunWith;
 
 import fr.vergne.parsing.definition.Definition;
 import fr.vergne.parsing.definition.Definition.DefinitionProxy;
+import fr.vergne.parsing.layer.ComposedLayerTest;
 import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.Layer.ContentListener;
 import fr.vergne.parsing.layer.Layer.NoContentException;
-import fr.vergne.parsing.layer.ModifiableComposedLayerTest;
 import fr.vergne.parsing.layer.exception.ParsingException;
 import fr.vergne.parsing.layer.standard.impl.UnsafeRecursiveLayer;
 
 @RunWith(JUnitPlatform.class)
-public class SequenceTest implements ModifiableComposedLayerTest<Sequence> {
+public class SequenceTest implements ComposedLayerTest<Sequence> {
+
+	private Sequence testSequence;
 
 	@Override
 	public Map<String, Sequence> instantiateLayers(Collection<String> specialCharacters) {
+		Map<String, Sequence> map = new HashMap<>();
+
 		StringBuilder builder = new StringBuilder();
 		List<Definition<?>> definitions = new LinkedList<>();
 		for (String character : specialCharacters) {
 			builder.append(character);
 			definitions.add(Constant.define(character));
 		}
-		Sequence sequence = new Sequence(definitions);
+		map.put(builder.toString(), new Sequence(definitions));
 
-		Map<String, Sequence> map = new HashMap<>();
-		map.put(builder.toString(), sequence);
+		Definition<Regex> character = Regex.define("[a-zA-Z]");
+		testSequence = new Sequence(character, character, character, character);
+		map.put("test", testSequence);
+
 		return map;
 	}
 
@@ -50,74 +56,18 @@ public class SequenceTest implements ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Override
-	public Collection<SublayerUpdate> getSublayersUpdates(Sequence parent) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public Collection<SublayerReplacement> getSublayersReplacements(Sequence sequence) {
-		Collection<SublayerReplacement> updates = new LinkedList<>();
-
-		// Set through index
-		updates.add(new SublayerReplacement() {
-
-			int index = 2;
-			Layer initial = sequence.get(index);
-			Layer replacement = sequence.getDefinition(index).create();
-
-			@Override
-			public Layer getInitial() {
-				return initial;
+	public Collection<SublayerUpdate> getSublayersUpdates(Sequence sequence) {
+		Collection<SublayerUpdate> updates = new LinkedList<>();
+		if (sequence == testSequence) {
+			for (int i = 0; i < sequence.size(); i++) {
+				Layer subLayer = sequence.get(i);
+				String initial = subLayer.getContent();
+				String replacement = initial.toUpperCase();
+				updates.add(ComposedLayerTest.simpleUpdate(subLayer, initial, replacement));
 			}
-
-			@Override
-			public Layer getReplacement() {
-				replacement.setContent(initial.getContent());
-				return replacement;
-			}
-
-			@Override
-			public void execute() {
-				sequence.set(index, replacement);
-			}
-
-			@Override
-			public void revert() {
-				sequence.set(index, initial);
-			}
-		});
-
-		// Set through definition
-		updates.add(new SublayerReplacement() {
-
-			@SuppressWarnings("unchecked")
-			Definition<Layer> definition = (Definition<Layer>) sequence.getDefinition(2);
-			Layer initial = sequence.get(definition);
-			Layer replacement = definition.create();
-
-			@Override
-			public Layer getInitial() {
-				return initial;
-			}
-
-			@Override
-			public Layer getReplacement() {
-				replacement.setContent(initial.getContent());
-				return replacement;
-			}
-
-			@Override
-			public void execute() {
-				sequence.set(definition, replacement);
-			}
-
-			@Override
-			public void revert() {
-				sequence.set(definition, initial);
-			}
-		});
-
+		} else {
+			// No update to test
+		}
 		return updates;
 	}
 
@@ -658,7 +608,7 @@ public class SequenceTest implements ModifiableComposedLayerTest<Sequence> {
 		try {
 			sequence.set(0, (String) null);
 			fail("No exception thrown");
-		} catch (IllegalArgumentException cause) {
+		} catch (IllegalArgumentException | NullPointerException cause) {
 			// OK
 		}
 	}
@@ -673,117 +623,6 @@ public class SequenceTest implements ModifiableComposedLayerTest<Sequence> {
 
 		try {
 			sequence.set(0, "");
-			fail("No exception thrown");
-		} catch (IllegalArgumentException cause) {
-			// OK
-		}
-	}
-
-	@Test
-	public void testSetIndexLayerChangesIndexContentCorrespondingly() {
-		Definition<Regex> word = Regex.define("[a-zA-Z]+");
-		Definition<Constant> space = Constant.define(" ");
-		Definition<Regex> number = Regex.define("\\d+");
-		Sequence sequence = new Sequence(word, space, number);
-		sequence.setContent("Answer 42");
-
-		Regex layer = word.create();
-		layer.setContent("Test");
-		sequence.set(0, layer);
-
-		assertEquals("Test", sequence.get(0).getContent());
-	}
-
-	@Test
-	public void testSetIndexLayerChangesIndexLayerCorrespondingly() {
-		Definition<Regex> word = Regex.define("[a-zA-Z]+");
-		Definition<Constant> space = Constant.define(" ");
-		Definition<Regex> number = Regex.define("\\d+");
-		Sequence sequence = new Sequence(word, space, number);
-		sequence.setContent("Answer 42");
-
-		Regex layer = word.create();
-		layer.setContent("Test");
-		sequence.set(0, layer);
-
-		assertSame(layer, sequence.get(0));
-	}
-
-	@Test
-	public void testSetIndexLayerReturnsOldLayer() {
-		Definition<Regex> word = Regex.define("[a-zA-Z]+");
-		Definition<Constant> space = Constant.define(" ");
-		Definition<Regex> number = Regex.define("\\d+");
-		Sequence sequence = new Sequence(word, space, number);
-		sequence.setContent("Answer 42");
-
-		Layer oldLayer = sequence.get(0);
-
-		Regex layer = word.create();
-		layer.setContent("Test");
-		assertSame(oldLayer, sequence.set(0, layer));
-	}
-
-	@Test
-	public void testSetIndexLayerChangesOverallContentCorrespondingly() {
-		Definition<Regex> word = Regex.define("[a-zA-Z]+");
-		Definition<Constant> space = Constant.define(" ");
-		Definition<Regex> number = Regex.define("\\d+");
-		Sequence sequence = new Sequence(word, space, number);
-		sequence.setContent("Answer 42");
-
-		Regex layer = word.create();
-		layer.setContent("Test");
-		sequence.set(0, layer);
-
-		assertEquals("Test 42", sequence.getContent());
-	}
-
-	@Test
-	public void testSetIndexLayerNotifiesListeners() {
-		Definition<Regex> word = Regex.define("[a-zA-Z]+");
-		Definition<Constant> space = Constant.define(" ");
-		Definition<Regex> number = Regex.define("\\d+");
-		Sequence sequence = new Sequence(word, space, number);
-		sequence.setContent("Answer 42");
-
-		String[] value = { null };
-		sequence.addContentListener((newValue) -> value[0] = newValue);
-
-		Regex layer = word.create();
-		layer.setContent("Test");
-		sequence.set(0, layer);
-		assertEquals("Test 42", value[0]);
-	}
-
-	@Test
-	public void testSetIndexLayerRejectsNullLayer() {
-		Definition<Regex> word = Regex.define("[a-zA-Z]+");
-		Definition<Constant> space = Constant.define(" ");
-		Definition<Regex> number = Regex.define("\\d+");
-		Sequence sequence = new Sequence(word, space, number);
-		sequence.setContent("Answer 42");
-
-		try {
-			sequence.set(0, (Layer) null);
-			fail("No exception thrown");
-		} catch (IllegalArgumentException cause) {
-			// OK
-		}
-	}
-
-	@Test
-	public void testSetIndexLayerRejectsInvalidLayer() {
-		Definition<Regex> word = Regex.define("[a-zA-Z]+");
-		Definition<Constant> space = Constant.define(" ");
-		Definition<Regex> number = Regex.define("\\d+");
-		Sequence sequence = new Sequence(word, space, number);
-		sequence.setContent("Answer 42");
-
-		Regex element = new Regex("[a-zA-Z0-9]+");
-		element.setContent("Test");
-		try {
-			sequence.set(0, element);
 			fail("No exception thrown");
 		} catch (IllegalArgumentException cause) {
 			// OK
@@ -853,7 +692,7 @@ public class SequenceTest implements ModifiableComposedLayerTest<Sequence> {
 		try {
 			sequence.set(word, (String) null);
 			fail("No exception thrown");
-		} catch (IllegalArgumentException cause) {
+		} catch (IllegalArgumentException | NullPointerException cause) {
 			// OK
 		}
 	}
@@ -885,7 +724,7 @@ public class SequenceTest implements ModifiableComposedLayerTest<Sequence> {
 		try {
 			sequence.set(null, "Test");
 			fail("No exception thrown");
-		} catch (IllegalArgumentException cause) {
+		} catch (IllegalArgumentException | NullPointerException cause) {
 			// OK
 		}
 	}
@@ -922,83 +761,6 @@ public class SequenceTest implements ModifiableComposedLayerTest<Sequence> {
 	}
 
 	@Test
-	public void testSetDefinitionLayerChangesDefinitionContentCorrespondingly() {
-		Definition<Regex> word = Regex.define("[a-zA-Z]+");
-		Definition<Constant> space = Constant.define(" ");
-		Definition<Regex> number = Regex.define("\\d+");
-		Sequence sequence = new Sequence(word, space, number);
-		sequence.setContent("Answer 42");
-
-		Regex layer = word.create();
-		layer.setContent("Test");
-		sequence.set(word, layer);
-
-		assertEquals("Test", sequence.get(word).getContent());
-	}
-
-	@Test
-	public void testSetDefinitionLayerChangesDefinitionLayerCorrespondingly() {
-		Definition<Regex> word = Regex.define("[a-zA-Z]+");
-		Definition<Constant> space = Constant.define(" ");
-		Definition<Regex> number = Regex.define("\\d+");
-		Sequence sequence = new Sequence(word, space, number);
-		sequence.setContent("Answer 42");
-
-		Regex layer = word.create();
-		layer.setContent("Test");
-		sequence.set(word, layer);
-
-		assertSame(layer, sequence.get(word));
-	}
-
-	@Test
-	public void testSetDefinitionLayerReturnsOldLayer() {
-		Definition<Regex> word = Regex.define("[a-zA-Z]+");
-		Definition<Constant> space = Constant.define(" ");
-		Definition<Regex> number = Regex.define("\\d+");
-		Sequence sequence = new Sequence(word, space, number);
-		sequence.setContent("Answer 42");
-
-		Layer oldLayer = sequence.get(word);
-
-		Regex layer = word.create();
-		layer.setContent("Test");
-		assertSame(oldLayer, sequence.set(word, layer));
-	}
-
-	@Test
-	public void testSetDefinitionLayerChangesOverallContentCorrespondingly() {
-		Definition<Regex> word = Regex.define("[a-zA-Z]+");
-		Definition<Constant> space = Constant.define(" ");
-		Definition<Regex> number = Regex.define("\\d+");
-		Sequence sequence = new Sequence(word, space, number);
-		sequence.setContent("Answer 42");
-
-		Regex layer = word.create();
-		layer.setContent("Test");
-		sequence.set(word, layer);
-
-		assertEquals("Test 42", sequence.getContent());
-	}
-
-	@Test
-	public void testSetDefinitionLayerNotifiesListeners() {
-		Definition<Regex> word = Regex.define("[a-zA-Z]+");
-		Definition<Constant> space = Constant.define(" ");
-		Definition<Regex> number = Regex.define("\\d+");
-		Sequence sequence = new Sequence(word, space, number);
-		sequence.setContent("Answer 42");
-
-		String[] value = { null };
-		sequence.addContentListener((newValue) -> value[0] = newValue);
-
-		Regex layer = word.create();
-		layer.setContent("Test");
-		sequence.set(word, layer);
-		assertEquals("Test 42", value[0]);
-	}
-
-	@Test
 	public void testDirectUpdateOnSubLayerNotifiesListeners() {
 		Definition<Regex> word = Regex.define("[a-zA-Z]+");
 		Definition<Constant> space = Constant.define(" ");
@@ -1014,119 +776,6 @@ public class SequenceTest implements ModifiableComposedLayerTest<Sequence> {
 
 		sequence.get(number).setContent("123");
 		assertEquals("Test 123", value[0]);
-	}
-
-	@Test
-	public void testDirectUpdateOnSetSubLayerNotifiesListeners() {
-		Definition<Regex> word = Regex.define("[a-zA-Z]+");
-		Definition<Constant> space = Constant.define(" ");
-		Definition<Regex> number = Regex.define("\\d+");
-		Sequence sequence = new Sequence(word, space, number);
-		sequence.setContent("Answer 42");
-
-		String[] value = { null };
-		sequence.addContentListener((newValue) -> value[0] = newValue);
-
-		Regex wordLayer = word.create();
-		wordLayer.setContent("Answer");
-		sequence.set(word, wordLayer);
-
-		wordLayer.setContent("Test");
-		assertEquals("Test 42", value[0]);
-
-		Regex numberLayer = number.create();
-		numberLayer.setContent("42");
-		sequence.set(number, numberLayer);
-
-		numberLayer.setContent("123");
-		assertEquals("Test 123", value[0]);
-	}
-
-	@Test
-	public void testSetDefinitionLayerRejectsNullLayer() {
-		Definition<Regex> word = Regex.define("[a-zA-Z]+");
-		Definition<Constant> space = Constant.define(" ");
-		Definition<Regex> number = Regex.define("\\d+");
-		Sequence sequence = new Sequence(word, space, number);
-		sequence.setContent("Answer 42");
-
-		try {
-			sequence.set(word, (Regex) null);
-			fail("No exception thrown");
-		} catch (IllegalArgumentException cause) {
-			// OK
-		}
-	}
-
-	@Test
-	public void testSetDefinitionLayerRejectsInvalidLayer() {
-		Definition<Regex> word = Regex.define("[a-zA-Z]+");
-		Definition<Constant> space = Constant.define(" ");
-		Definition<Regex> number = Regex.define("\\d+");
-		Sequence sequence = new Sequence(word, space, number);
-		sequence.setContent("Answer 42");
-
-		Regex element = new Regex("[a-zA-Z0-9]+");
-		element.setContent("Test");
-		try {
-			sequence.set(word, element);
-			fail("No exception thrown");
-		} catch (IllegalArgumentException cause) {
-			// OK
-		}
-	}
-
-	@Test
-	public void testSetDefinitionLayerRejectsNullDefinition() {
-		Definition<Regex> word = Regex.define("[a-zA-Z]+");
-		Definition<Constant> space = Constant.define(" ");
-		Definition<Regex> number = Regex.define("\\d+");
-		Sequence sequence = new Sequence(word, space, number);
-		sequence.setContent("Answer 42");
-
-		Regex item = word.create();
-		item.setContent("Test");
-		try {
-			sequence.set(null, item);
-			fail("No exception thrown");
-		} catch (IllegalArgumentException cause) {
-			// OK
-		}
-	}
-
-	@Test
-	public void testSetDefinitionLayerRejectsUnknownDefinition() {
-		Definition<Regex> word = Regex.define("[a-zA-Z]+");
-		Definition<Constant> space = Constant.define(" ");
-		Definition<Regex> number = Regex.define("\\d+");
-		Sequence sequence = new Sequence(word, space, number);
-		sequence.setContent("Answer 42");
-
-		Regex element = new Regex("[a-zA-Z0-9]+");
-		element.setContent("Test");
-		try {
-			sequence.set(Regex.define("[a-zA-Z]+"), element);
-			fail("No exception thrown");
-		} catch (IllegalArgumentException cause) {
-			// OK
-		}
-	}
-
-	@Test
-	public void testSetDefinitionLayerRejectsAmbiguousDefinition() {
-		Definition<Regex> word = Regex.define("[a-zA-Z]+");
-		Definition<Constant> space = Constant.define(" ");
-		Sequence sequence = new Sequence(word, space, word);
-		sequence.setContent("Answer test");
-
-		Regex element = new Regex("[a-zA-Z0-9]+");
-		element.setContent("try");
-		try {
-			sequence.set(word, element);
-			fail("No exception thrown");
-		} catch (IllegalArgumentException cause) {
-			// OK
-		}
 	}
 
 	@Test

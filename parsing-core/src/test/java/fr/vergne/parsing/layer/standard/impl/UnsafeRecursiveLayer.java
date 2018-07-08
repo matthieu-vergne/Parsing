@@ -25,11 +25,6 @@ public class UnsafeRecursiveLayer extends AbstractLayer implements Named {
 			public UnsafeRecursiveLayer create() {
 				return new UnsafeRecursiveLayer(definition);
 			}
-
-			@Override
-			public boolean isCompatibleWith(UnsafeRecursiveLayer layer) {
-				return true;
-			}
 		};
 	}
 

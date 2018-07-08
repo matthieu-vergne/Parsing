@@ -4,6 +4,7 @@ import static org.junit.Assert.*;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -17,15 +18,18 @@ import org.junit.runner.RunWith;
 
 import fr.vergne.parsing.definition.Definition;
 import fr.vergne.parsing.definition.Definition.DefinitionProxy;
+import fr.vergne.parsing.layer.ComposedLayerTest;
 import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.Layer.ContentListener;
-import fr.vergne.parsing.layer.ModifiableComposedLayerTest;
 import fr.vergne.parsing.layer.exception.ParsingException;
 import fr.vergne.parsing.layer.standard.Loop.BoundException;
 import fr.vergne.parsing.layer.standard.impl.UnsafeRecursiveLayer;
 
 @RunWith(JUnitPlatform.class)
-public class LoopTest implements ModifiableComposedLayerTest<Loop<Regex>> {
+public class LoopTest implements ComposedLayerTest<Loop<Regex>> {
+
+	private Loop<Regex> specialCharactersLoop;
+	private Loop<Regex> testLoop;
 
 	@Override
 	public Map<String, Loop<Regex>> instantiateLayers(Collection<String> specialCharacters) {
@@ -34,14 +38,14 @@ public class LoopTest implements ModifiableComposedLayerTest<Loop<Regex>> {
 			builder.append(character);
 		}
 
-		Loop<Regex> loop = new Loop<>(Regex.define("(?s:.)"));
+		specialCharactersLoop = new Loop<>(Regex.define("(?s:.)"));
 		Map<String, Loop<Regex>> map = new HashMap<>();
-		map.put(builder.toString(), loop);
+		map.put(builder.toString(), specialCharactersLoop);
 
-		Loop<Regex> loop2 = new Loop<>(Regex.define("[a-zA-Z\n]"));
-		map.put("test", loop2);
-		map.put("test\ntest", loop2);
-		map.put("", loop2);
+		testLoop = new Loop<>(Regex.define("[a-zA-Z\n]"));
+		map.put("test", testLoop);
+		map.put("test\ntest", testLoop);
+		map.put("", testLoop);
 
 		return map;
 	}
@@ -56,82 +60,28 @@ public class LoopTest implements ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Override
-	public Collection<SublayerUpdate> getSublayersUpdates(Loop<Regex> parent) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public Collection<SublayerReplacement> getSublayersReplacements(Loop<Regex> loop) {
-		Collection<SublayerReplacement> updates = new LinkedList<>();
-
-		if (loop.size() > 0) {
-			// Addition+removal at the start
-			updates.add(new SublayerReplacement() {
-
-				Regex initial = loop.get(0);
-				Regex replacement = loop.getItemDefinition().create();
-
-				@Override
-				public Layer getInitial() {
-					return initial;
-				}
-
-				@Override
-				public Layer getReplacement() {
-					replacement.setContent(initial.getContent());
-					return replacement;
-				}
-
-				@Override
-				public void execute() {
-					loop.add(0, replacement);
-					loop.remove(1);
-				}
-
-				@Override
-				public void revert() {
-					loop.add(0, initial);
-					loop.remove(1);
-				}
-
-			});
-
-			// Addition+removal at the end
-			updates.add(new SublayerReplacement() {
-
-				int index = loop.size() - 1;
-				Regex current = loop.get(index);
-				Regex replacement = loop.getItemDefinition().create();
-
-				@Override
-				public Layer getInitial() {
-					return current;
-				}
-
-				@Override
-				public Layer getReplacement() {
-					replacement.setContent(current.getContent());
-					return replacement;
-				}
-
-				@Override
-				public void execute() {
-					loop.add(index + 1, replacement);
-					loop.remove(index);
-				}
-
-				@Override
-				public void revert() {
-					loop.add(index + 1, current);
-					loop.remove(index);
-				}
-
-			});
+	public Collection<SublayerUpdate> getSublayersUpdates(Loop<Regex> loop) {
+		Collection<SublayerUpdate> updates = new LinkedList<>();
+		if (loop == specialCharactersLoop) {
+			// No update planned for this loop
+		} else if (loop == testLoop) {
+			if (loop.size() == 0) {
+				// No update planned for this loop
+			} else {
+				Regex sub0 = loop.get(0); // First item
+				Regex sub1 = loop.get(loop.size() / 2); // Middle item
+				Regex sub2 = loop.get(loop.size() - 1); // Last item
+				String initial0 = sub0.getContent();
+				String initial1 = sub1.getContent();
+				String initial2 = sub2.getContent();
+				String replacement = "X"; // Valid item not present initially
+				updates.add(ComposedLayerTest.simpleUpdate(sub0, initial0, replacement));
+				updates.add(ComposedLayerTest.simpleUpdate(sub1, initial1, replacement));
+				updates.add(ComposedLayerTest.simpleUpdate(sub2, initial2, replacement));
+			}
 		} else {
-			// Irrelevant updates
+			throw new RuntimeException("Loop not managed: " + loop);
 		}
-
 		return updates;
 	}
 
@@ -149,27 +99,21 @@ public class LoopTest implements ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	public void testGeneratorInstanceProperlyGeneratesInstancesWhenRequired() {
+	public void testInputDefinitionProperlyCreateInstancesWhenRequired() {
 		final Collection<Regex> generated = new HashSet<Regex>();
 		Loop<Regex> loop = new Loop<>(new Definition<Regex>() {
 
 			@Override
 			public String getRegex() {
-				// TODO Place regex here
-				return create().getRegex();
+				return "[a-zA-Z]";
 			}
 
 			@Override
 			public Regex create() {
 				// TODO Use SimpleDefinition?
-				Regex formula = new Regex("[a-zA-Z]");
+				Regex formula = new Regex(getRegex());
 				generated.add(formula);
 				return formula;
-			}
-
-			@Override
-			public boolean isCompatibleWith(Regex layer) {
-				return getRegex().equals(layer.getRegex());
 			}
 
 		});
@@ -500,120 +444,6 @@ public class LoopTest implements ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
-	public void testAddElementProperlyAddsElement() {
-		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"));
-		loop.setContent("Test");
-
-		loop.add(loop.size(), new Regex("[a-zA-Z]", "i"));
-		assertEquals("Testi", loop.getContent());
-		loop.add(loop.size(), new Regex("[a-zA-Z]", "n"));
-		assertEquals("Testin", loop.getContent());
-		loop.add(loop.size(), new Regex("[a-zA-Z]", "g"));
-		assertEquals("Testing", loop.getContent());
-
-		loop.add(0, new Regex("[a-zA-Z]", "V"));
-		assertEquals("VTesting", loop.getContent());
-		loop.add(1, new Regex("[a-zA-Z]", "i"));
-		assertEquals("ViTesting", loop.getContent());
-		loop.add(2, new Regex("[a-zA-Z]", "v"));
-		assertEquals("VivTesting", loop.getContent());
-		loop.add(3, new Regex("[a-zA-Z]", "a"));
-		assertEquals("VivaTesting", loop.getContent());
-	}
-
-	@Test
-	public void testAddElementProperlyNotifiesListeners() {
-		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"));
-		loop.setContent("Test");
-		final String[] value = new String[] { null };
-		loop.addContentListener(new ContentListener() {
-
-			@Override
-			public void contentSet(String newContent) {
-				value[0] = newContent;
-			}
-		});
-
-		loop.add(loop.size(), new Regex("[a-zA-Z]", "i"));
-		assertEquals("Testi", value[0]);
-		loop.add(loop.size(), new Regex("[a-zA-Z]", "n"));
-		assertEquals("Testin", value[0]);
-		loop.add(loop.size(), new Regex("[a-zA-Z]", "g"));
-		assertEquals("Testing", value[0]);
-
-		loop.add(0, new Regex("[a-zA-Z]", "V"));
-		assertEquals("VTesting", value[0]);
-		loop.add(1, new Regex("[a-zA-Z]", "i"));
-		assertEquals("ViTesting", value[0]);
-		loop.add(2, new Regex("[a-zA-Z]", "v"));
-		assertEquals("VivTesting", value[0]);
-		loop.add(3, new Regex("[a-zA-Z]", "a"));
-		assertEquals("VivaTesting", value[0]);
-	}
-
-	@Test
-	public void testUpdateOnAddedElementProperlyNotifiesListeners() {
-		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"));
-		loop.setContent("Test");
-		Regex added = new Regex("[a-zA-Z]", "a");
-		loop.add(2, added);
-
-		final String[] value = new String[] { null };
-		loop.addContentListener(new ContentListener() {
-
-			@Override
-			public void contentSet(String newContent) {
-				value[0] = newContent;
-			}
-		});
-
-		added.setContent("C");
-		assertEquals(loop.getContent(), value[0]);
-	}
-
-	@Test
-	public void testAddElementThrowsExceptionOnInvalidRegex() {
-		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"));
-		loop.setContent("Test");
-
-		try {
-			loop.add(3, new Regex("[a-zA-Z!]", "a"));
-			fail("Exception not thrown with " + loop);
-		} catch (IllegalArgumentException e) {
-		}
-	}
-
-	@Test
-	public void testAddElementThrowsExceptionOnInvalidIndex() {
-		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"));
-		loop.setContent("Test");
-
-		try {
-			loop.add(20, new Regex("[a-zA-Z]", "a"));
-			fail("Exception not thrown with " + loop);
-		} catch (IndexOutOfBoundsException e) {
-		}
-
-		try {
-			loop.add(-5, new Regex("[a-zA-Z]", "a"));
-			fail("Exception not thrown with " + loop);
-		} catch (IndexOutOfBoundsException e) {
-		}
-	}
-
-	@Test
-	public void testAddElementThrowsExceptionIfMaxNotRespected() {
-		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"), 0, 5);
-		loop.setContent("abcde");
-
-		try {
-			loop.add(2, new Regex("[a-zA-Z]", "a"));
-			fail("Exception not thrown with " + loop);
-		} catch (BoundException e) {
-		}
-	}
-
-	@Test
 	public void testRemoveProperlyRemovesElements() {
 		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"));
 		loop.setContent("Test");
@@ -905,42 +735,19 @@ public class LoopTest implements ModifiableComposedLayerTest<Loop<Regex>> {
 		assertEquals(++operationCounter, values.size());
 		assertEquals(loop.getContent(), values.getFirst());
 
-		loop.add(0, new Regex("[a-zA-Z]", "x"));
+		loop.addAll(0, Arrays.asList("a", "b", "c"));
 		assertEquals(++operationCounter, values.size());
 		assertEquals(loop.getContent(), values.getFirst());
 
-		loop.add(2, new Regex("[a-zA-Z]", "x"));
+		loop.addAll(2, Arrays.asList("a", "b", "c"));
 		assertEquals(++operationCounter, values.size());
 		assertEquals(loop.getContent(), values.getFirst());
 
-		loop.add(loop.size(), new Regex("[a-zA-Z]", "x"));
+		loop.addAll(loop.size(), Arrays.asList("a", "b", "c"));
 		assertEquals(++operationCounter, values.size());
 		assertEquals(loop.getContent(), values.getFirst());
 
-		loop.addAllContents(0, Arrays.asList("a", "b", "c"));
-		assertEquals(++operationCounter, values.size());
-		assertEquals(loop.getContent(), values.getFirst());
-
-		loop.addAllContents(2, Arrays.asList("a", "b", "c"));
-		assertEquals(++operationCounter, values.size());
-		assertEquals(loop.getContent(), values.getFirst());
-
-		loop.addAllContents(loop.size(), Arrays.asList("a", "b", "c"));
-		assertEquals(++operationCounter, values.size());
-		assertEquals(loop.getContent(), values.getFirst());
-
-		loop.addAll(0,
-				Arrays.asList(new Regex("[a-zA-Z]", "a"), new Regex("[a-zA-Z]", "b"), new Regex("[a-zA-Z]", "c")));
-		assertEquals(++operationCounter, values.size());
-		assertEquals(loop.getContent(), values.getFirst());
-
-		loop.addAll(2,
-				Arrays.asList(new Regex("[a-zA-Z]", "a"), new Regex("[a-zA-Z]", "b"), new Regex("[a-zA-Z]", "c")));
-		assertEquals(++operationCounter, values.size());
-		assertEquals(loop.getContent(), values.getFirst());
-
-		loop.addAll(loop.size(),
-				Arrays.asList(new Regex("[a-zA-Z]", "a"), new Regex("[a-zA-Z]", "b"), new Regex("[a-zA-Z]", "c")));
+		loop.sort((r1, r2) -> Comparator.<String>naturalOrder().compare(r1.getContent(), r2.getContent()));
 		assertEquals(++operationCounter, values.size());
 		assertEquals(loop.getContent(), values.getFirst());
 
@@ -1005,6 +812,48 @@ public class LoopTest implements ModifiableComposedLayerTest<Loop<Regex>> {
 	}
 
 	@Test
+	public void testRecursiveLoopReturnsCorrectParsingException() {
+		Loop<UnsafeRecursiveLayer> loop = instantiateRecursiveLayer();
+		try {
+			loop.setContent("---a---");
+			fail("Exception not thrown");
+		} catch (ParsingException e) {
+			assertEquals("Unable to parse UNSAFE:LOOP[UNSAFE*] for LOOP[UNSAFE*] from (1,4): \"a---\"", e.getMessage());
+		}
+	}
+
+	@Test
+	public void testSortInCorrectOrder() {
+		Loop<Regex> loop = new Loop<>(Regex.define("."));
+		loop.setContent("CbaBcA");
+		Comparator<Regex> comparator = (r1, r2) -> Comparator.<String>naturalOrder().compare(r1.getContent(),
+				r2.getContent());
+		loop.sort(comparator);
+		assertEquals("ABCabc", loop.getContent());
+	}
+
+	@Test
+	public void testSortProperlyNotifiesListeners() {
+		Loop<Regex> loop = new Loop<>(Regex.define("[a-zA-Z]"));
+		loop.setContent("bac");
+		final String[] value = new String[] { null };
+		loop.addContentListener(new ContentListener() {
+
+			@Override
+			public void contentSet(String newContent) {
+				value[0] = newContent;
+			}
+		});
+
+		Comparator<Regex> comparator = (r1, r2) -> Comparator.<String>naturalOrder().compare(r1.getContent(),
+				r2.getContent());
+		loop.sort(comparator);
+		assertEquals("abc", value[0]);
+		loop.sort(comparator.reversed());
+		assertEquals("cba", value[0]);
+	}
+
+	@Test
 	public void testBigLoop() {
 		Loop<Regex> loop = new Loop<>(Regex.define(">[0-9]++"), 0, Integer.MAX_VALUE, Quantifier.POSSESSIVE);
 		Random rand = new Random();
@@ -1016,16 +865,5 @@ public class LoopTest implements ModifiableComposedLayerTest<Loop<Regex>> {
 
 		loop.setContent(content);
 		assertEquals(content, loop.getContent());
-	}
-
-	@Test
-	public void testRecursiveLoopReturnsCorrectParsingException() {
-		Loop<UnsafeRecursiveLayer> loop = instantiateRecursiveLayer();
-		try {
-			loop.setContent("---a---");
-			fail("Exception not thrown");
-		} catch (ParsingException e) {
-			assertEquals("Unable to parse UNSAFE:LOOP[UNSAFE*] for LOOP[UNSAFE*] from (1,4): \"a---\"", e.getMessage());
-		}
 	}
 }

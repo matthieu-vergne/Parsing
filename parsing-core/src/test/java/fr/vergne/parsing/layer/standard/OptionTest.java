@@ -14,26 +14,31 @@ import org.junit.runner.RunWith;
 
 import fr.vergne.parsing.definition.Definition;
 import fr.vergne.parsing.definition.Definition.DefinitionProxy;
+import fr.vergne.parsing.layer.ComposedLayerTest;
 import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.Layer.ContentListener;
-import fr.vergne.parsing.layer.ModifiableComposedLayerTest;
 import fr.vergne.parsing.layer.exception.ParsingException;
 import fr.vergne.parsing.layer.standard.impl.UnsafeRecursiveLayer;
 
 // TODO Add quantifier tests?
 @RunWith(JUnitPlatform.class)
-public class OptionTest implements ModifiableComposedLayerTest<Option<Regex>> {
+public class OptionTest implements ComposedLayerTest<Option<Regex>> {
+
+	private Option<Regex> testOption;
 
 	@Override
 	public Map<String, Option<Regex>> instantiateLayers(Collection<String> specialCharacters) {
+		Map<String, Option<Regex>> map = new HashMap<>();
+
 		StringBuilder builder = new StringBuilder();
 		for (String character : specialCharacters) {
 			builder.append(character);
 		}
-		Option<Regex> option = new Option<>(Regex.define("(?s:.+)"));
+		map.put(builder.toString(), new Option<>(Regex.define("(?s:.+)")));
 
-		Map<String, Option<Regex>> map = new HashMap<>();
-		map.put(builder.toString(), option);
+		testOption = new Option<>(Regex.define("[a-zA-Z]"));
+		map.put("x", testOption);
+
 		return map;
 	}
 
@@ -43,44 +48,15 @@ public class OptionTest implements ModifiableComposedLayerTest<Option<Regex>> {
 	}
 
 	@Override
-	public Collection<SublayerUpdate> getSublayersUpdates(Option<Regex> parent) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public Collection<SublayerReplacement> getSublayersReplacements(Option<Regex> option) {
-		Collection<SublayerReplacement> updates = new LinkedList<>();
-
-		if (option.isPresent()) {
-			updates.add(new SublayerReplacement() {
-
-				Regex current = option.getOption();
-				Regex replacement = option.getOptionalDefinition().create();
-
-				@Override
-				public Layer getInitial() {
-					return current;
-				}
-
-				@Override
-				public Layer getReplacement() {
-					replacement.setContent(current.getContent());
-					return replacement;
-				}
-
-				@Override
-				public void execute() {
-					option.setOption(replacement);
-				}
-
-				@Override
-				public void revert() {
-					option.setOption(current);
-				}
-			});
+	public Collection<SublayerUpdate> getSublayersUpdates(Option<Regex> option) {
+		Collection<SublayerUpdate> updates = new LinkedList<>();
+		if (option == testOption) {
+			Layer subLayer = option.getOption();
+			String initial = subLayer.getContent();
+			String replacement = "z";
+			updates.add(ComposedLayerTest.simpleUpdate(subLayer, initial, replacement));
 		} else {
-			// Irrelevant updates
+			// No update to test
 		}
 		return updates;
 	}
@@ -175,30 +151,6 @@ public class OptionTest implements ModifiableComposedLayerTest<Option<Regex>> {
 		assertEquals(option.getContent(), value[0]);
 		option.setContent("");
 		assertEquals(option.getContent(), value[0]);
-	}
-
-	@Test
-	public void testSetOptionNotifiesListeners() {
-		Definition<Regex> regex = Regex.define("[abc]+");
-		Option<Regex> option = new Option<>(regex);
-		final String[] value = new String[] { null };
-		option.addContentListener(new ContentListener() {
-
-			@Override
-			public void contentSet(String newContent) {
-				value[0] = newContent;
-			}
-		});
-
-		Regex element = regex.create();
-		element.setContent("aaa");
-		option.setOption(element);
-		assertEquals("aaa", value[0]);
-
-		element = regex.create();
-		element.setContent("ccc");
-		option.setOption(element);
-		assertEquals("ccc", value[0]);
 	}
 
 	@Test

@@ -33,15 +33,6 @@ public interface Definition<T extends Layer> {
 	public T create();
 
 	/**
-	 * 
-	 * @param layer
-	 *            the {@link Layer} to evaluate
-	 * @return <code>true</code> if this {@link Layer} is equivalent to one created
-	 *         through {@link #create()}, false otherwise
-	 */
-	public boolean isCompatibleWith(T layer);
-
-	/**
 	 * Create an alias to an existing {@link Definition}. The source
 	 * {@link Definition} and the alias are not the same (different instances), but
 	 * they build on the same rules (can parse the same content). If you need it to
@@ -54,7 +45,7 @@ public interface Definition<T extends Layer> {
 	 */
 	// TODO test
 	public static <T extends Layer> Definition<T> like(Definition<T> source) {
-		return like(source, Function.identity(), Function.identity());
+		return like(source, Function.identity());
 	}
 
 	/**
@@ -68,14 +59,11 @@ public interface Definition<T extends Layer> {
 	 * @param translater
 	 *            the {@link Function} which creates a target {@link Layer} based on
 	 *            a source {@link Layer}
-	 * @param inverse
-	 *            the {@link Function} which retrieves the source {@link Layer} from
-	 *            the target {@link Layer}
 	 * @return the target {@link Definition}
 	 */
 	// TODO test
 	public static <L1 extends Layer, L2 extends Layer> Definition<L2> like(Definition<L1> source,
-			Function<L1, L2> translater, Function<L2, L1> inverse) {
+			Function<L1, L2> translater) {
 		return new Definition<L2>() {
 
 			@Override
@@ -86,15 +74,6 @@ public interface Definition<T extends Layer> {
 			@Override
 			public L2 create() {
 				return translater.apply(source.create());
-			}
-
-			@Override
-			public boolean isCompatibleWith(L2 layer) {
-				/*
-				 * TODO Inverse is only needed for that, but it would be nice to remove this
-				 * method. Try to do that and remove the inverse parameter when it is done.
-				 */
-				return source.isCompatibleWith(inverse.apply(layer));
 			}
 		};
 	}
@@ -143,11 +122,6 @@ public interface Definition<T extends Layer> {
 			}
 
 			@Override
-			public boolean isCompatibleWith(T layer) {
-				return definition.isCompatibleWith(layer);
-			}
-
-			@Override
 			public void setDelegate(Definition<T> definition) {
 				this.definition = definition;
 			}
@@ -178,11 +152,6 @@ public interface Definition<T extends Layer> {
 				L layer = definition.create();
 				layer.setContent(content);
 				return layer;
-			}
-
-			@Override
-			public boolean isCompatibleWith(L layer) {
-				return definition.isCompatibleWith(layer);
 			}
 		};
 	}

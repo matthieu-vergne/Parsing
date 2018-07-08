@@ -20,6 +20,26 @@ public interface ComposedLayerTest<T extends Layer> extends LayerTest<T> {
 		String getReplacement();
 	}
 
+	static public SublayerUpdate simpleUpdate(Layer subLayer, String initial, String replacement) {
+		return new SublayerUpdate() {
+			@Override
+			public Layer getLayer() {
+				return subLayer;
+			}
+
+			@Override
+			public String getInitial() {
+				return initial;
+			}
+
+			@Override
+			public String getReplacement() {
+				return replacement;
+			}
+
+		};
+	}
+
 	// TODO See if I can merge with other methods
 	// TODO Implement in child tests
 	public Collection<SublayerUpdate> getSublayersUpdates(T parent);

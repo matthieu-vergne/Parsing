@@ -7,7 +7,7 @@ import fr.vergne.parsing.definition.Definition;
 import fr.vergne.parsing.layer.Layer;
 
 public class SimpleDefinition<T extends Layer> implements Definition<T> {
-	
+
 	private final Supplier<T> instantiator;
 	private final Function<T, String> regexProvider;
 
@@ -15,7 +15,7 @@ public class SimpleDefinition<T extends Layer> implements Definition<T> {
 		this.instantiator = instantiator;
 		this.regexProvider = regexProvider;
 	}
-	
+
 	@Override
 	public String getRegex() {
 		return regexProvider.apply(create());
@@ -24,11 +24,6 @@ public class SimpleDefinition<T extends Layer> implements Definition<T> {
 	@Override
 	public T create() {
 		return instantiator.get();
-	}
-
-	@Override
-	public boolean isCompatibleWith(T layer) {
-		return getRegex().equals(regexProvider.apply(layer));
 	}
 
 }

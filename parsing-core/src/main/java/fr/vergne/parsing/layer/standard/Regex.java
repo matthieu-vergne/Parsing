@@ -109,11 +109,6 @@ public class Regex extends AbstractLayer implements Named {
 			public Regex create() {
 				return new Regex(regex);
 			}
-
-			@Override
-			public boolean isCompatibleWith(Regex layer) {
-				return layer.getRegex().equals(regex);
-			}
 		};
 	}
 }

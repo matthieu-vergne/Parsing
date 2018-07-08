@@ -2,8 +2,11 @@ package fr.vergne.parsing.layer.standard;
 
 import static org.junit.Assert.*;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -15,16 +18,24 @@ import org.junit.runner.RunWith;
 
 import fr.vergne.parsing.definition.Definition;
 import fr.vergne.parsing.definition.Definition.DefinitionProxy;
+import fr.vergne.parsing.layer.ComposedLayerTest;
 import fr.vergne.parsing.layer.Layer;
 import fr.vergne.parsing.layer.Layer.ContentListener;
-import fr.vergne.parsing.layer.ModifiableComposedLayerTest;
 import fr.vergne.parsing.layer.exception.ParsingException;
 import fr.vergne.parsing.layer.standard.Loop.BoundException;
 import fr.vergne.parsing.layer.standard.impl.UnsafeRecursiveLayer;
 
 // TODO Test quantifiers?
 @RunWith(JUnitPlatform.class)
-public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedLoop<Regex, Constant>> {
+public class SeparatedLoopTest implements ComposedLayerTest<SeparatedLoop<Regex, Constant>> {
+
+	private SeparatedLoop<Regex, Constant> specialCharactersLoop;
+	private SeparatedLoop<Regex, Constant> testLoop;
+
+	static void assertContains(String message, String expected, String actual) {
+		String failedMsg = '"' + actual + '"' + " does not contain " + '"' + expected + '"';
+		assertTrue(failedMsg+"\n"+message, actual.contains(expected));
+	}
 
 	@Override
 	public Map<String, SeparatedLoop<Regex, Constant>> instantiateLayers(Collection<String> specialCharacters) {
@@ -32,8 +43,8 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 		String sep = ",";
 
 		{
-			SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<>(Regex.define("[^,]+"), Constant.define(sep));
-			loop.setDefaultSeparator(sep);
+			specialCharactersLoop = new SeparatedLoop<>(Regex.define("[^,]+"), Constant.define(sep));
+			specialCharactersLoop.setDefaultSeparator(sep);
 
 			StringBuilder builder = new StringBuilder();
 			for (String character : specialCharacters) {
@@ -41,15 +52,15 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 				builder.append(character);
 			}
 			String content = builder.toString().substring(sep.length());
-			map.put(content, loop);
+			map.put(content, specialCharactersLoop);
 		}
 
 		{
-			SeparatedLoop<Regex, Constant> loop2 = new SeparatedLoop<>(Regex.define("[a-zA-Z]"), Constant.define(sep));
-			loop2.setDefaultSeparator(sep);
-			map.put("a,b,c,d", loop2);
-			map.put("a", loop2);
-			map.put("", loop2);
+			testLoop = new SeparatedLoop<>(Regex.define("[a-zA-Z]"), Constant.define(sep));
+			testLoop.setDefaultSeparator(sep);
+			map.put("a,b,c,d", testLoop);
+			map.put("a", testLoop);
+			map.put("", testLoop);
 		}
 
 		return map;
@@ -68,149 +79,28 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 	}
 
 	@Override
-	public Collection<SublayerUpdate> getSublayersUpdates(SeparatedLoop<Regex, Constant> parent) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public Collection<SublayerReplacement> getSublayersReplacements(SeparatedLoop<Regex, Constant> loop) {
-		Collection<SublayerReplacement> updates = new LinkedList<>();
-
-		if (loop.size() > 0) {
-			// Item addition+removal at the start
-			updates.add(new SublayerReplacement() {
-
-				Regex initial = loop.get(0);
-				Regex replacement = loop.getItemDefinition().create();
-
-				@Override
-				public Layer getInitial() {
-					return initial;
-				}
-
-				@Override
-				public Layer getReplacement() {
-					replacement.setContent(initial.getContent());
-					return replacement;
-				}
-
-				@Override
-				public void execute() {
-					loop.add(0, replacement);
-					loop.remove(1);
-				}
-
-				@Override
-				public void revert() {
-					loop.add(0, initial);
-					loop.remove(1);
-				}
-
-			});
-
-			// Item addition+removal at the end
-			updates.add(new SublayerReplacement() {
-
-				int index = loop.size() - 1;
-				Regex current = loop.get(index);
-				Regex replacement = loop.getItemDefinition().create();
-
-				@Override
-				public Layer getInitial() {
-					return current;
-				}
-
-				@Override
-				public Layer getReplacement() {
-					replacement.setContent(current.getContent());
-					return replacement;
-				}
-
-				@Override
-				public void execute() {
-					loop.add(index + 1, replacement);
-					loop.remove(index);
-				}
-
-				@Override
-				public void revert() {
-					loop.add(index + 1, current);
-					loop.remove(index);
-				}
-
-			});
+	public Collection<SublayerUpdate> getSublayersUpdates(SeparatedLoop<Regex, Constant> loop) {
+		Collection<SublayerUpdate> updates = new LinkedList<>();
+		if (loop == specialCharactersLoop) {
+			// No update planned for this loop
+		} else if (loop == testLoop) {
+			if (loop.size() == 0) {
+				// No update planned for this loop
+			} else {
+				Regex sub0 = loop.get(0); // First item
+				Regex sub1 = loop.get(loop.size() / 2); // Middle item
+				Regex sub2 = loop.get(loop.size() - 1); // Last item
+				String initial0 = sub0.getContent();
+				String initial1 = sub1.getContent();
+				String initial2 = sub2.getContent();
+				String replacement = "X"; // Valid item not present initially
+				updates.add(ComposedLayerTest.simpleUpdate(sub0, initial0, replacement));
+				updates.add(ComposedLayerTest.simpleUpdate(sub1, initial1, replacement));
+				updates.add(ComposedLayerTest.simpleUpdate(sub2, initial2, replacement));
+			}
 		} else {
-			// Irrelevant updates
+			throw new RuntimeException("Loop not managed: " + loop);
 		}
-
-		if (loop.size() > 1) {
-			// Separator addition+removal
-			updates.add(new SublayerReplacement() {
-
-				Constant replacement;
-
-				@Override
-				public Layer getInitial() {
-					return null;
-				}
-
-				@Override
-				public Layer getReplacement() {
-					return replacement;
-				}
-
-				@Override
-				public void execute() {
-					Regex reference = loop.get(loop.size() - 1);
-					Regex addition = loop.getItemDefinition().create();
-					addition.setContent(reference.getContent());
-					loop.add(loop.size(), addition);
-					replacement = loop.getSeparator(loop.size() - 2);
-				}
-
-				@Override
-				public void revert() {
-					loop.remove(loop.size() - 1);
-				}
-
-			});
-
-			// Item addition+removal at the end
-			updates.add(new SublayerReplacement() {
-
-				int index = loop.size() - 1;
-				Regex current = loop.get(index);
-				Regex replacement = loop.getItemDefinition().create();
-
-				@Override
-				public Layer getInitial() {
-					return current;
-				}
-
-				@Override
-				public Layer getReplacement() {
-					replacement.setContent(current.getContent());
-					return replacement;
-				}
-
-				@Override
-				public void execute() {
-					loop.add(index + 1, replacement);
-					loop.remove(index);
-				}
-
-				@Override
-				public void revert() {
-					loop.add(index + 1, current);
-					loop.remove(index);
-				}
-
-			});
-		} else {
-			// Irrelevant updates
-		}
-
 		return updates;
 	}
 
@@ -553,15 +443,26 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 			loop.add(2, "!");
 			fail("Exception not thrown with " + loop);
 		} catch (ParsingException e) {
-			assertEquals(loop.toString(), "Incompatible regex \"[a-zA-Z]\" for content \"!\"", e.getMessage());
+			String message = loop.toString() + formatException(e);
+			assertContains(message, "[a-zA-Z]", e.getMessage());
+			assertContains(message, "\"!\"", e.getMessage());
 		}
 
 		try {
 			loop.add(2, "abc");
 			fail("Exception not thrown with " + loop);
 		} catch (ParsingException e) {
-			assertEquals(loop.toString(), "Incompatible regex \"[a-zA-Z]\" for content \"abc\"", e.getMessage());
+			String message = loop.toString() + formatException(e);
+			assertContains(message, "[a-zA-Z]", e.getMessage());
+			assertContains(message, "\"abc\"", e.getMessage());
 		}
+	}
+
+	private String formatException(ParsingException e) {
+		StringWriter out = new StringWriter();
+		PrintWriter writer = new PrintWriter(out);
+		e.printStackTrace(writer);
+		return "\n" + out.toString();
 	}
 
 	@Test
@@ -589,148 +490,6 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 
 		try {
 			loop.add(2, "a");
-			fail("Exception not thrown with " + loop);
-		} catch (BoundException e) {
-		}
-	}
-
-	@Test
-	public void testAddItemProperlyAddsItem() {
-		SeparatedLoop<Regex, Regex> loop = new SeparatedLoop<>(Regex.define("[a-zA-Z]"), Regex.define("[,;]"));
-		loop.setContent("a,b,c,d");
-		loop.setDefaultSeparator(",");
-
-		loop.add(loop.size(), new Regex("[a-zA-Z]", "e"));
-		assertEquals("a,b,c,d,e", loop.getContent());
-		loop.add(loop.size(), new Regex("[a-zA-Z]", "f"));
-		assertEquals("a,b,c,d,e,f", loop.getContent());
-
-		loop.add(1, new Regex("[a-zA-Z]", "z"));
-		assertEquals("a,z,b,c,d,e,f", loop.getContent());
-		loop.add(0, new Regex("[a-zA-Z]", "y"));
-		assertEquals("y,a,z,b,c,d,e,f", loop.getContent());
-		loop.add(3, new Regex("[a-zA-Z]", "x"));
-		assertEquals("y,a,z,x,b,c,d,e,f", loop.getContent());
-	}
-
-	@Test
-	public void testAddItemUsesCorrectSeparator() {
-		SeparatedLoop<Regex, Regex> loop = new SeparatedLoop<>(Regex.define("[a-zA-Z]"), Regex.define("[,;]"));
-		loop.setContent("a,b,c,d");
-
-		loop.setDefaultSeparator(",");
-		loop.add(loop.size(), new Regex("[a-zA-Z]", "e"));
-		assertEquals("a,b,c,d,e", loop.getContent());
-		loop.add(loop.size(), new Regex("[a-zA-Z]", "f"));
-		assertEquals("a,b,c,d,e,f", loop.getContent());
-
-		loop.setDefaultSeparator(";");
-		loop.add(1, new Regex("[a-zA-Z]", "z"));
-		assertEquals("a;z,b,c,d,e,f", loop.getContent());
-		loop.add(0, new Regex("[a-zA-Z]", "y"));
-		assertEquals("y;a;z,b,c,d,e,f", loop.getContent());
-		loop.add(3, new Regex("[a-zA-Z]", "x"));
-		assertEquals("y;a;z;x,b,c,d,e,f", loop.getContent());
-	}
-
-	@Test
-	public void testAddItemProperlyNotifiesListeners() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<>(Regex.define("[a-zA-Z]"), Constant.define(","));
-		loop.setContent("a,b,c,d");
-		final String[] value = new String[] { null };
-		loop.addContentListener(new ContentListener() {
-
-			@Override
-			public void contentSet(String newContent) {
-				value[0] = newContent;
-			}
-		});
-
-		loop.add(0, new Regex("[a-zA-Z]", "i"));
-		assertEquals(loop.getContent(), value[0]);
-		loop.add(2, new Regex("[a-zA-Z]", "j"));
-		assertEquals(loop.getContent(), value[0]);
-		loop.add(loop.size(), new Regex("[a-zA-Z]", "k"));
-		assertEquals(loop.getContent(), value[0]);
-	}
-
-	@Test
-	public void testUpdateOnAddedItemProperlyNotifiesListeners() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<>(Regex.define("[a-zA-Z]"), Constant.define(","));
-		loop.setDefaultSeparator(",");
-		Regex added0 = new Regex("[a-zA-Z]", "a");
-		Regex added1 = new Regex("[a-zA-Z]", "b");
-		Regex added2 = new Regex("[a-zA-Z]", "c");
-		loop.add(0, added0);
-		loop.add(1, added1);
-		loop.add(2, added2);
-
-		final String[] value = new String[] { null };
-		loop.addContentListener(new ContentListener() {
-
-			@Override
-			public void contentSet(String newContent) {
-				value[0] = newContent;
-			}
-		});
-
-		added0.setContent("x");
-		assertEquals(loop.getContent(), value[0]);
-		added1.setContent("y");
-		assertEquals(loop.getContent(), value[0]);
-		added2.setContent("z");
-		assertEquals(loop.getContent(), value[0]);
-	}
-
-	@Test
-	public void testAddItemThrowsExceptionOnInvalidRegex() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<>(Regex.define("[a-zA-Z]"), Constant.define(","));
-		loop.setContent("a,b,c,d");
-
-		try {
-			loop.add(0, new Regex("[a-zA-Z!]", "a"));
-			fail("Exception not thrown with " + loop);
-		} catch (IllegalArgumentException e) {
-		}
-
-		try {
-			loop.add(2, new Regex("[a-zA-Z!]", "a"));
-			fail("Exception not thrown with " + loop);
-		} catch (IllegalArgumentException e) {
-		}
-
-		try {
-			loop.add(4, new Regex("[a-zA-Z!]", "a"));
-			fail("Exception not thrown with " + loop);
-		} catch (IllegalArgumentException e) {
-		}
-	}
-
-	@Test
-	public void testAddItemThrowsExceptionOnInvalidIndex() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<>(Regex.define("[a-zA-Z]"), Constant.define(","));
-		loop.setContent("a,b,c,d");
-
-		try {
-			loop.add(20, new Regex("[a-zA-Z]", "a"));
-			fail("Exception not thrown with " + loop);
-		} catch (IndexOutOfBoundsException e) {
-		}
-
-		try {
-			loop.add(-5, new Regex("[a-zA-Z]", "a"));
-			fail("Exception not thrown with " + loop);
-		} catch (IndexOutOfBoundsException e) {
-		}
-	}
-
-	@Test
-	public void testAddItemThrowsExceptionIfMaxNotRespected() {
-		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<>(Regex.define("[a-zA-Z]"), Constant.define(","), 0, 5);
-		loop.setContent("a,b,c,d,e");
-
-		try {
-			loop.add(2, new Regex("[a-zA-Z]", "a"));
 			fail("Exception not thrown with " + loop);
 		} catch (BoundException e) {
 		}
@@ -1275,42 +1034,19 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 		assertEquals(++operationCounter, values.size());
 		assertEquals(loop.getContent(), values.getFirst());
 
-		loop.add(0, new Regex("[a-zA-Z]", "x"));
+		loop.addAll(0, Arrays.asList("a", "b", "c"));
 		assertEquals(++operationCounter, values.size());
 		assertEquals(loop.getContent(), values.getFirst());
 
-		loop.add(2, new Regex("[a-zA-Z]", "x"));
+		loop.addAll(2, Arrays.asList("a", "b", "c"));
 		assertEquals(++operationCounter, values.size());
 		assertEquals(loop.getContent(), values.getFirst());
 
-		loop.add(loop.size(), new Regex("[a-zA-Z]", "x"));
+		loop.addAll(loop.size(), Arrays.asList("a", "b", "c"));
 		assertEquals(++operationCounter, values.size());
 		assertEquals(loop.getContent(), values.getFirst());
 
-		loop.addAllContents(0, Arrays.asList("a", "b", "c"));
-		assertEquals(++operationCounter, values.size());
-		assertEquals(loop.getContent(), values.getFirst());
-
-		loop.addAllContents(2, Arrays.asList("a", "b", "c"));
-		assertEquals(++operationCounter, values.size());
-		assertEquals(loop.getContent(), values.getFirst());
-
-		loop.addAllContents(loop.size(), Arrays.asList("a", "b", "c"));
-		assertEquals(++operationCounter, values.size());
-		assertEquals(loop.getContent(), values.getFirst());
-
-		loop.addAll(0,
-				Arrays.asList(new Regex("[a-zA-Z]", "a"), new Regex("[a-zA-Z]", "b"), new Regex("[a-zA-Z]", "c")));
-		assertEquals(++operationCounter, values.size());
-		assertEquals(loop.getContent(), values.getFirst());
-
-		loop.addAll(2,
-				Arrays.asList(new Regex("[a-zA-Z]", "a"), new Regex("[a-zA-Z]", "b"), new Regex("[a-zA-Z]", "c")));
-		assertEquals(++operationCounter, values.size());
-		assertEquals(loop.getContent(), values.getFirst());
-
-		loop.addAll(loop.size(),
-				Arrays.asList(new Regex("[a-zA-Z]", "a"), new Regex("[a-zA-Z]", "b"), new Regex("[a-zA-Z]", "c")));
+		loop.sort((r1, r2) -> Comparator.<String>naturalOrder().compare(r1.getContent(), r2.getContent()));
 		assertEquals(++operationCounter, values.size());
 		assertEquals(loop.getContent(), values.getFirst());
 
@@ -1340,5 +1076,34 @@ public class SeparatedLoopTest implements ModifiableComposedLayerTest<SeparatedL
 		loop.setContent("a,b,c");
 		assertEquals(++operationCounter, values.size());
 		assertEquals(loop.getContent(), values.getFirst());
+	}
+
+	@Test
+	public void testSortInCorrectOrder() {
+		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<>(Regex.define("[a-zA-Z]"), Constant.define(","));
+		loop.setContent("C,b,a,B,c,A");
+		loop.sort((r1, r2) -> Comparator.<String>naturalOrder().compare(r1.getContent(), r2.getContent()));
+		assertEquals("A,B,C,a,b,c", loop.getContent());
+	}
+
+	@Test
+	public void testSortProperlyNotifiesListeners() {
+		SeparatedLoop<Regex, Constant> loop = new SeparatedLoop<>(Regex.define("[a-zA-Z]"), Constant.define(","));
+		loop.setContent("d,b,a,c");
+		final String[] value = new String[] { null };
+		loop.addContentListener(new ContentListener() {
+
+			@Override
+			public void contentSet(String newContent) {
+				value[0] = newContent;
+			}
+		});
+
+		Comparator<Regex> comparator = (r1, r2) -> Comparator.<String>naturalOrder().compare(r1.getContent(),
+				r2.getContent());
+		loop.sort(comparator);
+		assertEquals("a,b,c,d", value[0]);
+		loop.sort(comparator.reversed());
+		assertEquals("d,c,b,a", value[0]);
 	}
 }

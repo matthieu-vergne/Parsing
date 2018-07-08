@@ -248,12 +248,6 @@ public class Choice extends AbstractLayer implements Named {
 			public Choice create() {
 				return new Choice(definitions);
 			}
-
-			@Override
-			public boolean isCompatibleWith(Choice layer) {
-				return definitions.containsAll(layer.getDefinitions())
-						&& layer.getDefinitions().containsAll(definitions);
-			}
 		};
 	}
 

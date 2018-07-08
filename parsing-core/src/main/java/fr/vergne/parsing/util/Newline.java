@@ -31,11 +31,6 @@ public class Newline extends Regex {
 		public Newline create() {
 			return new Newline();
 		}
-
-		@Override
-		public boolean isCompatibleWith(Newline layer) {
-			return true;
-		}
 	};
 
 }

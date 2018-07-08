@@ -75,11 +75,6 @@ public class Constant extends AbstractLayer implements Named {
 			public Constant create() {
 				return new Constant(content);
 			}
-
-			@Override
-			public boolean isCompatibleWith(Constant layer) {
-				return layer.getConstant().equals(content);
-			}
 		};
 	}
 }

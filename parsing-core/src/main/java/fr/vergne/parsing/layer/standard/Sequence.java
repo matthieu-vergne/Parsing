@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -220,48 +221,32 @@ public class Sequence extends AbstractLayer implements Named {
 		return definitions.size();
 	}
 
-	public <Item extends Layer> Item set(Definition<Item> definition, Item item) {
-		if (!definitions.contains(definition)) {
-			throw new IllegalArgumentException("Unknown definition: " + definition);
-		} else if (definitions.indexOf(definition) != definitions.lastIndexOf(definition)) {
-			throw new IllegalArgumentException("Ambiguous definition: " + definition);
-		} else if (item == null) {
-			throw new IllegalArgumentException("No item provided: " + item);
-		} else if (!definition.isCompatibleWith(item)) {
-			throw new IllegalArgumentException("Invalid item provided: " + item);
-		} else if (item.getContent().isEmpty()) {
-			throw new IllegalArgumentException("Empty item provided: " + item);
-		} else {
-			@SuppressWarnings("unchecked")
-			Item oldItem = (Item) layers.set(definitions.indexOf(definition), item);
-			oldItem.removeContentListener(deepListener);
-			item.addContentListener(deepListener);
-			fireContentUpdate();
-			return oldItem;
-		}
-	}
-
+	// TODO return item instead of string alone
 	public <Item extends Layer> String set(Definition<Item> definition, String content) {
-		if (definition == null) {
-			throw new IllegalArgumentException("No definition provided.");
+		Objects.requireNonNull(definition, "No definition provided.");
+		int index = definitions.indexOf(definition);
+		if (index < 0) {
+			throw new IllegalArgumentException("Unknown definition: " + definition);
+		} else if (index != definitions.lastIndexOf(definition)) {
+			int index2 = definitions.lastIndexOf(definition);
+			throw new IllegalArgumentException(
+					"Ambiguous definition with " + index + " and " + index2 + ": " + definition);
 		} else {
-			Item item = definition.create();
-			try {
-				item.setContent(content);
-			} catch (NullPointerException cause) {
-				throw new IllegalArgumentException(cause);
-			}
-			return set(definition, item).getContent();
+			return set(index, content);
 		}
 	}
 
-	@SuppressWarnings("unchecked")
-	public <Item extends Layer> Item set(int index, Item item) {
-		return set((Definition<Item>) definitions.get(index), item);
-	}
-
+	// TODO return layer instead of string alone
 	public String set(int index, String content) {
-		return set(definitions.get(index), content);
+		Objects.requireNonNull(content, "No content provided.");
+
+		Layer item = definitions.get(index).create();
+		item.setContent(content);
+		Layer oldItem = layers.set(index, item);
+		oldItem.removeContentListener(deepListener);
+		item.addContentListener(deepListener);
+		fireContentUpdate();
+		return oldItem.getContent();
 	}
 
 	public List<Definition<? extends Layer>> getDefinitions() {
@@ -301,12 +286,6 @@ public class Sequence extends AbstractLayer implements Named {
 			@Override
 			public Sequence create() {
 				return new Sequence(items);
-			}
-
-			@Override
-			public boolean isCompatibleWith(Sequence sequence) {
-				List<Definition<? extends Layer>> otherItems = sequence.getDefinitions();
-				return otherItems.containsAll(items) && items.containsAll(otherItems);
 			}
 		};
 	}

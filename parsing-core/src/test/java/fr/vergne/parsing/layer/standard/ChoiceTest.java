@@ -27,6 +27,8 @@ import fr.vergne.parsing.layer.standard.impl.UnsafeRecursiveLayer;
 @RunWith(JUnitPlatform.class)
 public class ChoiceTest implements ComposedLayerTest<Choice> {
 
+	private Choice testChoice;
+
 	@Override
 	public Map<String, Choice> instantiateLayers(Collection<String> specialCharacters) {
 		Collection<Definition<?>> alternatives = new LinkedList<>();
@@ -39,6 +41,10 @@ public class ChoiceTest implements ComposedLayerTest<Choice> {
 		for (String content : specialCharacters) {
 			map.put(content, choice);
 		}
+
+		testChoice = new Choice(Regex.define("[0-9]"), Regex.define("[a-z]"));
+		map.put("0", testChoice);
+
 		return map;
 	}
 
@@ -48,9 +54,17 @@ public class ChoiceTest implements ComposedLayerTest<Choice> {
 	}
 
 	@Override
-	public Collection<SublayerUpdate> getSublayersUpdates(Choice parent) {
-		// TODO Auto-generated method stub
-		return null;
+	public Collection<SublayerUpdate> getSublayersUpdates(Choice choice) {
+		Collection<SublayerUpdate> updates = new LinkedList<>();
+		if (choice == testChoice) {
+			Layer subLayer = choice.get();
+			String initial = subLayer.getContent();
+			String replacement = "1";
+			updates.add(ComposedLayerTest.simpleUpdate(subLayer, initial, replacement));
+		} else {
+			// No update to test
+		}
+		return updates;
 	}
 
 	@Override

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -36,8 +37,8 @@ import fr.vergne.parsing.util.RegexRecursivityLimiter;
  * 
  * @param <Element>
  */
-// TODO Split bounded & unbounded loops or remove clear()
 // TODO Test bounds exceptions
+// TODO reduce responsibilities (min/max, quantifier, default, etc.)
 public class Loop<Element extends Layer> extends AbstractLayer implements Iterable<Element>, Named {
 
 	// TODO make it private
@@ -232,20 +233,6 @@ public class Loop<Element extends Layer> extends AbstractLayer implements Iterab
 
 	/**
 	 * This method adds a new {@link Element} to the end of this {@link Loop}. The
-	 * {@link Element} should have the same regex than the usual {@link Element}s of
-	 * this {@link Loop}.
-	 * 
-	 * @param element
-	 *            the new {@link Element}
-	 * @throws BoundException
-	 *             if the addition implies to reach a size above the maximum
-	 */
-	public void add(Element element) throws BoundException {
-		add(size(), element);
-	}
-
-	/**
-	 * This method adds a new {@link Element} to the end of this {@link Loop}. The
 	 * content should be compatible with the regex of the {@link Element}s of this
 	 * {@link Loop}.
 	 * 
@@ -257,22 +244,6 @@ public class Loop<Element extends Layer> extends AbstractLayer implements Iterab
 	 */
 	public Element add(String content) throws BoundException {
 		return add(size(), content);
-	}
-
-	/**
-	 * This method adds a new {@link Element} to this {@link Loop}. The
-	 * {@link Element} should have the same regex than the usual {@link Element} s
-	 * of this {@link Loop}.
-	 * 
-	 * @param index
-	 *            the index of the new {@link Element}
-	 * @param element
-	 *            the new {@link Element}
-	 * @throws BoundException
-	 *             if the addition implies to reach a size above the maximum
-	 */
-	public void add(int index, Element element) throws BoundException {
-		addAll(index, Arrays.asList(element));
 	}
 
 	/**
@@ -292,51 +263,8 @@ public class Loop<Element extends Layer> extends AbstractLayer implements Iterab
 		if (size() >= max) {
 			throw new BoundException("This loop cannot have more than " + max + " elements.");
 		} else {
-			Element newElement = itemDefinition.create();
-			newElement.setContent(content);
-			add(index, newElement);
-			return newElement;
-		}
-	}
-
-	/**
-	 * This method adds new {@link Element}s to this {@link Loop}. The
-	 * {@link Element}s should all have the same regex than the usual
-	 * {@link Element}s of this {@link Loop}.<br/>
-	 * <br/>
-	 * For providing a collection of {@link String}s, use
-	 * {@link #addAllContents(int, Collection)}, which has a different name to avoid
-	 * type erasure issues.
-	 * 
-	 * @param index
-	 *            the index form which to start the addition
-	 * @param elements
-	 *            the new {@link Element}s
-	 * @throws BoundException
-	 *             if the addition implies to reach a size above the maximum
-	 */
-	public void addAll(int index, Collection<Element> elements) throws BoundException {
-		if (size() + elements.size() > max) {
-			throw new BoundException("This loop cannot have more than " + max + " elements.");
-		} else {
-			Collection<Element> validElements = new LinkedList<Element>();
-			for (Element element : elements) {
-				if (!itemDefinition.isCompatibleWith(element)) {
-					throw new IllegalArgumentException("The element (" + element
-							+ ") is not compatible with the definition of this loop: " + itemDefinition.getRegex());
-				} else if (element.getContent() == null) {
-					throw new IllegalArgumentException(
-							"You cannot add an element which has no content: set it before to add it to this loop.");
-				} else {
-					validElements.add(element);
-				}
-			}
-
-			for (Element element : validElements) {
-				element.addContentListener(deepListener);
-			}
-			occurrences.addAll(index, validElements);
-			fireContentUpdate();
+			Collection<Element> elements = addAll(index, Arrays.asList(content));
+			return elements.iterator().next();
 		}
 	}
 
@@ -353,7 +281,7 @@ public class Loop<Element extends Layer> extends AbstractLayer implements Iterab
 	 * @throws BoundException
 	 *             if the addition implies to reach a size above the maximum
 	 */
-	public Collection<Element> addAllContents(int index, Collection<String> contents) throws BoundException {
+	public Collection<Element> addAll(int index, Collection<String> contents) throws BoundException {
 		if (size() >= max) {
 			throw new BoundException("This loop cannot have more than " + max + " elements.");
 		} else {
@@ -363,9 +291,42 @@ public class Loop<Element extends Layer> extends AbstractLayer implements Iterab
 				element.setContent(content);
 				elements.add(element);
 			}
-			addAll(index, elements);
+			addAllInternal(index, elements);
 			return elements;
 		}
+	}
+
+	private void addAllInternal(int index, Collection<Element> elements) throws BoundException {
+		if (size() + elements.size() > max) {
+			throw new BoundException("This loop cannot have more than " + max + " elements.");
+		} else {
+			Collection<Element> validElements = new LinkedList<Element>();
+			for (Element element : elements) {
+				if (element.getContent() == null) {
+					throw new IllegalArgumentException(
+							"You cannot add an element which has no content: set it before to add it to this loop.");
+				} else {
+					validElements.add(element);
+				}
+			}
+
+			for (Element element : validElements) {
+				element.addContentListener(deepListener);
+			}
+			occurrences.addAll(index, validElements);
+			fireContentUpdate();
+		}
+	}
+
+	/**
+	 * Sort this {@link Loop} to have its elements in a specific order.
+	 * 
+	 * @param comparator
+	 *            the element {@link Comparator} to use
+	 */
+	public void sort(Comparator<Element> comparator) {
+		occurrences.sort(comparator);
+		fireContentUpdate();
 	}
 
 	/**
@@ -474,12 +435,6 @@ public class Loop<Element extends Layer> extends AbstractLayer implements Iterab
 			@Override
 			public Loop<Item> create() {
 				return new Loop<>(itemDefinition, min, max, quantifier);
-			}
-
-			@Override
-			public boolean isCompatibleWith(Loop<Item> layer) {
-				return layer.getItemDefinition().equals(itemDefinition) && layer.getMin() == min
-						&& layer.getMax() == max && layer.getQuantifier().equals(quantifier);
 			}
 		};
 	}

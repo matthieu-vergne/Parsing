@@ -111,21 +111,6 @@ public class Option<CLayer extends Layer> extends AbstractLayer implements Named
 		}
 	}
 
-	public void setOption(CLayer layer) {
-		if (!optionDefinition.isCompatibleWith(layer)) {
-			throw new IllegalArgumentException("Invalid layer: " + layer);
-		} else {
-			if (isPresent()) {
-				this.layer.removeContentListener(deepListener);
-			} else {
-				// No listener to remove
-			}
-			this.layer = layer;
-			this.layer.addContentListener(deepListener);
-			fireContentUpdate();
-		}
-	}
-
 	@Override
 	public String getName() {
 		return "OPT";
@@ -154,11 +139,6 @@ public class Option<CLayer extends Layer> extends AbstractLayer implements Named
 			@Override
 			public Option<T> create() {
 				return new Option<T>(definition, quantifier);
-			}
-
-			@Override
-			public boolean isCompatibleWith(Option<T> option) {
-				return option.getOptionalDefinition().equals(definition) && option.getQuantifier().equals(quantifier);
 			}
 		};
 	}
