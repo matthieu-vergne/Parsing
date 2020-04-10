@@ -24,8 +24,6 @@ import fr.vergne.parsing.layer.Layer;
  * {@link Layer} instance.
  * </ol>
  * 
- * @author Matthieu Vergne <matthieu.vergne@gmail.com>
- *
  * @param <L> The {@link Layer} to use internally
  */
 // TODO test

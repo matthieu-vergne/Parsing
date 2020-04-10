@@ -23,8 +23,6 @@ import fr.vergne.parsing.util.RegexRecursivityLimiter;
  * Consequently, the number of {@link Separator}s is always equal to the number
  * of {@link Item}s - 1.
  * 
- * @author Matthieu Vergne <matthieu.vergne@gmail.com>
- * 
  * @param <Item>
  * @param <Separator>
  */

@@ -5,9 +5,6 @@ import java.util.function.Function;
 /**
  * This interface is a facility for naming elements. As much as possible,
  * {@link #getName()} should return a constant.
- * 
- * @author Matthieu Vergne <matthieu.vergne@gmail.com>
- *
  */
 public interface Named {
 	String getName();

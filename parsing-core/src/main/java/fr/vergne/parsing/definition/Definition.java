@@ -8,8 +8,6 @@ import fr.vergne.parsing.layer.Layer;
  * A {@link Definition} defines a {@link Layer} in order to be able to
  * instantiate it through {@link #create()}.
  * 
- * @author Matthieu Vergne <matthieu.vergne@gmail.com>
- *
  * @param <T>
  */
 // TODO Import quantifier here? Should it go together with regex?
@@ -37,7 +35,7 @@ public interface Definition<T extends Layer> {
 	 * {@link Definition} and the alias are not the same (different instances), but
 	 * they build on the same rules (can parse the same content). If you need it to
 	 * have also a different {@link Class}, you must use
-	 * {@link #like(Definition, Function, Function)} instead.
+	 * {@link #like(Definition, Function)} instead.
 	 * 
 	 * @param source
 	 *            the {@link Definition} to mimic
@@ -86,8 +84,6 @@ public interface Definition<T extends Layer> {
 	 * the {@link DefinitionProxy} can create instances through
 	 * {@link DefinitionProxy#create()}.
 	 * 
-	 * @author Matthieu Vergne <matthieu.vergne@gmail.com>
-	 *
 	 * @param <L>
 	 *            The type of {@link Layer} to delegate to
 	 */

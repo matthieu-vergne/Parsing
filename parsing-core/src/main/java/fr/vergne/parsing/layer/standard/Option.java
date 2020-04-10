@@ -14,8 +14,6 @@ import fr.vergne.parsing.util.RegexRecursivityLimiter;
  * An {@link Option} make a {@link Layer} optional. Thus, a compatible content
  * is one which fits the optional {@link Layer} or an empty one.
  * 
- * @author Matthieu Vergne <matthieu.vergne@gmail.com>
- * 
  * @param <CLayer>
  */
 public class Option<CLayer extends Layer> extends AbstractLayer implements Named {

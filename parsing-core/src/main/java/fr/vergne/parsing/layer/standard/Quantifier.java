@@ -13,12 +13,9 @@ import fr.vergne.parsing.layer.Layer;
  * <li>possessive: X*+</li>
  * </ul>
  * These are regex-specific tools, so no detail is given here. But one can found
- * plenty of information about these quantifiers on the web, like:<br/>
+ * plenty of information about these quantifiers on the web, like:<br>
  * <a href="http://www.regular-expressions.info/possessive.html">http://www.
  * regular-expressions.info/possessive.html</a>
- * 
- * @author Matthieu Vergne <matthieu.vergne@gmail.com>
- * 
  */
 public enum Quantifier {
 	GREEDY(""), LAZY("?"), POSSESSIVE("+");

@@ -34,9 +34,9 @@ import fr.vergne.parsing.util.RegexRecursivityLimiter;
  * <ol>
  * <li>"&lt;a href='"</li>
  * <li>url</li>
- * <li>"'>"</li>
+ * <li>"'&gt;"</li>
  * <li>content</li>
- * <li>"&lt;/a>"</li>
+ * <li>"&lt;/a&gt;"</li>
  * </ol>
  * At a higher level, it also fits global structures like the architecture of a
  * scientific paper for instance:
@@ -50,9 +50,6 @@ import fr.vergne.parsing.util.RegexRecursivityLimiter;
  * <li>discussion</li>
  * <li>conclusion</li>
  * </ol>
- * 
- * @author Matthieu Vergne <matthieu.vergne@gmail.com>
- * 
  */
 public class Sequence extends AbstractLayer implements Named {
 

@@ -14,9 +14,6 @@ import fr.vergne.parsing.layer.exception.ParsingException;
  * {@link Layer} <code>B</code>, changing the content of <code>B</code> should
  * change correspondingly the content of <code>A</code>. This is how these
  * elements act as different semantical "layers" over a specific content.
- * 
- * @author Matthieu Vergne <matthieu.vergne@gmail.com>
- * 
  */
 public interface Layer {
 
@@ -75,9 +72,6 @@ public interface Layer {
 	 * {@link Layer} sees its contents modified. It does not necessarily reduce the
 	 * to the call of {@link Layer#setContent(String)}, but can come from other
 	 * methods which modifies part of the content.
-	 * 
-	 * @author Matthieu Vergne <matthieu.vergne@gmail.com>
-	 * 
 	 */
 	public static interface ContentListener {
 

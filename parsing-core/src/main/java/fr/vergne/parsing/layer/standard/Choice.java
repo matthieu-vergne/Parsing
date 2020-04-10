@@ -24,8 +24,6 @@ import fr.vergne.parsing.util.RegexRecursivityLimiter;
  * In the case of a pure syntaxic variability (e.g. different representations of
  * a same number), it is better to use a {@link Regex}.
  * 
- * @author Matthieu Vergne <matthieu.vergne@gmail.com>
- * 
  */
 public class Choice extends AbstractLayer implements Named {
 
@@ -191,7 +189,7 @@ public class Choice extends AbstractLayer implements Named {
 	/**
 	 * 
 	 * @return the alternative set as reference, <code>null</code> by default
-	 * @see #setReferenceDefinition(Layer)
+	 * @see #setReferenceDefinition(Definition)
 	 */
 	public Definition<?> getReferenceDefinition() {
 		if (referenceDefinitionIndex == null) {

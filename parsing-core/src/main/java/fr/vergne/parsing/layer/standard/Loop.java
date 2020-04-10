@@ -26,14 +26,12 @@ import fr.vergne.parsing.util.RegexRecursivityLimiter;
  * sequences of similar elements, like an ordered list of variable length. At
  * the opposite of a {@link Sequence}, which considers a static sequence of
  * (possibly) different elements, a {@link Loop} considers a variable
- * repetitions of a single pattern, possibly constrained in size.<br/>
- * <br/>
+ * repetitions of a single pattern, possibly constrained in size.
+ * <p>
  * It is common to deal with sequences having separators, like an ordered list
  * of numbers separated by comas or spaces. In such a case, prefer to use a
  * {@link SeparatedLoop} which comes in hand to manage these separators and get
  * rid of them to get only the listed elements.
- * 
- * @author Matthieu Vergne <matthieu.vergne@gmail.com>
  * 
  * @param <Element>
  */

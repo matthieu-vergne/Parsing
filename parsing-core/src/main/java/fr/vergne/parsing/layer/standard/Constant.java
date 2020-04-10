@@ -14,9 +14,6 @@ import fr.vergne.parsing.util.Named;
  * An {@link Constant} is a {@link Layer} representing a static piece of text.
  * This is particularly suited to represent keywords, punctuation, and other
  * pieces of text we expect to find exactly as-is.
- * 
- * @author Matthieu Vergne <matthieu.vergne@gmail.com>
- * 
  */
 public class Constant extends AbstractLayer implements Named {
 
